@@ -27,7 +27,9 @@
     "test": "NODE_OPTIONS=\"--experimental-vm-modules --no-warnings=ExperimentalWarning\" jest",
     "test:cov": "npm run test -- --coverage"
   },
-  "dependencies": {},
+  "dependencies": {
+    "class-transformer": "^0.5.1"
+  },
   "devDependencies": {
     "@tsconfig/node18": "^2.0.1",
     "@types/jest": "^29.5.2",
