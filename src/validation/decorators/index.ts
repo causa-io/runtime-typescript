@@ -8,3 +8,4 @@ export {
   hasUniqueValues,
 } from './has-unique-values.decorator.js';
 export { IsNullable } from './is-nullable.decorator.js';
+export { RequiresProperty } from './requires-property.decorator.js';
