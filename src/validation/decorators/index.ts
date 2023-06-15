@@ -7,3 +7,4 @@ export {
   HasUniqueValues,
   hasUniqueValues,
 } from './has-unique-values.decorator.js';
+export { IsNullable } from './is-nullable.decorator.js';
