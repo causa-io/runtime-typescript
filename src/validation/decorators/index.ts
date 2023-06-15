@@ -13,5 +13,9 @@ export {
   isGreaterThanValue,
 } from './is-greater-than-property.decorator.js';
 export { IsNullable } from './is-nullable.decorator.js';
+export {
+  IsObjectWithKeysMaxLength,
+  isObjectWithKeysMaxLength,
+} from './is-object-with-keys-max-length.decorator.js';
 export { RequiresPropertyNotToBeDefined } from './requires-property-not-to-be-defined.decorator.js';
 export { RequiresProperty } from './requires-property.decorator.js';
