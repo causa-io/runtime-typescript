@@ -1,5 +1,11 @@
 import { jest } from '@jest/globals';
-import { Transaction, TransactionRunner } from '../transaction/index.js';
+import { Event, PublishOptions } from '../events/index.js';
+import {
+  BufferEventTransaction,
+  EventTransaction,
+  Transaction,
+  TransactionRunner,
+} from '../transaction/index.js';
 import { VersionedEntityStateTransaction } from './state-transaction.js';
 
 export type MockTransaction = Transaction<VersionedEntityStateTransaction, any>;
@@ -13,9 +19,13 @@ export const mockStateTransaction = {
   >,
 };
 
+export const mockEventTransaction: EventTransaction & {
+  bufferedEvents: { topic: string; event: Event; options: PublishOptions }[];
+} = new BufferEventTransaction({} as any) as any;
+
 export const mockTransaction = new Transaction<any, any>(
   mockStateTransaction,
-  {},
+  mockEventTransaction,
 );
 
 export class MockRunner extends TransactionRunner<MockTransaction> {
