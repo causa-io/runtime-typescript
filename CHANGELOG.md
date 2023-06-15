@@ -14,3 +14,5 @@ Features:
 - Define TypeScript typing utilities, starting with `KeyOfType`.
 - Define entity errors.
 - Implement the `VersionedEntityEventProcessor` and the `VersionedEntityManager`.
+- Implement `validateObject` and `parseObject`.
+- Implement validation decorators.

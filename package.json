@@ -29,14 +29,16 @@
   },
   "dependencies": {
     "class-transformer": "^0.5.1",
+    "class-validator": "^0.14.0",
+    "reflect-metadata": "^0.1.13",
     "uuid": "^9.0.0"
   },
   "devDependencies": {
     "@tsconfig/node18": "^2.0.1",
     "@types/jest": "^29.5.2",
-    "@types/node": "^18.16.16",
+    "@types/node": "^18.16.18",
     "@types/uuid": "^9.0.2",
-    "@typescript-eslint/eslint-plugin": "^5.59.9",
+    "@typescript-eslint/eslint-plugin": "^5.59.11",
     "eslint": "^8.42.0",
     "eslint-config-prettier": "^8.8.0",
     "eslint-plugin-prettier": "^4.2.1",
