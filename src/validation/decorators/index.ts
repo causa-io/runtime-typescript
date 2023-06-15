@@ -1,3 +1,4 @@
+export { AllowMissingIfPropertyDefined } from './allow-missing-if-property-defined.decorator.js';
 export { AllowMissing } from './allow-missing.decorator.js';
 export {
   HasEmptyIntersectionWith,
