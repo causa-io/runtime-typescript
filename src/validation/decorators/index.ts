@@ -1,3 +1,4 @@
+export { AllowMissing } from './allow-missing.decorator.js';
 export {
   HasEmptyIntersectionWith,
   hasEmptyIntersectionWith,
