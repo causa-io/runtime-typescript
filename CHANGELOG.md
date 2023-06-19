@@ -19,3 +19,4 @@ Features:
 - Implement logging utilities: `getPinoConfiguration`, `updatePinoConfiguration`, `createLogger` and `getDefaultLogger`.
 - Implement logging testing utilities.
 - Implement the `LockManager`.
+- Implement the NestJS application factory and corresponding testing utilities.
