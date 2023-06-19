@@ -18,3 +18,4 @@ Features:
 - Implement validation decorators.
 - Implement logging utilities: `getPinoConfiguration`, `updatePinoConfiguration`, `createLogger` and `getDefaultLogger`.
 - Implement logging testing utilities.
+- Implement the `LockManager`.
