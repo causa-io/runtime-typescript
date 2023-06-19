@@ -12,7 +12,8 @@
   "types": "dist/index.d.ts",
   "exports": {
     ".": "./dist/index.js",
-    "./logging/testing": "./dist/logging/testing.js"
+    "./logging/testing": "./dist/logging/testing.js",
+    "./nestjs": "./dist/nestjs/index.js"
   },
   "files": [
     "dist/",
