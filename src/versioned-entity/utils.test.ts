@@ -3,19 +3,19 @@ import { Event, PublishOptions } from '../events/index.js';
 import {
   BufferEventTransaction,
   EventTransaction,
+  FindReplaceStateTransaction,
   Transaction,
   TransactionRunner,
 } from '../transaction/index.js';
-import { VersionedEntityStateTransaction } from './state-transaction.js';
 
-export type MockTransaction = Transaction<VersionedEntityStateTransaction, any>;
+export type MockTransaction = Transaction<FindReplaceStateTransaction, any>;
 
 export const mockStateTransaction = {
   findOneWithSameKeyAs: jest.fn(() => Promise.resolve(undefined)) as jest.Mock<
-    VersionedEntityStateTransaction['findOneWithSameKeyAs']
+    FindReplaceStateTransaction['findOneWithSameKeyAs']
   >,
   replace: jest.fn(() => Promise.resolve()) as jest.Mock<
-    VersionedEntityStateTransaction['replace']
+    FindReplaceStateTransaction['replace']
   >,
 };
 
