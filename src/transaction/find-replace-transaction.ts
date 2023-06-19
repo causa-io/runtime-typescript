@@ -1,7 +1,10 @@
+import { EventTransaction } from './event-transaction.js';
+import { Transaction } from './transaction.js';
+
 /**
- * A transaction that can be used to modify the state of versioned entities.
+ * A transaction that exposes methods to find and replace entities based on their primary key.
  */
-export interface VersionedEntityStateTransaction {
+export interface FindReplaceStateTransaction {
   /**
    * Replaces a possibly existing entity with the given one.
    * If the entity does not exist, it is created.
@@ -26,3 +29,11 @@ export interface VersionedEntityStateTransaction {
     entity: Partial<T>,
   ): Promise<T | undefined>;
 }
+
+/**
+ * A transaction that at least conforms to {@link FindReplaceStateTransaction}.
+ */
+export type FindReplaceTransaction = Transaction<
+  FindReplaceStateTransaction,
+  EventTransaction
+>;

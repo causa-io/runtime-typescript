@@ -11,9 +11,11 @@ import {
   EventName,
   PublishOptions,
 } from '../events/index.js';
-import { TransactionRunner } from '../transaction/index.js';
+import {
+  FindReplaceTransaction,
+  TransactionRunner,
+} from '../transaction/index.js';
 import { VersionedEntityEventProcessor } from './event-processor.js';
-import { VersionedEntityTransaction } from './transaction.js';
 import {
   VersionedEntity,
   VersionedEntityCreation,
@@ -23,7 +25,7 @@ import {
 /**
  * Options when performing a generic write operation on a versioned entity.
  */
-type VersionedEntityOperationOptions<T extends VersionedEntityTransaction> = {
+type VersionedEntityOperationOptions<T extends FindReplaceTransaction> = {
   /**
    * The transaction to use.
    */
@@ -39,7 +41,7 @@ type VersionedEntityOperationOptions<T extends VersionedEntityTransaction> = {
  * Options when performing an update operation on a versioned entity.
  */
 type VersionedEntityUpdateOptions<
-  T extends VersionedEntityTransaction,
+  T extends FindReplaceTransaction,
   P extends VersionedEntity,
 > = VersionedEntityOperationOptions<T> & {
   /**
@@ -61,7 +63,7 @@ type VersionedEntityUpdateOptions<
  * It provides CRUD-like methods that publish events and update the state accordingly.
  */
 export class VersionedEntityManager<
-  T extends VersionedEntityTransaction,
+  T extends FindReplaceTransaction,
   E extends Event<string, VersionedEntity>,
 > extends VersionedEntityEventProcessor<T, E, EventData<E>> {
   /**

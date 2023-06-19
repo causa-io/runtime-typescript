@@ -1,7 +1,9 @@
 import { Event } from '../events/index.js';
-import { TransactionRunner } from '../transaction/index.js';
+import {
+  FindReplaceTransaction,
+  TransactionRunner,
+} from '../transaction/index.js';
 import { KeyOfType } from '../typing/index.js';
-import { VersionedEntityTransaction } from './transaction.js';
 import { VersionedEntity } from './versioned-entity.js';
 
 /**
@@ -11,7 +13,7 @@ import { VersionedEntity } from './versioned-entity.js';
  * {@link VersionedEntityEventProcessor.updateState} should be overridden.
  */
 export class VersionedEntityEventProcessor<
-  T extends VersionedEntityTransaction,
+  T extends FindReplaceTransaction,
   E extends Event,
   P extends VersionedEntity,
 > {
