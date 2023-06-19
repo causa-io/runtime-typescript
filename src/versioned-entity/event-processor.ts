@@ -1,6 +1,6 @@
 import { Event } from '../events/index.js';
 import { TransactionRunner } from '../transaction/index.js';
-import { KeyOfType } from '../typing.js';
+import { KeyOfType } from '../typing/index.js';
 import { VersionedEntityTransaction } from './transaction.js';
 import { VersionedEntity } from './versioned-entity.js';
 
