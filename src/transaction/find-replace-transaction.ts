@@ -16,6 +16,17 @@ export interface FindReplaceStateTransaction {
   replace<T extends object>(entity: T): Promise<void>;
 
   /**
+   * Deletes an entity of the given type with the same primary key as the given entity.
+   *
+   * @param type The type of the entity to delete.
+   * @param key The primary key of the entity to delete, as a partial entity containing all the primary key columns.
+   */
+  deleteWithSameKeyAs<T extends object>(
+    type: { new (): T },
+    key: Partial<T>,
+  ): Promise<void>;
+
+  /**
    * Looks up an entity of the given type with the same primary key as the given entity.
    * This should return the entity even if it is deleted.
    *
