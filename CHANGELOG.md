@@ -11,8 +11,10 @@ Features:
 - Implement the `Transaction` class.
 - Implement the base `TransactionRunner`.
 - Define the `VersionedEntity`, `VersionedEntityStateTransaction`, and `VersionedEntityTransaction`.
-- Define TypeScript typing utilities, starting with `KeyOfType`.
+- Define TypeScript typing utilities.
 - Define entity errors.
 - Implement the `VersionedEntityEventProcessor` and the `VersionedEntityManager`.
 - Implement `validateObject` and `parseObject`.
 - Implement validation decorators.
+- Implement logging utilities: `getPinoConfiguration`, `updatePinoConfiguration`, `createLogger` and `getDefaultLogger`.
+- Implement logging testing utilities.
