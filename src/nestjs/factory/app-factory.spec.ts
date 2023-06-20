@@ -2,6 +2,7 @@ import { Controller, Get, INestApplication, Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PinoLogger } from 'nestjs-pino';
 import supertest from 'supertest';
+import { EntityAlreadyExistsError } from '../../errors/index.js';
 import { getLoggedObjects, spyOnLogger } from '../../logging/testing.js';
 import { createApp } from './app-factory.js';
 
@@ -17,6 +18,11 @@ class TestController {
   async get() {
     this.logger.info('💮');
     return;
+  }
+
+  @Get('/conflict')
+  async throwAlreadyExist() {
+    throw new EntityAlreadyExistsError({} as any, {});
   }
 }
 
@@ -81,5 +87,9 @@ describe('app-factory', () => {
 
   it('should import the healthcheck module', async () => {
     await request.get('/health').expect(200);
+  });
+
+  it('should import the exception filter module', async () => {
+    await request.get('/test/conflict').expect(409);
   });
 });

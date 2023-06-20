@@ -22,3 +22,5 @@ Features:
 - Implement the NestJS application factory and corresponding testing utilities.
 - Implement the `LoggerModule`.
 - Implement the `HealthcheckModule`.
+- Define base HTTP errors.
+- Implement the `ExceptionFilterModule`.
