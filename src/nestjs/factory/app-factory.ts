@@ -4,6 +4,7 @@ import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { json } from 'express';
 import { Logger } from 'nestjs-pino';
+import { ExceptionFilterModule } from '../errors/index.js';
 import { HealthcheckModule } from '../healthcheck/index.js';
 import { LoggerModule } from '../logging/index.js';
 
@@ -23,6 +24,7 @@ function createAppModule(businessModule: any): any {
     ConfigModule.forRoot({ isGlobal: true }),
     LoggerModule,
     HealthcheckModule,
+    ExceptionFilterModule,
     businessModule,
   ];
 
