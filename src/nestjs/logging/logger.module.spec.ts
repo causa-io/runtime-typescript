@@ -4,16 +4,25 @@ import { Test } from '@nestjs/testing';
 import { Logger as PinoLogger } from 'nestjs-pino';
 import supertest from 'supertest';
 import {
+  getLoggedErrors,
   getLoggedInfos,
+  getLoggedObjects,
   getLoggedWarnings,
   spyOnLogger,
 } from '../../logging/testing.js';
 import { LoggerModule } from './logger.module.js';
 
 describe('LoggerModule', () => {
+  let healthFun: () => string;
+
   @Controller()
   class TestController {
     private readonly logger = new Logger(TestController.name);
+
+    @Get('health')
+    health() {
+      return healthFun();
+    }
 
     @Get('someRoute')
     route() {
@@ -30,6 +39,8 @@ describe('LoggerModule', () => {
   });
 
   beforeEach(async () => {
+    healthFun = () => 'OK';
+
     const testingModule = await Test.createTestingModule({
       imports: [LoggerModule],
       controllers: [TestController],
@@ -43,6 +54,28 @@ describe('LoggerModule', () => {
 
   afterEach(async () => {
     await app.close();
+  });
+
+  it('should not log successful healthchecks', async () => {
+    await request.get('/health').expect(200);
+
+    const actualLoggedObjects = getLoggedObjects();
+    const actualLoggedUrls = actualLoggedObjects.map((o) => o.req?.url);
+    expect(actualLoggedUrls).not.toContain('/health');
+  });
+
+  it('should log failed healthchecks', async () => {
+    healthFun = () => {
+      throw new Error();
+    };
+
+    await request.get('/health').expect(500);
+
+    expect(getLoggedErrors()).toEqual([
+      expect.objectContaining({
+        req: expect.objectContaining({ url: '/health' }),
+      }),
+    ]);
   });
 
   it('should redact the authorization header', async () => {

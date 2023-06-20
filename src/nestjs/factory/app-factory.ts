@@ -3,6 +3,9 @@ import { ConfigModule } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { json } from 'express';
+import { Logger } from 'nestjs-pino';
+import { HealthcheckModule } from '../healthcheck/index.js';
+import { LoggerModule } from '../logging/index.js';
 
 /**
  * The configuration for `body-parser` of the maximum size of input payloads when parsing JSON.
@@ -16,7 +19,12 @@ const DEFAULT_PAYLOAD_LIMIT = '5mb';
  * @returns The module from which the NestJS application can be created.
  */
 function createAppModule(businessModule: any): any {
-  const imports = [ConfigModule.forRoot({ isGlobal: true }), businessModule];
+  const imports = [
+    ConfigModule.forRoot({ isGlobal: true }),
+    LoggerModule,
+    HealthcheckModule,
+    businessModule,
+  ];
 
   @Module({ imports })
   class AppModule {}
@@ -71,6 +79,10 @@ export async function createApp(
   const AppModule = createAppModule(businessModule);
 
   const app = await appFactory(AppModule);
+
+  const logger = app.get(Logger);
+
+  app.useLogger(logger);
   app.useGlobalPipes();
   app.enableShutdownHooks();
 
