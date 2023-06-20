@@ -1,10 +1,23 @@
-import { Controller, Get, INestApplication, Module } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  INestApplication,
+  Module,
+  Post,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { IsPhoneNumber } from 'class-validator';
 import { PinoLogger } from 'nestjs-pino';
 import supertest from 'supertest';
 import { EntityAlreadyExistsError } from '../../errors/index.js';
 import { getLoggedObjects, spyOnLogger } from '../../logging/testing.js';
 import { createApp } from './app-factory.js';
+
+class PostTestDto {
+  @IsPhoneNumber()
+  phoneNumber!: string;
+}
 
 @Controller('test')
 class TestController {
@@ -23,6 +36,11 @@ class TestController {
   @Get('/conflict')
   async throwAlreadyExist() {
     throw new EntityAlreadyExistsError({} as any, {});
+  }
+
+  @Post('/')
+  async validateBody(@Body() body: PostTestDto) {
+    return body;
   }
 }
 
@@ -91,5 +109,20 @@ describe('app-factory', () => {
 
   it('should import the exception filter module', async () => {
     await request.get('/test/conflict').expect(409);
+  });
+
+  it('should import the validation module', async () => {
+    await request
+      .post('/test')
+      .send({ forbidden: '🙅', phoneNumber: '📞' })
+      .expect(400)
+      .expect(({ body }) => {
+        expect(body).toMatchObject({
+          statusCode: 400,
+          message: expect.stringContaining('phoneNumber'),
+          errorCode: 'invalidInput',
+          fields: expect.arrayContaining(['phoneNumber', 'forbidden']),
+        });
+      });
   });
 });
