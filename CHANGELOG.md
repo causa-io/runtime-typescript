@@ -24,3 +24,5 @@ Features:
 - Implement the `HealthcheckModule`.
 - Define base HTTP errors.
 - Implement the `ExceptionFilterModule`.
+- Implement the `ValidationPipe` and `ValidationModule`.
+- Define reusable DTOs for validation.
