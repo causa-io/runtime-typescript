@@ -20,3 +20,4 @@ Features:
 - Implement logging testing utilities.
 - Implement the `LockManager`.
 - Implement the NestJS application factory and corresponding testing utilities.
+- Implement the `LoggerModule`.
