@@ -86,3 +86,47 @@ export class InternalServerError extends HttpError<InternalServerErrorDto> {
     super(new InternalServerErrorDto(message));
   }
 }
+
+/**
+ * The response for a {@link BadRequestError}.
+ */
+export class BadRequestErrorDto implements ErrorResponse {
+  readonly statusCode = HttpStatus.BAD_REQUEST;
+  readonly errorCode = 'badRequest';
+
+  constructor(readonly message: string = 'The request is invalid.') {}
+}
+
+/**
+ * An error mapped to a generic 400 HTTP error.
+ */
+export class BadRequestError extends HttpError<BadRequestErrorDto> {
+  constructor(message?: string) {
+    super(new BadRequestErrorDto(message));
+  }
+}
+
+/**
+ * The response for a {@link ValidationError}.
+ */
+export class ValidationErrorDto implements ErrorResponse {
+  readonly statusCode = HttpStatus.BAD_REQUEST;
+  readonly errorCode = 'invalidInput';
+
+  /**
+   * Creates a new {@link ValidationErrorDto}.
+   *
+   * @param message A message returned to the client.
+   * @param fields The list of fields in the request that failed validation.
+   */
+  constructor(readonly message: string, readonly fields: string[]) {}
+}
+
+/**
+ * An error thrown when a request fails validation, mapped to a 400 HTTP error.
+ */
+export class ValidationError extends HttpError<ValidationErrorDto> {
+  constructor(message: string, fields: string[]) {
+    super(new ValidationErrorDto(message, fields));
+  }
+}

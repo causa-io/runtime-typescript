@@ -10,7 +10,7 @@ export type ErrorResponse = {
   readonly statusCode: HttpStatus;
 
   /**
-   * A message returned to the client.
+   * A message describing the error.
    */
   readonly message: string;
 
