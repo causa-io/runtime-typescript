@@ -7,6 +7,7 @@ import { Logger } from 'nestjs-pino';
 import { ExceptionFilterModule } from '../errors/index.js';
 import { HealthcheckModule } from '../healthcheck/index.js';
 import { LoggerModule } from '../logging/index.js';
+import { ValidationModule } from '../validation/index.js';
 
 /**
  * The configuration for `body-parser` of the maximum size of input payloads when parsing JSON.
@@ -24,6 +25,7 @@ function createAppModule(businessModule: any): any {
     ConfigModule.forRoot({ isGlobal: true }),
     LoggerModule,
     HealthcheckModule,
+    ValidationModule,
     ExceptionFilterModule,
     businessModule,
   ];
