@@ -1,17 +1,41 @@
 import { HttpStatus } from '@nestjs/common';
+import { ApiProperty } from '@nestjs/swagger';
+import { IsString } from 'class-validator';
+import { ApiConstantProperty } from '../openapi/index.js';
 import { ErrorResponse, HttpError } from './http-error.js';
+
+/**
+ * The base class for all error DTOs, providing OpenAPI metadata.
+ */
+export abstract class ErrorDto implements ErrorResponse {
+  @ApiProperty({ description: 'The HTTP status code of the error.' })
+  @IsString()
+  readonly statusCode!: HttpStatus;
+
+  @ApiProperty({ description: 'A message describing the error.' })
+  @IsString()
+  readonly message!: string;
+
+  @ApiProperty({ description: 'An error identifier, as a string.' })
+  @IsString()
+  readonly errorCode!: string;
+}
 
 /**
  * The response for a {@link NotFoundError}.
  */
-export class NotFoundErrorDto implements ErrorResponse {
+export class NotFoundErrorDto extends ErrorDto {
+  @ApiConstantProperty({ const: HttpStatus.NOT_FOUND })
   readonly statusCode = HttpStatus.NOT_FOUND;
 
+  @ApiConstantProperty({ const: 'notFound' })
   readonly errorCode = 'notFound';
 
   constructor(
     readonly message: string = 'The requested resource was not found on the server.',
-  ) {}
+  ) {
+    super();
+  }
 }
 
 /**
@@ -26,13 +50,18 @@ export class NotFoundError extends HttpError<NotFoundErrorDto> {
 /**
  * The response for a {@link ConflictError}.
  */
-export class ConflictErrorDto implements ErrorResponse {
+export class ConflictErrorDto extends ErrorDto {
+  @ApiConstantProperty({ const: HttpStatus.CONFLICT })
   readonly statusCode = HttpStatus.CONFLICT;
+
+  @ApiConstantProperty({ const: 'conflict' })
   readonly errorCode = 'conflict';
 
   constructor(
     readonly message: string = 'The request conflicts with existing resource(s) on the server.',
-  ) {}
+  ) {
+    super();
+  }
 }
 
 /**
@@ -47,13 +76,18 @@ export class ConflictError extends HttpError<ConflictErrorDto> {
 /**
  * The response for a {@link IncorrectVersionError}.
  */
-export class IncorrectVersionErrorDto implements ErrorResponse {
+export class IncorrectVersionErrorDto extends ErrorDto {
+  @ApiConstantProperty({ const: HttpStatus.CONFLICT })
   readonly statusCode = HttpStatus.CONFLICT;
+
+  @ApiConstantProperty({ const: 'incorrectVersion' })
   readonly errorCode = 'incorrectVersion';
 
   constructor(
     readonly message: string = 'The provided version does not match the version of the resource on the server.',
-  ) {}
+  ) {
+    super();
+  }
 }
 
 /**
@@ -69,13 +103,18 @@ export class IncorrectVersionError extends HttpError<IncorrectVersionErrorDto> {
 /**
  * The response for a {@link InternalServerError}.
  */
-export class InternalServerErrorDto implements ErrorResponse {
+export class InternalServerErrorDto extends ErrorDto {
+  @ApiConstantProperty({ const: HttpStatus.INTERNAL_SERVER_ERROR })
   readonly statusCode = HttpStatus.INTERNAL_SERVER_ERROR;
+
+  @ApiConstantProperty({ const: 'internalServerError' })
   readonly errorCode = 'internalServerError';
 
   constructor(
     readonly message: string = 'An unexpected error occurred on the server.',
-  ) {}
+  ) {
+    super();
+  }
 }
 
 /**
@@ -90,11 +129,16 @@ export class InternalServerError extends HttpError<InternalServerErrorDto> {
 /**
  * The response for a {@link BadRequestError}.
  */
-export class BadRequestErrorDto implements ErrorResponse {
+export class BadRequestErrorDto extends ErrorDto {
+  @ApiConstantProperty({ const: HttpStatus.BAD_REQUEST })
   readonly statusCode = HttpStatus.BAD_REQUEST;
+
+  @ApiConstantProperty({ const: 'badRequest' })
   readonly errorCode = 'badRequest';
 
-  constructor(readonly message: string = 'The request is invalid.') {}
+  constructor(readonly message: string = 'The request is invalid.') {
+    super();
+  }
 }
 
 /**
@@ -109,8 +153,11 @@ export class BadRequestError extends HttpError<BadRequestErrorDto> {
 /**
  * The response for a {@link ValidationError}.
  */
-export class ValidationErrorDto implements ErrorResponse {
+export class ValidationErrorDto extends ErrorDto {
+  @ApiConstantProperty({ const: HttpStatus.BAD_REQUEST })
   readonly statusCode = HttpStatus.BAD_REQUEST;
+
+  @ApiConstantProperty({ const: 'invalidInput' })
   readonly errorCode = 'invalidInput';
 
   /**
@@ -119,7 +166,9 @@ export class ValidationErrorDto implements ErrorResponse {
    * @param message A message returned to the client.
    * @param fields The list of fields in the request that failed validation.
    */
-  constructor(readonly message: string, readonly fields: string[]) {}
+  constructor(readonly message: string, readonly fields: string[]) {
+    super();
+  }
 }
 
 /**
