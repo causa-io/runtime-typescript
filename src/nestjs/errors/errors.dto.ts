@@ -179,3 +179,53 @@ export class ValidationError extends HttpError<ValidationErrorDto> {
     super(new ValidationErrorDto(message, fields));
   }
 }
+
+/**
+ * The response for a {@link UnauthenticatedError}.
+ */
+export class UnauthenticatedErrorDto extends ErrorDto {
+  @ApiConstantProperty({ const: HttpStatus.UNAUTHORIZED })
+  readonly statusCode = HttpStatus.UNAUTHORIZED;
+
+  @ApiConstantProperty({ const: 'unauthenticated' })
+  readonly errorCode = 'unauthenticated';
+
+  constructor(readonly message: string = 'The request must be authenticated.') {
+    super();
+  }
+}
+
+/**
+ * An error mapped to a generic 401 HTTP error.
+ * "Unauthenticated" is closer to the true meaning of the error: no authentication mechanism was provided with the
+ * request.
+ */
+export class UnauthenticatedError extends HttpError<UnauthenticatedErrorDto> {
+  constructor() {
+    super(new UnauthenticatedErrorDto());
+  }
+}
+
+/**
+ * The response for a {@link ForbiddenError}.
+ */
+export class ForbiddenErrorDto extends ErrorDto {
+  @ApiConstantProperty({ const: HttpStatus.FORBIDDEN })
+  readonly statusCode = HttpStatus.FORBIDDEN;
+
+  @ApiConstantProperty({ const: 'forbidden' })
+  readonly errorCode = 'forbidden';
+
+  constructor(readonly message: string = 'The request is not allowed.') {
+    super();
+  }
+}
+
+/**
+ * An error mapped to a generic 403 HTTP error.
+ */
+export class ForbiddenError extends HttpError<ForbiddenErrorDto> {
+  constructor() {
+    super(new ForbiddenErrorDto());
+  }
+}

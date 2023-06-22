@@ -1,3 +1,4 @@
+export * from './auth/index.js';
 export * from './errors/index.js';
 export * from './factory/index.js';
 export * from './healthcheck/index.js';
