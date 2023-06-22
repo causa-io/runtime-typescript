@@ -1,5 +1,6 @@
 import { Controller, Get, Module } from '@nestjs/common';
 import { ApiExcludeEndpoint } from '@nestjs/swagger';
+import { Public } from '../auth/index.js';
 
 /**
  * The name of the endpoint responding to health checks.
@@ -12,6 +13,7 @@ export const HEALTH_ENDPOINT = 'health';
 @Controller(HEALTH_ENDPOINT)
 export class HealthController {
   @Get()
+  @Public()
   @ApiExcludeEndpoint()
   get() {
     return;
