@@ -1,6 +1,12 @@
 {
   "extends": "./tsconfig.json",
-  "exclude": ["dist", "jest.config.ts", "**/*spec.ts", "**/*.test.ts"],
+  "exclude": [
+    "dist",
+    "jest.config.ts",
+    "**/*.spec.ts",
+    "**/*.test.ts",
+    "swagger/"
+  ],
   "compilerOptions": {
     "sourceMap": false,
     "incremental": false

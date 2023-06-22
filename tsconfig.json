@@ -9,6 +9,9 @@
     "experimentalDecorators": true,
     "sourceMap": true,
     "outDir": "./dist",
-    "incremental": true
+    "incremental": true,
+    "plugins": [
+      { "transform": "./swagger/swagger.cts", "introspectComments": true }
+    ]
   }
 }
