@@ -16,7 +16,15 @@ const config: Config = {
   extensionsToTreatAsEsm: ['.ts'],
   moduleFileExtensions: ['js', 'ts'],
   transform: {
-    '^.+\\.ts$': ['ts-jest', { useESM: true }],
+    '^.+\\.ts$': [
+      'ts-jest',
+      {
+        astTransformers: {
+          before: ['./swagger/swagger.test.cjs'],
+        },
+        useESM: true,
+      },
+    ],
   },
   moduleNameMapper: {
     '^(\\.{1,2}/.*)\\.js$': '$1',
