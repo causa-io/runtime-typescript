@@ -22,7 +22,8 @@ Features:
 - Implement the NestJS application factory and corresponding testing utilities.
 - Implement the `LoggerModule`.
 - Implement the `HealthcheckModule`.
-- Define base HTTP errors.
+- Define base HTTP errors with OpenAPI support.
 - Implement the `ExceptionFilterModule`.
 - Implement the `ValidationPipe` and `ValidationModule`.
-- Define reusable DTOs for validation.
+- Define reusable DTOs for validation with OpenAPI support.
+- Implement the OpenAPI `ApiConstantProperty` decorator.
