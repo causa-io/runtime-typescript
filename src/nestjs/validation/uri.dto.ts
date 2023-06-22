@@ -1,3 +1,4 @@
+import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { IsDate, IsUUID } from 'class-validator';
 
@@ -8,6 +9,7 @@ export class IdParams {
   /**
    * The resource's UUID.
    */
+  @ApiProperty({ description: `The resource's UUID.`, format: 'uuid' })
   @IsUUID(4)
   id!: string;
 }
@@ -20,6 +22,7 @@ export class VersionedMutationQuery {
   /**
    * The known version of the resource.
    */
+  @ApiProperty({ description: 'The known version of the resource.' })
   @Type(() => Date)
   @IsDate()
   updatedAt!: Date;
