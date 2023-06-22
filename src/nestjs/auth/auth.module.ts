@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { PassportModule } from '@nestjs/passport';
 import { BearerAuthGuard } from './bearer-auth.guard.js';
+import { UserClaimsGuard } from './user-claims.guard.js';
 
 /**
  * A module that can be imported to activate authentication and authorization on all routes of an application.
@@ -13,6 +14,7 @@ import { BearerAuthGuard } from './bearer-auth.guard.js';
   imports: [PassportModule],
   providers: [
     { provide: APP_GUARD, useClass: BearerAuthGuard },
+    { provide: APP_GUARD, useClass: UserClaimsGuard },
   ],
 })
 export class AuthModule {}
