@@ -229,3 +229,29 @@ export class ForbiddenError extends HttpError<ForbiddenErrorDto> {
     super(new ForbiddenErrorDto());
   }
 }
+
+/**
+ * The response for a {@link ServiceUnavailableError}.
+ */
+export class ServiceUnavailableErrorDto extends ErrorDto {
+  @ApiConstantProperty({ const: HttpStatus.SERVICE_UNAVAILABLE })
+  readonly statusCode = HttpStatus.SERVICE_UNAVAILABLE;
+
+  @ApiConstantProperty({ const: 'serviceUnavailable' })
+  readonly errorCode = 'serviceUnavailable';
+
+  constructor(
+    readonly message: string = 'The server is currently unable to handle the request.',
+  ) {
+    super();
+  }
+}
+
+/**
+ * An error mapped to a generic 503 HTTP error.
+ */
+export class ServiceUnavailableError extends HttpError<ServiceUnavailableErrorDto> {
+  constructor() {
+    super(new ServiceUnavailableErrorDto());
+  }
+}

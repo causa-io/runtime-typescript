@@ -28,3 +28,4 @@ Features:
 - Define reusable DTOs for validation with OpenAPI support.
 - Implement the OpenAPI `ApiConstantProperty` decorator.
 - Implement authentication-related utilities and NestJS module.
+- Implement event-related utilities for NestJS.
