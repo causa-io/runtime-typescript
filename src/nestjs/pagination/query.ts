@@ -1,10 +1,13 @@
 import { Type, instanceToInstance } from 'class-transformer';
 import { IsInt, IsPositive } from 'class-validator';
 import { AllowMissing } from '../../validation/index.js';
+import { IsKeyTypeStringOrSkip } from './is-key-type-string-or-skip.decorator.js';
 
 /**
  * The base type defining a query to fetch a page of items.
  * Most of the time, this should be subclassed to add additional filters.
+ * The {@link PageQuery.readAfter} can also be set to a custom type, in which case it should be decorated with
+ * `CustomReadAfterType`.
  */
 export class PageQuery<T = string> {
   /**
@@ -19,6 +22,7 @@ export class PageQuery<T = string> {
   /**
    * The token to pass when fetching the next page of results. Provided by the previous query response.
    */
+  @IsKeyTypeStringOrSkip()
   @AllowMissing()
   readAfter?: T;
 
