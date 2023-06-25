@@ -1,3 +1,4 @@
+import { ApiProperty } from '@nestjs/swagger';
 import { Type, instanceToInstance } from 'class-transformer';
 import { IsInt, IsPositive } from 'class-validator';
 import { AllowMissing } from '../../validation/index.js';
@@ -13,6 +14,10 @@ export class PageQuery<T = string> {
   /**
    * The maximum number of returned results.
    */
+  @ApiProperty({
+    description: 'The maximum number of returned results.',
+    required: false,
+  })
   @IsPositive()
   @IsInt()
   @AllowMissing()
@@ -22,6 +27,12 @@ export class PageQuery<T = string> {
   /**
    * The token to pass when fetching the next page of results. Provided by the previous query response.
    */
+  @ApiProperty({
+    description:
+      'The token to pass when fetching the next page of results. Provided by the previous query response.',
+    type: String,
+    required: false,
+  })
   @IsKeyTypeStringOrSkip()
   @AllowMissing()
   readAfter?: T;

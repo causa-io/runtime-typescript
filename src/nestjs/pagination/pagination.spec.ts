@@ -5,6 +5,7 @@ import {
   Module,
   Query,
 } from '@nestjs/common';
+import { ApiOkResponse, ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
   IsDate,
@@ -18,6 +19,7 @@ import 'reflect-metadata';
 import supertest from 'supertest';
 import { AllowMissing } from '../../index.js';
 import { createApp } from '../factory/index.js';
+import { generateOpenApiDocument } from '../openapi/utils.test.js';
 import { CustomReadAfterType } from './custom-read-after-type.decorator.js';
 import { Page } from './page.js';
 import { PageQuery } from './query.js';
@@ -30,11 +32,13 @@ class MyQuery extends PageQuery<string> {
 
   @IsString()
   @AllowMissing()
+  @ApiProperty({ description: '🔧', required: false })
   readonly otherValue?: string;
 
   @IsDate()
   @Type(() => Date)
   @AllowMissing()
+  @ApiProperty({ description: '📆', required: false })
   readonly dateFilter?: Date;
 }
 
@@ -55,6 +59,7 @@ class MyComplexQuery extends PageQuery<CustomKey> {
 
   @IsString()
   @AllowMissing()
+  @ApiProperty({ description: '🔧', required: false })
   otherValue?: string;
 
   @CustomReadAfterType()
@@ -67,15 +72,18 @@ class MyEntity {
   }
 
   @IsUUID()
+  @ApiProperty({ description: '🆔' })
   readonly id!: string;
 
   @IsInt()
+  @ApiProperty({ description: '1️⃣' })
   readonly someProp!: number;
 }
 
 @Controller()
 class MyController {
   @Get('/simple')
+  @ApiOkResponse({ description: '📃', type: () => Page.of(MyEntity) })
   async getItems(@Query() query: MyQuery): Promise<Page<MyEntity, MyQuery>> {
     const count = query.otherValue === '📃' ? query.limit : 2;
     const start = query.readAfter ? parseInt(query.readAfter) + 1 : 0;
@@ -97,6 +105,7 @@ class MyController {
   }
 
   @Get('/complex')
+  @ApiOkResponse({ description: '📃📄', type: () => Page.of(MyEntity) })
   async getItemsComplex(
     @Query() query: MyComplexQuery,
   ): Promise<Page<MyEntity, MyComplexQuery>> {
@@ -236,6 +245,135 @@ describe('Page', () => {
             JSON.stringify({ someKeyValue: '0', date }),
           ).toString('base64')}&otherValue=%F0%9F%93%83`,
         });
+    });
+  });
+
+  describe('OpenAPI', () => {
+    it('should generate the OpenAPI schema', async () => {
+      const actualDocument = await generateOpenApiDocument(MyModule);
+
+      expect(actualDocument).toEqual({
+        components: {
+          schemas: {
+            MyEntity: {
+              properties: {
+                id: { description: '🆔', type: 'string' },
+                someProp: { description: '1️⃣', type: 'number' },
+              },
+              required: ['id', 'someProp'],
+              type: 'object',
+            },
+            PageOfMyEntity: {
+              properties: {
+                nextPageQuery: {
+                  description:
+                    'The query to make to fetch the next page of results.',
+                  type: 'string',
+                  nullable: true,
+                },
+                items: {
+                  description: 'The items in the current page.',
+                  type: 'array',
+                  items: { $ref: '#/components/schemas/MyEntity' },
+                },
+              },
+              required: ['nextPageQuery', 'items'],
+              type: 'object',
+            },
+          },
+        },
+        info: { contact: {}, description: '', title: '', version: '1.0.0' },
+        openapi: '3.0.0',
+        paths: {
+          '/complex': {
+            get: {
+              operationId: 'MyController_getItemsComplex',
+              parameters: [
+                {
+                  description: 'The maximum number of returned results.',
+                  in: 'query',
+                  name: 'limit',
+                  required: false,
+                  schema: { type: 'number' },
+                },
+                {
+                  description:
+                    'The token to pass when fetching the next page of results. Provided by the previous query response.',
+                  in: 'query',
+                  name: 'readAfter',
+                  required: false,
+                  schema: { type: 'string' },
+                },
+                {
+                  description: '🔧',
+                  in: 'query',
+                  name: 'otherValue',
+                  required: false,
+                  schema: { type: 'string' },
+                },
+              ],
+              responses: {
+                200: {
+                  content: {
+                    'application/json': {
+                      schema: { $ref: '#/components/schemas/PageOfMyEntity' },
+                    },
+                  },
+                  description: '📃📄',
+                },
+              },
+            },
+          },
+          '/simple': {
+            get: {
+              operationId: 'MyController_getItems',
+              parameters: [
+                {
+                  description: 'The maximum number of returned results.',
+                  in: 'query',
+                  name: 'limit',
+                  required: false,
+                  schema: { type: 'number' },
+                },
+                {
+                  description:
+                    'The token to pass when fetching the next page of results. Provided by the previous query response.',
+                  in: 'query',
+                  name: 'readAfter',
+                  required: false,
+                  schema: { type: 'string' },
+                },
+                {
+                  description: '🔧',
+                  in: 'query',
+                  name: 'otherValue',
+                  required: false,
+                  schema: { type: 'string' },
+                },
+                {
+                  description: '📆',
+                  in: 'query',
+                  name: 'dateFilter',
+                  required: false,
+                  schema: { type: 'string', format: 'date-time' },
+                },
+              ],
+              responses: {
+                200: {
+                  content: {
+                    'application/json': {
+                      schema: { $ref: '#/components/schemas/PageOfMyEntity' },
+                    },
+                  },
+                  description: '📃',
+                },
+              },
+            },
+          },
+        },
+        servers: [],
+        tags: [],
+      });
     });
   });
 });

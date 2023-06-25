@@ -1,3 +1,5 @@
+import { Type } from '@nestjs/common';
+import { ApiProperty } from '@nestjs/swagger';
 import { Transform, instanceToPlain } from 'class-transformer';
 import { PageQuery, WithLimit } from './query.js';
 
@@ -30,11 +32,17 @@ export class Page<T, PQ extends PageQuery<any> = PageQuery> {
   @Transform(({ value }) => convertQueryToSearchParams(value), {
     toPlainOnly: true,
   })
+  @ApiProperty({
+    description: 'The query to make to fetch the next page of results.',
+    type: String,
+    nullable: true,
+  })
   readonly nextPageQuery: PQ | null;
 
   /**
    * The items in the current page.
    */
+  @ApiProperty({ description: 'The items in the current page.' })
   readonly items: T[];
 
   /**
@@ -57,5 +65,18 @@ export class Page<T, PQ extends PageQuery<any> = PageQuery> {
     this.nextPageQuery = isPageFull
       ? query.copy({ readAfter: readAfterResolver(items.at(-1) as T) } as any)
       : null;
+  }
+
+  /**
+   * Returns a {@link Page} subclass that can be used for OpenAPI generation (e.g. in `ApiResponse` decorators).
+   *
+   * @param type The type of items in the page.
+   * @returns The page type.
+   */
+  static of<T>(type: { new (): T }): Type<Page<T>> {
+    class TypedPage extends Page<T> {}
+    ApiProperty({ type: () => [type] })(TypedPage.prototype, 'items');
+    Object.defineProperty(TypedPage, 'name', { value: `PageOf${type.name}` });
+    return TypedPage;
   }
 }
