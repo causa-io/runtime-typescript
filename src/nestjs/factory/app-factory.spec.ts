@@ -7,6 +7,7 @@ import {
   Post,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { Transform } from 'class-transformer';
 import { IsPhoneNumber } from 'class-validator';
 import { PinoLogger } from 'nestjs-pino';
 import supertest from 'supertest';
@@ -16,6 +17,7 @@ import { createApp } from './app-factory.js';
 
 class PostTestDto {
   @IsPhoneNumber()
+  @Transform(({ value }) => `📞: ${value}`, { toPlainOnly: true })
   phoneNumber!: string;
 }
 
@@ -124,5 +126,12 @@ describe('app-factory', () => {
           fields: expect.arrayContaining(['phoneNumber', 'forbidden']),
         });
       });
+  });
+
+  it('should transform the response', async () => {
+    return request
+      .post('/test')
+      .send({ phoneNumber: '+33600000000' })
+      .expect(201, { phoneNumber: '📞: +33600000000' });
   });
 });

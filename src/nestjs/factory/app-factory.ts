@@ -1,6 +1,11 @@
-import { INestApplication, Module } from '@nestjs/common';
+import {
+  ClassSerializerInterceptor,
+  INestApplication,
+  Module,
+  ModuleMetadata,
+} from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { NestFactory } from '@nestjs/core';
+import { APP_INTERCEPTOR, NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { json } from 'express';
 import { Logger } from 'nestjs-pino';
@@ -21,7 +26,7 @@ const DEFAULT_PAYLOAD_LIMIT = '5mb';
  * @returns The module from which the NestJS application can be created.
  */
 function createAppModule(businessModule: any): any {
-  const imports = [
+  const imports: ModuleMetadata['imports'] = [
     ConfigModule.forRoot({ isGlobal: true }),
     LoggerModule,
     HealthcheckModule,
@@ -30,7 +35,12 @@ function createAppModule(businessModule: any): any {
     businessModule,
   ];
 
-  @Module({ imports })
+  @Module({
+    imports,
+    providers: [
+      { provide: APP_INTERCEPTOR, useClass: ClassSerializerInterceptor },
+    ],
+  })
   class AppModule {}
 
   return AppModule;
