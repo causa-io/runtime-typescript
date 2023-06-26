@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.1.0 (2023-06-26)
+
 Features:
 
 - Define the `ObjectSerializer` interface and its `JsonObjectSerializer` implementation.
