@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.2.0 (2023-07-04)
+
 Breaking changes:
 
 - Remove the useless `HealthcheckModule`. Services should implement their own endpoint, possibly using `@nestjs/terminus`. `HEALTHCHECK_ENDPOINT` is still available, as the normalized healthcheck path.
