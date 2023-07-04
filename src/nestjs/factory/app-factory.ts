@@ -10,7 +10,6 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { json } from 'express';
 import { Logger } from 'nestjs-pino';
 import { ExceptionFilterModule } from '../errors/index.js';
-import { HealthcheckModule } from '../healthcheck/index.js';
 import { LoggerModule } from '../logging/index.js';
 import { ValidationModule } from '../validation/index.js';
 
@@ -29,7 +28,6 @@ function createAppModule(businessModule: any): any {
   const imports: ModuleMetadata['imports'] = [
     ConfigModule.forRoot({ isGlobal: true }),
     LoggerModule,
-    HealthcheckModule,
     ValidationModule,
     ExceptionFilterModule,
     businessModule,

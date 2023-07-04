@@ -105,10 +105,6 @@ describe('app-factory', () => {
     ]);
   });
 
-  it('should import the healthcheck module', async () => {
-    await request.get('/health').expect(200);
-  });
-
   it('should import the exception filter module', async () => {
     await request.get('/test/conflict').expect(409);
   });
