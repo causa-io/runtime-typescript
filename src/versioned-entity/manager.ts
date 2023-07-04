@@ -285,8 +285,32 @@ export class VersionedEntityManager<
   }
 
   /**
+   * Defines how an entity should be updated.
+   * The default implementation performs a shallow merge of the existing entity and the update data. Override this
+   * method to customize the update behavior.
+   * This method does not have to return a class instance, as it will be passed to `plainToInstance` to create the
+   * updated entity.
+   *
+   * @param existingEntity The existing entity to update.
+   * @param update The update data.
+   * @returns The updated entity.
+   */
+  protected makeUpdatedObject(
+    existingEntity: EventData<E>,
+    update: VersionedEntityUpdate<EventData<E>>,
+  ): EventData<E> {
+    return {
+      ...existingEntity,
+      ...update,
+    };
+  }
+
+  /**
    * Updates an entity and creates a new event from the given update data, publishes the event, and processes it using
    * {@link VersionedEntityManager.processEvent}.
+   *
+   * By default, the update only performs a shallow merge. Override {@link VersionedEntityManager.makeUpdatedObject} to
+   * customize the update behavior.
    *
    * @param eventName The name of the event when updating the entity.
    * @param update The data to use when updating the entity.
@@ -313,11 +337,13 @@ export class VersionedEntityManager<
           await options.validationFn(existingEntity);
         }
 
-        const entity = plainToInstance(this.projectionType, {
-          ...existingEntity,
-          ...update,
-          updatedAt: transaction.timestamp,
-        });
+        const entity = plainToInstance(
+          this.projectionType,
+          this.makeUpdatedObject(existingEntity, {
+            ...update,
+            updatedAt: transaction.timestamp,
+          }),
+        );
 
         const event = await this.makeProcessAndPublishEvent(eventName, entity, {
           transaction,
