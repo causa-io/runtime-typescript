@@ -95,7 +95,6 @@ export async function createApp(
   const logger = app.get(Logger);
 
   app.useLogger(logger);
-  app.useGlobalPipes();
   app.enableShutdownHooks();
 
   await app.init();
