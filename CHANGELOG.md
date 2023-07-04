@@ -5,6 +5,11 @@
 Breaking changes:
 
 - Remove the useless `HealthcheckModule`. Services should implement their own endpoint, possibly using `@nestjs/terminus`. `HEALTHCHECK_ENDPOINT` is still available, as the normalized healthcheck path.
+- Refactor entity error types to allow extra data to be missing.
+
+Features:
+
+- Allow customization of the update logic in the `VersionedEntityManager`.
 
 ## v0.1.0 (2023-06-26)
 

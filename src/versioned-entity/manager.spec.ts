@@ -335,6 +335,53 @@ describe('VersionedEntityManager', () => {
       ]);
       expect(mockStateTransaction.findOneWithSameKeyAs).not.toHaveBeenCalled();
     });
+
+    it('should use the provided custom update logic', async () => {
+      class MyManager extends VersionedEntityManager<MockTransaction, MyEvent> {
+        protected makeUpdatedObject(
+          existingEntity: MyEntity,
+          update: Partial<MyEntity>,
+        ): MyEntity {
+          return {
+            ...existingEntity,
+            ...update,
+            someProperty: `${existingEntity.someProperty} 📝`,
+          };
+        }
+      }
+      manager = new MyManager('my-topic', MyEvent, MyEntity, new MockRunner());
+      const existingEntity = new MyEntity({ id: 'abc', someProperty: '👋' });
+      mockStateTransaction.findOneWithSameKeyAs.mockResolvedValueOnce(
+        existingEntity,
+      );
+
+      const actualEvent = await manager.update(
+        'myEntityUpdated',
+        { id: 'abc', someProperty: '🙈' },
+        existingEntity.updatedAt,
+      );
+
+      expect(actualEvent).toBeInstanceOf(MyEvent);
+      expect(actualEvent).toEqual(
+        expect.objectContaining({
+          id: expect.any(String),
+          producedAt: mockTransaction.timestamp,
+          name: 'myEntityUpdated',
+          data: expect.objectContaining({
+            ...existingEntity,
+            updatedAt: mockTransaction.timestamp,
+            someProperty: '👋 📝',
+          }),
+        }),
+      );
+      expect(actualEvent.data).toBeInstanceOf(MyEntity);
+      expect(mockStateTransaction.replace).toHaveBeenCalledExactlyOnceWith(
+        actualEvent.data,
+      );
+      expect(mockEventTransaction.bufferedEvents).toEqual([
+        { topic: 'my-topic', event: actualEvent, options: { attributes: {} } },
+      ]);
+    });
   });
 
   describe('delete', () => {
