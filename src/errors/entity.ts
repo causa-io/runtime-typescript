@@ -1,17 +1,23 @@
 /**
+ * References the type of the entity for which an error occurred.
+ * Can be `null` if it is not available.
+ */
+type EntityTypeForError = { new (...args: any[]): any } | null;
+
+/**
  * An error thrown when operating on an entity.
  */
-export abstract class EntityError<T = any> extends Error {
+export abstract class EntityError extends Error {
   /**
    * Creates a new {@link EntityError}.
    *
-   * @param entityType The type of entity.
-   * @param key A partial object that should contain the primary key of the entity for which the error occurred.
+   * @param entityType The type of entity, or `null` if it is not available.
+   * @param key A value representing the key used to look up the entity, or `null` if it is not available.
    * @param message The error message.
    */
   constructor(
-    readonly entityType: { new (...args: any[]): T },
-    readonly key: Partial<T>,
+    readonly entityType: EntityTypeForError,
+    readonly key: any,
     message: string,
   ) {
     super(message);
@@ -21,14 +27,14 @@ export abstract class EntityError<T = any> extends Error {
 /**
  * An error thrown when an entity is not found in the state / database.
  */
-export class EntityNotFoundError<T = any> extends EntityError<T> {
+export class EntityNotFoundError extends EntityError {
   /**
    * Creates a new {@link EntityNotFoundError}.
    *
-   * @param entityType The type of entity that could not be found.
-   * @param key A partial entity that should contain the primary key of the entity that could not be found.
+   * @param entityType The type of entity, or `null` if it is not available.
+   * @param key A value representing the key used to look up the entity, or `null` if it is not available.
    */
-  constructor(entityType: { new (...args: any[]): T }, key: Partial<T>) {
+  constructor(entityType: EntityTypeForError, key: any) {
     super(entityType, key, 'The entity could not be found.');
   }
 }
@@ -36,14 +42,14 @@ export class EntityNotFoundError<T = any> extends EntityError<T> {
 /**
  * An error thrown when trying to create an entity that already exists.
  */
-export class EntityAlreadyExistsError<T = any> extends EntityError<T> {
+export class EntityAlreadyExistsError extends EntityError {
   /**
    * Creates a new {@link EntityAlreadyExistsError}.
    *
-   * @param entityType The type of entity that already exists.
-   * @param key A partial entity that should contain the primary key of the entity that already exists.
+   * @param entityType The type of entity, or `null` if it is not available.
+   * @param key A value representing the key used to look up the entity, or `null` if it is not available.
    */
-  constructor(entityType: { new (...args: any[]): T }, key: Partial<T>) {
+  constructor(entityType: EntityTypeForError, key: any) {
     super(entityType, key, 'The entity already exists.');
   }
 }
@@ -52,18 +58,18 @@ export class EntityAlreadyExistsError<T = any> extends EntityError<T> {
  * An error thrown when trying to update an entity, but the version of the entity in the state does not match the
  * provided version.
  */
-export class IncorrectEntityVersionError<T = any> extends EntityError<T> {
+export class IncorrectEntityVersionError extends EntityError {
   /**
    * Creates a new {@link IncorrectEntityVersionError}.
    *
-   * @param entityType The type of entity.
-   * @param key A partial entity that should contain the primary key of the entity.
+   * @param entityType The type of entity, or `null` if it is not available.
+   * @param key A value representing the key used to look up the entity, or `null` if it is not available.
    * @param providedVersion The version of the entity provided by the requester of the update.
    * @param stateVersion The version of the entity, as found in the state.
    */
   constructor(
-    entityType: { new (...args: any[]): T },
-    key: Partial<T>,
+    entityType: EntityTypeForError,
+    key: any,
     readonly providedVersion: Date,
     readonly stateVersion: Date,
   ) {
