@@ -6,18 +6,11 @@ import {
   Query,
 } from '@nestjs/common';
 import { ApiOkResponse, ApiProperty } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
-import {
-  IsDate,
-  IsInt,
-  IsNumberString,
-  IsString,
-  IsUUID,
-} from 'class-validator';
+import { IsInt, IsNumberString, IsString, IsUUID } from 'class-validator';
 import 'jest-extended';
 import 'reflect-metadata';
 import supertest from 'supertest';
-import { AllowMissing } from '../../index.js';
+import { AllowMissing, IsDateType } from '../../validation/index.js';
 import { createApp } from '../factory/index.js';
 import { generateOpenApiDocument } from '../openapi/utils.test.js';
 import { CustomReadAfterType } from './custom-read-after-type.decorator.js';
@@ -35,8 +28,7 @@ class MyQuery extends PageQuery<string> {
   @ApiProperty({ description: '🔧', required: false })
   readonly otherValue?: string;
 
-  @IsDate()
-  @Type(() => Date)
+  @IsDateType()
   @AllowMissing()
   @ApiProperty({ description: '📆', required: false })
   readonly dateFilter?: Date;
@@ -46,8 +38,7 @@ class CustomKey {
   @IsNumberString()
   readonly someKeyValue!: string;
 
-  @Type(() => Date)
-  @IsDate()
+  @IsDateType()
   readonly date!: Date;
 }
 

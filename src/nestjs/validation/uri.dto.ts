@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
-import { IsDate, IsUUID } from 'class-validator';
+import { IsUUID } from 'class-validator';
+import { IsDateType } from '../../validation/index.js';
 
 /**
  * A DTO object defining the HTTP request parameters used when accessing a single resource referenced by its UUID.
@@ -23,7 +23,6 @@ export class VersionedMutationQuery {
    * The known version of the resource.
    */
   @ApiProperty({ description: 'The known version of the resource.' })
-  @Type(() => Date)
-  @IsDate()
+  @IsDateType()
   updatedAt!: Date;
 }
