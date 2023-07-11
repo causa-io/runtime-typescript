@@ -7,6 +7,15 @@ import { KeyOfType } from '../typing/index.js';
 import { VersionedEntity } from './versioned-entity.js';
 
 /**
+ * A function that builds a projection from an event.
+ */
+type VersionedEntityProjection<
+  T extends FindReplaceTransaction,
+  E extends Event,
+  P extends VersionedEntity,
+> = (event: E, transaction: T) => Promise<P>;
+
+/**
  * A class that processes events for a versioned entity and builds the corresponding state.
  *
  * It can be subclassed to customize how the state is built, in which case
@@ -16,6 +25,7 @@ export class VersionedEntityEventProcessor<
   T extends FindReplaceTransaction,
   E extends Event,
   P extends VersionedEntity,
+  R extends TransactionRunner<T> = TransactionRunner<T>,
 > {
   /**
    * The name of the column that should be used to compare the state and the projection's versions.
@@ -33,8 +43,8 @@ export class VersionedEntityEventProcessor<
    */
   constructor(
     readonly projectionType: { new (): P },
-    readonly project: (event: E) => P,
-    readonly runner: TransactionRunner<T>,
+    readonly project: VersionedEntityProjection<T, E, P>,
+    readonly runner: R,
     options: {
       /**
        * The name of the column that should be used to compare the state and the projection's versions.
@@ -118,11 +128,11 @@ export class VersionedEntityEventProcessor<
       skipVersionCheck?: boolean;
     } = {},
   ): Promise<boolean> {
-    const projection = this.project(event);
-
     return await this.runner.runInNewOrExisting(
       options.transaction,
       async (transaction) => {
+        const projection = await this.project(event, transaction);
+
         if (!options.skipVersionCheck) {
           const isProjectionMoreRecent =
             await this.isProjectionMoreRecentThanState(projection, {

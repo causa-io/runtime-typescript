@@ -5,6 +5,8 @@
 Breaking changes:
 
 - Expose logging utilities in `@causa/runtime/testing` rather than `@causa/runtime/logging/testing`.
+- Make the projection function in the `VersionedEntityEventProcessor` async and pass the current transaction.
+- Rename `findExistingEntityOrFail` to `findExistingEntityWithVersionOrFail`.
 
 Features:
 

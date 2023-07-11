@@ -40,14 +40,16 @@ type MyEvent = Event<
   }
 >;
 
-const projectionFn = ({ data }: Event) =>
-  new MyEntity({
-    id: data.id,
-    createdAt: data.createdAt,
-    updatedAt: data.updatedAt,
-    deletedAt: data.deletedAt,
-    someProperty: data.originalProperty,
-  });
+const projectionFn = jest.fn(
+  async ({ data }: Event) =>
+    new MyEntity({
+      id: data.id,
+      createdAt: data.createdAt,
+      updatedAt: data.updatedAt,
+      deletedAt: data.deletedAt,
+      someProperty: data.originalProperty,
+    }),
+);
 
 describe('VersionedEntityEventProcessor', () => {
   let processor: VersionedEntityEventProcessor<
@@ -134,6 +136,10 @@ describe('VersionedEntityEventProcessor', () => {
       const actualWasProcessed = await processor.processEvent(event);
 
       expect(actualWasProcessed).toBeFalse();
+      expect(projectionFn).toHaveBeenCalledExactlyOnceWith(
+        event,
+        mockTransaction,
+      );
       expect(mockStateTransaction.replace).not.toHaveBeenCalled();
     });
 
@@ -153,11 +159,16 @@ describe('VersionedEntityEventProcessor', () => {
       mockStateTransaction.findOneWithSameKeyAs.mockResolvedValueOnce(
         new MyEntity({ updatedAt: new Date('2020-01-01') }),
       );
-      const expectedEntity = projectionFn(event);
+      const expectedEntity = await projectionFn(event);
+      projectionFn.mockClear();
 
       const actualWasProcessed = await processor.processEvent(event);
 
       expect(actualWasProcessed).toBeTrue();
+      expect(projectionFn).toHaveBeenCalledExactlyOnceWith(
+        event,
+        mockTransaction,
+      );
       expect(mockStateTransaction.replace).toHaveBeenCalledExactlyOnceWith(
         expectedEntity,
       );
@@ -179,13 +190,18 @@ describe('VersionedEntityEventProcessor', () => {
           originalProperty: '👋',
         },
       };
-      const expectedEntity = projectionFn(event);
+      const expectedEntity = await projectionFn(event);
+      projectionFn.mockClear();
 
       const actualWasProcessed = await processor.processEvent(event, {
         skipVersionCheck: true,
       });
 
       expect(actualWasProcessed).toBeTrue();
+      expect(projectionFn).toHaveBeenCalledExactlyOnceWith(
+        event,
+        mockTransaction,
+      );
       expect(mockStateTransaction.findOneWithSameKeyAs).not.toHaveBeenCalled();
       expect(mockStateTransaction.replace).toHaveBeenCalledExactlyOnceWith(
         expectedEntity,
@@ -227,7 +243,7 @@ describe('VersionedEntityEventProcessor', () => {
           originalProperty: '👋',
         },
       };
-      const expectedEntity = projectionFn(event);
+      const expectedEntity = await projectionFn(event);
       const processor = new MyProcessor();
 
       const actualWasProcessed = await processor.processEvent(event);
