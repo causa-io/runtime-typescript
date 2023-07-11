@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.3.0 (2023-07-11)
+
 Breaking changes:
 
 - Expose logging utilities in `@causa/runtime/testing` rather than `@causa/runtime/logging/testing`.
