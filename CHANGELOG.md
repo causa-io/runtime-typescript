@@ -10,6 +10,11 @@ Features:
 
 - Accept several overrides in `makeTestAppFactory`.
 - Implement the `serializeAsJavaScriptObject` testing utility.
+- Define the `terminusModuleWithLogger` NestJS module.
+
+Fixes:
+
+- Ensure missing DTO properties are not filled as `undefined` in the `ValidationPipe`.
 
 ## v0.2.0 (2023-07-04)
 
