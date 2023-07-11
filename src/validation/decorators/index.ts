@@ -8,6 +8,7 @@ export {
   HasUniqueValues,
   hasUniqueValues,
 } from './has-unique-values.decorator.js';
+export { IsDateType } from './is-date-type.decorator.js';
 export {
   IsGreaterThanProperty,
   isGreaterThanValue,
