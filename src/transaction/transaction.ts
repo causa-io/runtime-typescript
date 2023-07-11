@@ -22,7 +22,10 @@ export class Transaction<ST, ET extends EventTransaction> {
    * @param stateTransaction The transaction to use for state changes.
    * @param eventTransaction The transaction to use to publish events.
    */
-  constructor(readonly stateTransaction: ST, readonly eventTransaction: ET) {}
+  constructor(
+    readonly stateTransaction: ST,
+    readonly eventTransaction: ET,
+  ) {}
 
   /**
    * Validates that the given date is in the past compared to the current {@link TransactionContext.timestamp}.

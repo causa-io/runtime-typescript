@@ -166,7 +166,10 @@ export class ValidationErrorDto extends ErrorDto {
    * @param message A message returned to the client.
    * @param fields The list of fields in the request that failed validation.
    */
-  constructor(readonly message: string, readonly fields: string[]) {
+  constructor(
+    readonly message: string,
+    readonly fields: string[],
+  ) {
     super();
   }
 }

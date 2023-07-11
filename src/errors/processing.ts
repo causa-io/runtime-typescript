@@ -11,7 +11,10 @@ export class RetryableError extends Error {
    * @param message The error message.
    * @param delay The delay, in milliseconds, that should be waited before retrying.
    */
-  constructor(message: string, readonly delay?: number) {
+  constructor(
+    message: string,
+    readonly delay?: number,
+  ) {
     super(message);
   }
 }
