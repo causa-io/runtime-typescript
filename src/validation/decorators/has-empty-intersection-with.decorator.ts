@@ -45,7 +45,7 @@ export function HasEmptyIntersectionWith<P2 extends string>(
   options?: ValidationOptions,
 ) {
   return function HasEmptyIntersectionWithDecorator<P1 extends string>(
-    prototype: { [key in P1 | P2]?: any[] },
+    prototype: { [key in P1 | P2]?: any[] | null },
     propertyName: P1,
   ) {
     registerDecorator({

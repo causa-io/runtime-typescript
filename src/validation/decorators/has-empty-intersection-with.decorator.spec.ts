@@ -1,7 +1,8 @@
-import { validate } from 'class-validator';
+import { IsString, validate } from 'class-validator';
 import 'jest-extended';
 import { AllowMissing } from './allow-missing.decorator.js';
 import { HasEmptyIntersectionWith } from './has-empty-intersection-with.decorator.js';
+import { IsNullable } from './is-nullable.decorator.js';
 
 describe('HasEmptyIntersectionWith', () => {
   class MyClassWithArrays {
@@ -16,7 +17,9 @@ describe('HasEmptyIntersectionWith', () => {
     readonly array1: string[];
 
     @AllowMissing()
-    readonly array2?: string[];
+    @IsNullable()
+    @IsString({ each: true })
+    readonly array2?: string[] | null;
   }
 
   it('should not validate if the decorated property is not an array', async () => {
@@ -46,6 +49,8 @@ describe('HasEmptyIntersectionWith', () => {
         },
         property: 'array1',
       }),
+      // Error about the other property not being an array.
+      expect.any(Object),
     ]);
   });
 

@@ -1,5 +1,7 @@
 import { validate } from 'class-validator';
 import 'jest-extended';
+import { AllowMissing } from './allow-missing.decorator.js';
+import { IsNullable } from './is-nullable.decorator.js';
 import { IsObjectWithKeysMaxLength } from './is-object-with-keys-max-length.decorator.js';
 
 class MyObject {
@@ -8,7 +10,9 @@ class MyObject {
   }
 
   @IsObjectWithKeysMaxLength(2)
-  myObject!: Record<string, any>;
+  @AllowMissing()
+  @IsNullable()
+  myObject?: Record<string, any> | null;
 }
 
 describe('IsObjectWithKeysMaxLength', () => {

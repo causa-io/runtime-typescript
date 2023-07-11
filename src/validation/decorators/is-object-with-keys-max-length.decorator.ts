@@ -32,7 +32,7 @@ export function IsObjectWithKeysMaxLength(
   options?: ValidationOptions,
 ) {
   return function IsMapWithKeysMaxLengthDecorator<P extends string>(
-    prototype: { [key in P]: Record<string, any> },
+    prototype: { [key in P]?: Record<string, any> | null },
     propertyName: P,
   ) {
     registerDecorator({
