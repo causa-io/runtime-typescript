@@ -1,7 +1,8 @@
-import { validate } from 'class-validator';
+import { IsString, validate } from 'class-validator';
 import 'jest-extended';
 import { validatorOptions } from '../configuration.js';
 import { AllowMissing } from './allow-missing.decorator.js';
+import { IsNullable } from './is-nullable.decorator.js';
 import { RequiresProperty } from './requires-property.decorator.js';
 
 class MyObject {
@@ -13,7 +14,9 @@ class MyObject {
   @AllowMissing()
   firstProperty?: string;
 
+  @IsString()
   @AllowMissing()
+  @IsNullable()
   otherProperty?: string | null;
 }
 

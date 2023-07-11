@@ -32,7 +32,7 @@ export function hasUniqueValues(value: unknown): value is any[] | object {
  */
 export function HasUniqueValues(options?: ValidationOptions) {
   return function HasUniqueValuesDecorator<P extends string>(
-    prototype: { [key in P]?: any[] | object },
+    prototype: { [key in P]?: any[] | object | null },
     propertyName: P,
   ) {
     registerDecorator({

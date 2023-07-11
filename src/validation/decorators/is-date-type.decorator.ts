@@ -11,7 +11,7 @@ export function IsDateType(options: ValidationOptions = {}) {
   const typeDecorator = Type(() => Date);
 
   return function IsDateTypeDecorator<P extends string | symbol>(
-    prototype: { [key in P]?: Date | Date[] },
+    prototype: { [key in P]?: Date | Date[] | null },
     propertyName: P,
   ) {
     isDateDecorator(prototype, propertyName);

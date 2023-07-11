@@ -1,10 +1,12 @@
 import 'jest-extended';
 import { parseObject } from '../parser.js';
 import { IsDateType } from './is-date-type.decorator.js';
+import { IsNullable } from './is-nullable.decorator.js';
 
 class MyObject {
   @IsDateType()
-  myDate!: Date;
+  @IsNullable()
+  myDate!: Date | null;
 
   @IsDateType({ each: true })
   myArrayOfDates!: Date[];

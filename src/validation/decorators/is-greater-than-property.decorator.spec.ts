@@ -2,6 +2,7 @@ import { IsNumber, validate } from 'class-validator';
 import 'jest-extended';
 import { AllowMissing } from './allow-missing.decorator.js';
 import { IsGreaterThanProperty } from './is-greater-than-property.decorator.js';
+import { IsNullable } from './is-nullable.decorator.js';
 
 class MyObject {
   constructor(data?: Partial<MyObject>) {
@@ -21,7 +22,8 @@ class MyObject {
 
   @IsNumber()
   @AllowMissing()
-  optionalProperty?: number;
+  @IsNullable()
+  optionalProperty?: number | null;
 }
 
 describe('IsGreaterThanProperty', () => {

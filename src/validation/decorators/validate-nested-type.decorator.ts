@@ -33,7 +33,7 @@ export function ValidateNestedType<T>(
     : IsDefined(validatorOptions);
 
   return function ValidateNestedTypeDecorator<P extends string | symbol>(
-    target: { [key in P]?: T | T[] },
+    target: { [key in P]?: T | T[] | null },
     propertyKey: P,
   ) {
     typeDecorator(target, propertyKey);

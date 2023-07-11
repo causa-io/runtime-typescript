@@ -1,6 +1,7 @@
 import { IsNumberString } from 'class-validator';
 import 'jest-extended';
 import { parseObject } from '../parser.js';
+import { IsNullable } from './is-nullable.decorator.js';
 import { ValidateNestedType } from './validate-nested-type.decorator.js';
 
 class MyChildObject {
@@ -16,7 +17,8 @@ class MyParentObject {
   optionalChild?: MyChildObject;
 
   @ValidateNestedType(() => MyChildObject, { allowMissing: true })
-  childArray?: MyChildObject[];
+  @IsNullable()
+  childArray?: MyChildObject[] | null;
 }
 
 describe('ValidateNestedType', () => {
