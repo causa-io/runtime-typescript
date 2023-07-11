@@ -25,6 +25,7 @@ export class VersionedEntityEventProcessor<
   T extends FindReplaceTransaction,
   E extends Event,
   P extends VersionedEntity,
+  R extends TransactionRunner<T> = TransactionRunner<T>,
 > {
   /**
    * The name of the column that should be used to compare the state and the projection's versions.
@@ -43,7 +44,7 @@ export class VersionedEntityEventProcessor<
   constructor(
     readonly projectionType: { new (): P },
     readonly project: VersionedEntityProjection<T, E, P>,
-    readonly runner: TransactionRunner<T>,
+    readonly runner: R,
     options: {
       /**
        * The name of the column that should be used to compare the state and the projection's versions.

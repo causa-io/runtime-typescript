@@ -65,7 +65,8 @@ type VersionedEntityUpdateOptions<
 export class VersionedEntityManager<
   T extends FindReplaceTransaction,
   E extends Event<string, VersionedEntity>,
-> extends VersionedEntityEventProcessor<T, E, EventData<E>> {
+  R extends TransactionRunner<T> = TransactionRunner<T>,
+> extends VersionedEntityEventProcessor<T, E, EventData<E>, R> {
   /**
    * Creates a new {@link VersionedEntityManager}.
    *
@@ -78,7 +79,7 @@ export class VersionedEntityManager<
     readonly topic: string,
     readonly eventType: { new (): E },
     entityType: { new (): EventData<E> },
-    runner: TransactionRunner<T>,
+    runner: R,
   ) {
     super(entityType, async ({ data }) => data, runner);
   }
