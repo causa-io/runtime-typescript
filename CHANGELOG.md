@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.3.1 (2023-07-11)
+
 Fixes:
 
 - Allow `null` type in validation decorators.
