@@ -80,7 +80,7 @@ export class VersionedEntityManager<
     entityType: { new (): EventData<E> },
     runner: TransactionRunner<T>,
   ) {
-    super(entityType, ({ data }) => data, runner);
+    super(entityType, async ({ data }) => data, runner);
   }
 
   /**
