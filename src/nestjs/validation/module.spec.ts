@@ -1,6 +1,10 @@
-import { Body, Controller, Post } from '@nestjs/common';
-import { NestApplication } from '@nestjs/core';
-import { Test } from '@nestjs/testing';
+import {
+  Body,
+  Controller,
+  INestApplication,
+  Module,
+  Post,
+} from '@nestjs/common';
 import { Type } from 'class-transformer';
 import {
   IsDefined,
@@ -11,7 +15,7 @@ import {
 } from 'class-validator';
 import supertest from 'supertest';
 import { AllowMissing } from '../../validation/index.js';
-import { ExceptionFilterModule } from '../index.js';
+import { ExceptionFilterModule, createApp } from '../index.js';
 import { ValidationModule } from './module.js';
 
 class ChildDto {
@@ -36,24 +40,34 @@ class Dto {
 @Controller('/')
 class TestController {
   @Post('/validate')
-  async validate(@Body() dto: Dto) {
+  async validate(@Body() dto: Dto): Promise<string> {
     return dto.phoneNumber;
+  }
+
+  @Post('/checkNoUndefined')
+  async checkNoUndefined(@Body() dto: Dto): Promise<string> {
+    console.log(dto.child);
+    return 'array' in dto.child ? '❌' : '✅';
   }
 }
 
+@Module({
+  controllers: [TestController],
+  imports: [ValidationModule, ExceptionFilterModule],
+})
+class MyModule {}
+
 describe('object', () => {
-  let app: NestApplication;
+  let app: INestApplication;
   let request: supertest.SuperTest<supertest.Test>;
 
   beforeAll(async () => {
-    const module = await Test.createTestingModule({
-      imports: [ValidationModule, ExceptionFilterModule],
-      controllers: [TestController],
-    }).compile();
-    app = module.createNestApplication();
-
+    app = await createApp(MyModule);
     request = supertest(app.getHttpServer());
-    await app.init();
+  });
+
+  afterAll(async () => {
+    await app.close();
   });
 
   it('should return 400 on validation issue', async () => {
@@ -105,6 +119,13 @@ describe('object', () => {
           fields: ['child.array'],
         });
       });
+  });
+
+  it('should not set missing values to undefined', async () => {
+    return request
+      .post('/checkNoUndefined')
+      .send({ phoneNumber: '+33600000000', child: { shortString: '👍' } })
+      .expect(201, '✅');
   });
 
   it('should pass', async () => {
