@@ -156,7 +156,7 @@ export class VersionedEntityManager<
    * @param options Options when finding the entity.
    * @returns The found entity.
    */
-  protected async findExistingEntityOrFail(
+  protected async findExistingEntityWithVersionOrFail(
     entity: Partial<EventData<E>>,
     knownUpdatedAt: Date,
     options: {
@@ -328,7 +328,7 @@ export class VersionedEntityManager<
     return await this.runner.runInNewOrExisting(
       options.transaction,
       async (transaction) => {
-        const existingEntity = await this.findExistingEntityOrFail(
+        const existingEntity = await this.findExistingEntityWithVersionOrFail(
           update as Partial<EventData<E>>,
           knownUpdatedAt,
           { transaction, existingEntity: options.existingEntity },
@@ -375,7 +375,7 @@ export class VersionedEntityManager<
     return await this.runner.runInNewOrExisting(
       options.transaction,
       async (transaction) => {
-        const existingEntity = await this.findExistingEntityOrFail(
+        const existingEntity = await this.findExistingEntityWithVersionOrFail(
           entityKey,
           knownUpdatedAt,
           { transaction, existingEntity: options.existingEntity },
