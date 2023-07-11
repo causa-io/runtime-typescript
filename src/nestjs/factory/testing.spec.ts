@@ -91,6 +91,37 @@ describe('test-utils', () => {
 
       expect(actualServiceOutput).toEqual('🤡');
     });
+
+    it('should allow overriding several providers', async () => {
+      let app!: INestApplication;
+      let actualServiceOutput: string;
+      let actualConfigValue: string;
+      try {
+        app = await createApp(AppModule, {
+          appFactory: makeTestAppFactory({
+            config: { MY_VAR: '🍦' },
+            overrides: [
+              (builder) =>
+                builder
+                  .overrideProvider(MyService)
+                  .useValue({ computeStuff: () => '🤡' }),
+              (builder) =>
+                builder
+                  .overrideProvider(ConfigService)
+                  .useValue({ getOrThrow: () => '🐛' }),
+            ],
+          }),
+        });
+        const actualController = app.get(TestController);
+        actualServiceOutput = actualController.serviceOutput;
+        actualConfigValue = actualController.configValue;
+      } finally {
+        await app?.close();
+      }
+
+      expect(actualServiceOutput).toEqual('🤡');
+      expect(actualConfigValue).toEqual('🐛');
+    });
   });
 
   describe('createMockConfigService', () => {
