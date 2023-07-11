@@ -41,6 +41,13 @@ export function createMockConfigService(
 }
 
 /**
+ * A function that overrides providers in a {@link TestingModuleBuilder}.
+ */
+export type NestJsModuleOverrider = (
+  builder: TestingModuleBuilder,
+) => TestingModuleBuilder;
+
+/**
  * The options for the {@link makeTestAppFactory} function.
  */
 export type MakeTestAppFactoryOptions = {
@@ -56,7 +63,7 @@ export type MakeTestAppFactoryOptions = {
    * @param builder The module builder.
    * @returns The module builder returned by calls to builder methods.
    */
-  overrides?: (builder: TestingModuleBuilder) => TestingModuleBuilder;
+  overrides?: NestJsModuleOverrider | NestJsModuleOverrider[];
 };
 
 /**
@@ -76,14 +83,20 @@ export function makeTestAppFactory(
     configService = createMockConfigService(options.config ?? process.env);
   }
 
+  const overrides = options.overrides
+    ? Array.isArray(options.overrides)
+      ? options.overrides
+      : [options.overrides]
+    : [];
+
   return async (appModule) => {
     let builder = Test.createTestingModule({ imports: [appModule] })
       .overrideProvider(ConfigService)
       .useValue(configService);
 
-    if (options.overrides) {
-      builder = options.overrides(builder);
-    }
+    overrides.forEach((override) => {
+      builder = override(builder);
+    });
 
     const moduleRef = await builder.compile();
 

@@ -25,7 +25,10 @@ class PostTestDto {
 class TestController {
   readonly someConfValue: string;
 
-  constructor(readonly logger: PinoLogger, configService: ConfigService) {
+  constructor(
+    readonly logger: PinoLogger,
+    configService: ConfigService,
+  ) {
     this.someConfValue = configService.getOrThrow('SOME_CONF_VALUE');
   }
 

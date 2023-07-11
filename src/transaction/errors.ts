@@ -13,7 +13,10 @@ export class TransactionOldTimestampError extends RetryableError {
    * @param transactionTimestamp The timestamp set in the failed transaction.
    * @param delay The observed delay by which the transaction was set in the past.
    */
-  constructor(readonly transactionTimestamp: Date, delay: number) {
+  constructor(
+    readonly transactionTimestamp: Date,
+    delay: number,
+  ) {
     super(
       'Failed to validate an existing date against the transaction timestamp.',
       delay,
