@@ -5,16 +5,9 @@ import {
   Module,
   Post,
 } from '@nestjs/common';
-import { Type } from 'class-transformer';
-import {
-  IsDefined,
-  IsInt,
-  IsPhoneNumber,
-  MaxLength,
-  ValidateNested,
-} from 'class-validator';
+import { IsInt, IsPhoneNumber, MaxLength } from 'class-validator';
 import supertest from 'supertest';
-import { AllowMissing } from '../../validation/index.js';
+import { AllowMissing, ValidateNestedType } from '../../validation/index.js';
 import { ExceptionFilterModule, createApp } from '../index.js';
 import { ValidationModule } from './module.js';
 
@@ -31,9 +24,7 @@ class Dto {
   @IsPhoneNumber()
   phoneNumber!: string;
 
-  @Type(() => ChildDto)
-  @ValidateNested()
-  @IsDefined()
+  @ValidateNestedType(() => ChildDto)
   child!: ChildDto;
 }
 

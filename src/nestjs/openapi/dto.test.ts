@@ -1,14 +1,7 @@
 import { HttpStatus } from '@nestjs/common';
 import { ApiProperty } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
-import {
-  Equals,
-  IsDate,
-  IsInt,
-  IsString,
-  ValidateNested,
-} from 'class-validator';
-import { AllowMissing } from '../../index.js';
+import { Equals, IsDate, IsInt, IsString } from 'class-validator';
+import { AllowMissing, ValidateNestedType } from '../../validation/index.js';
 import { ErrorDto } from '../errors/index.js';
 import { ApiConstantProperty } from './api-constant-property.decorator.js';
 
@@ -33,8 +26,7 @@ export class MyResponseDto {
   readonly constProp!: '🧊';
 
   @ApiProperty({ description: '🧒' })
-  @Type(() => SubDto)
-  @ValidateNested()
+  @ValidateNestedType(() => SubDto)
   readonly subProp!: SubDto;
 }
 

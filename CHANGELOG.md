@@ -13,6 +13,7 @@ Features:
 - Accept several overrides in `makeTestAppFactory`.
 - Implement the `serializeAsJavaScriptObject` testing utility.
 - Define the `terminusModuleWithLogger` NestJS module.
+- Implement the `IsDateType` and `ValidateNestedType` decorators.
 
 Fixes:
 
