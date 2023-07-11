@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+Breaking changes:
+
+- Expose logging utilities in `@causa/runtime/testing` rather than `@causa/runtime/logging/testing`.
+
+Features:
+
+- Accept several overrides in `makeTestAppFactory`.
+- Implement the `serializeAsJavaScriptObject` testing utility.
+
 ## v0.2.0 (2023-07-04)
 
 Breaking changes:
