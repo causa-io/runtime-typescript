@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+Fixes:
+
+- Allow `null` type in validation decorators.
+- Handle `null` and `undefined` in the `JsonSerializableBigInt` decorator.
+
 ## v0.3.0 (2023-07-11)
 
 Breaking changes:
