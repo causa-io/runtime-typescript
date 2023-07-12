@@ -13,7 +13,7 @@ import { ValidationError } from '../errors/index.js';
  * @param object The object to remove `undefined` properties from.
  */
 function removeUndefinedPropertiesRecursively(object: any): void {
-  if (typeof object !== 'object') {
+  if (!object || typeof object !== 'object' || object instanceof Date) {
     return;
   }
 

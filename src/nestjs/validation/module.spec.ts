@@ -7,7 +7,11 @@ import {
 } from '@nestjs/common';
 import { IsInt, IsPhoneNumber, MaxLength } from 'class-validator';
 import supertest from 'supertest';
-import { AllowMissing, ValidateNestedType } from '../../validation/index.js';
+import {
+  AllowMissing,
+  IsNullable,
+  ValidateNestedType,
+} from '../../validation/index.js';
 import { ExceptionFilterModule, createApp } from '../index.js';
 import { ValidationModule } from './module.js';
 
@@ -26,6 +30,10 @@ class Dto {
 
   @ValidateNestedType(() => ChildDto)
   child!: ChildDto;
+
+  @IsNullable()
+  @ValidateNestedType(() => ChildDto)
+  nullableChild!: ChildDto | null;
 }
 
 @Controller('/')
@@ -35,10 +43,9 @@ class TestController {
     return dto.phoneNumber;
   }
 
-  @Post('/checkNoUndefined')
-  async checkNoUndefined(@Body() dto: Dto): Promise<string> {
-    console.log(dto.child);
-    return 'array' in dto.child ? '❌' : '✅';
+  @Post('/checkNullsAndNoUndefined')
+  async checkNullsAndNoUndefined(@Body() dto: Dto): Promise<string> {
+    return 'array' in dto.child || dto.nullableChild !== null ? '❌' : '✅';
   }
 }
 
@@ -64,7 +71,7 @@ describe('object', () => {
   it('should return 400 on validation issue', async () => {
     return request
       .post('/validate')
-      .send({ phoneNumber: '📞' })
+      .send({ phoneNumber: '📞', nullableChild: { shortString: '✅' } })
       .expect(400)
       .expect(({ body }) => {
         expect(body).toMatchObject({
@@ -80,7 +87,11 @@ describe('object', () => {
   it('should correctly format validation error for child properties', async () => {
     return request
       .post('/validate')
-      .send({ phoneNumber: '📞', child: { shortString: '💥💥💥💥' } })
+      .send({
+        phoneNumber: '📞',
+        child: { shortString: '💥💥💥💥' },
+        nullableChild: { shortString: '✅' },
+      })
       .expect(400)
       .expect(({ body }) => {
         expect(body).toMatchObject({
@@ -99,6 +110,7 @@ describe('object', () => {
       .send({
         phoneNumber: '+33600000000',
         child: { shortString: '✅', array: [1, 2, 3.5] },
+        nullableChild: { shortString: '✅' },
       })
       .expect(400)
       .expect(({ body }) => {
@@ -112,17 +124,25 @@ describe('object', () => {
       });
   });
 
-  it('should not set missing values to undefined', async () => {
+  it('should not set missing values to undefined and handle nulls', async () => {
     return request
-      .post('/checkNoUndefined')
-      .send({ phoneNumber: '+33600000000', child: { shortString: '👍' } })
+      .post('/checkNullsAndNoUndefined')
+      .send({
+        phoneNumber: '+33600000000',
+        child: { shortString: '👍' },
+        nullableChild: null,
+      })
       .expect(201, '✅');
   });
 
   it('should pass', async () => {
     return request
       .post('/validate')
-      .send({ phoneNumber: '+33600000000', child: { shortString: '✅' } })
+      .send({
+        phoneNumber: '+33600000000',
+        child: { shortString: '✅' },
+        nullableChild: { shortString: '✅' },
+      })
       .expect(201);
   });
 });
