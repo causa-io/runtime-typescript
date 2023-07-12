@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.3.2 (2023-07-12)
+
 Fixes:
 
 - Handle `null`s when removing `undefined`` properties recursively during validation.
