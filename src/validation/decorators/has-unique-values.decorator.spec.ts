@@ -1,6 +1,7 @@
 import { validate } from 'class-validator';
 import 'jest-extended';
 import { HasUniqueValues } from './has-unique-values.decorator.js';
+import { IsNullable } from './is-nullable.decorator.js';
 
 describe('HasUniqueValues', () => {
   class MyClass {
@@ -9,7 +10,8 @@ describe('HasUniqueValues', () => {
     }
 
     @HasUniqueValues()
-    readonly obj: any;
+    @IsNullable()
+    readonly obj?: any | null;
   }
 
   it('should not validate if the decorated property is not an array or object', async () => {

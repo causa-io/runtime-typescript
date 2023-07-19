@@ -36,7 +36,7 @@ export function IsObjectWithKeysMaxLength(
     propertyName: P,
   ) {
     registerDecorator({
-      name: 'isMapWithKeysMaxLength',
+      name: 'isObjectWithKeysMaxLength',
       target: prototype.constructor,
       propertyName,
       constraints: [],

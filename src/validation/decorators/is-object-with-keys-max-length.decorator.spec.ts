@@ -32,7 +32,7 @@ describe('IsObjectWithKeysMaxLength', () => {
     expect(errors).toEqual([
       expect.objectContaining({
         constraints: {
-          isMapWithKeysMaxLength: `'myObject' should be an object with keys that are no longer than 2 characters.`,
+          isObjectWithKeysMaxLength: `'myObject' should be an object with keys that are no longer than 2 characters.`,
         },
         property: 'myObject',
       }),
