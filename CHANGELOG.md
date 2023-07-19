@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+Features:
+
+- Implement the `IsObjectWithValuesSatisfying` decorator.
+
 ## v0.3.2 (2023-07-12)
 
 Fixes:
