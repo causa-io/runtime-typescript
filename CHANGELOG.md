@@ -5,6 +5,7 @@
 Features:
 
 - Implement the `IsObjectWithValuesSatisfying` decorator.
+- Define the `EventWithPickedData` type.
 
 ## v0.3.2 (2023-07-12)
 
