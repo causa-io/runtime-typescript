@@ -166,6 +166,13 @@ describe('Page', () => {
         readAfter: { someKeyValue: item.id, date: expectedDate },
       });
     });
+
+    it('should create a page with a null query', () => {
+      const actualPage = new Page([new MyEntity()], null);
+
+      expect(actualPage.items).toHaveLength(1);
+      expect(actualPage.nextPageQuery).toBeNull();
+    });
   });
 
   describe('serialization', () => {
