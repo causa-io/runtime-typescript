@@ -7,7 +7,7 @@
 Features:
 
 - Expose the `PinoLogger` as the logger to use from the NestJS utilities.
-- Allow a null `Query`` when constructing a `Page`.
+- Allow a null `Query` when constructing a `Page`.
 
 ## v0.4.0 (2023-07-19)
 
