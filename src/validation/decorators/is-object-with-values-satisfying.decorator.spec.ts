@@ -1,6 +1,6 @@
 import { isInt, validate } from 'class-validator';
 import 'jest-extended';
-import { IsObjectWithValuesSatisfying } from './is-object-with-values-satisfying.js';
+import { IsObjectWithValuesSatisfying } from './is-object-with-values-satisfying.decorator.js';
 
 class MyObject {
   constructor(myObject: object) {

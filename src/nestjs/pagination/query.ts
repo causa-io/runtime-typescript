@@ -11,6 +11,10 @@ import { IsKeyTypeStringOrSkip } from './is-key-type-string-or-skip.decorator.js
  * `CustomReadAfterType`.
  */
 export class PageQuery<T = string> {
+  constructor(partial?: Partial<PageQuery<T>>) {
+    Object.assign(this, partial);
+  }
+
   /**
    * The maximum number of returned results.
    */
