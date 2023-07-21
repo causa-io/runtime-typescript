@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.5.0 (2023-07-21)
+
 Features:
 
 - Expose the `PinoLogger` as the logger to use from the NestJS utilities.
