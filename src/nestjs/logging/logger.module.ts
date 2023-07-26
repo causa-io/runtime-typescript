@@ -10,17 +10,20 @@ import { HEALTHCHECK_ENDPOINT } from '../healthcheck/index.js';
 @Global()
 @Module({
   imports: [
-    PinoLoggerModule.forRoot({
-      pinoHttp: {
-        // Passing the default logger ensures the default configuration is inherited...
-        logger: getDefaultLogger(),
-        // ... the following only sets up pino-http specific settings.
-        autoLogging: {
-          ignore: (req) =>
-            (req as any).originalUrl === `/${HEALTHCHECK_ENDPOINT}`,
+    // Using an async factory function ensures the logger had the chance to be configured before it is used.
+    PinoLoggerModule.forRootAsync({
+      useFactory: () => ({
+        pinoHttp: {
+          // Passing the default logger ensures the default configuration is inherited...
+          logger: getDefaultLogger(),
+          // ... the following only sets up pino-http specific settings.
+          autoLogging: {
+            ignore: (req) =>
+              (req as any).originalUrl === `/${HEALTHCHECK_ENDPOINT}`,
+          },
+          redact: { paths: ['req.headers.authorization'] },
         },
-        redact: { paths: ['req.headers.authorization'] },
-      },
+      }),
     }),
   ],
   providers: [Logger],
