@@ -1,18 +1,16 @@
+import { jest } from '@jest/globals';
 import { Controller, Get, INestApplication, Logger } from '@nestjs/common';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { Test } from '@nestjs/testing';
-import { Logger as PinoLogger } from 'nestjs-pino';
 import supertest from 'supertest';
-import {
-  getLoggedErrors,
-  getLoggedInfos,
-  getLoggedObjects,
-  getLoggedWarnings,
-  spyOnLogger,
-} from '../../logging/testing.js';
-import { LoggerModule } from './logger.module.js';
+import type * as loggingTestingType from '../../logging/testing.js';
+import type { LoggerModule as LoggerModuleType } from './logger.module.js';
 
 describe('LoggerModule', () => {
+  let loggingTesting: typeof loggingTestingType;
+  let LoggerModule: typeof LoggerModuleType;
+  let PinoLogger: any;
+
   let healthFun: () => string;
 
   @Controller()
@@ -34,13 +32,17 @@ describe('LoggerModule', () => {
   let app: INestApplication;
   let request: supertest.SuperTest<supertest.Test>;
 
-  beforeAll(() => {
-    spyOnLogger();
-  });
-
   beforeEach(async () => {
     healthFun = () => 'OK';
 
+    jest.resetModules();
+
+    loggingTesting = await import('../../logging/testing.js');
+    ({ LoggerModule } = await import('./logger.module.js'));
+    ({ Logger: PinoLogger } = await import('nestjs-pino'));
+  });
+
+  async function initApp() {
     const testingModule = await Test.createTestingModule({
       imports: [LoggerModule],
       controllers: [TestController],
@@ -50,16 +52,20 @@ describe('LoggerModule', () => {
     await app.init();
 
     request = supertest(app.getHttpServer());
-  });
+
+    loggingTesting.spyOnLogger();
+  }
 
   afterEach(async () => {
     await app.close();
   });
 
   it('should not log successful healthchecks', async () => {
+    await initApp();
+
     await request.get('/health').expect(200);
 
-    const actualLoggedObjects = getLoggedObjects();
+    const actualLoggedObjects = loggingTesting.getLoggedObjects();
     const actualLoggedUrls = actualLoggedObjects.map((o) => o.req?.url);
     expect(actualLoggedUrls).not.toContain('/health');
   });
@@ -68,10 +74,11 @@ describe('LoggerModule', () => {
     healthFun = () => {
       throw new Error();
     };
+    await initApp();
 
     await request.get('/health').expect(500);
 
-    expect(getLoggedErrors()).toEqual([
+    expect(loggingTesting.getLoggedErrors()).toEqual([
       expect.objectContaining({
         req: expect.objectContaining({ url: '/health' }),
       }),
@@ -79,13 +86,15 @@ describe('LoggerModule', () => {
   });
 
   it('should redact the authorization header', async () => {
+    await initApp();
+
     await request
       .get('/someRoute')
       .set('Authorization', 'some token')
       .expect(200);
 
     expect(
-      getLoggedInfos({
+      loggingTesting.getLoggedInfos({
         predicate: (o) => o.message === 'request completed',
       }),
     ).toEqual([
@@ -99,10 +108,12 @@ describe('LoggerModule', () => {
   });
 
   it('should inherit the logger configuration', async () => {
+    await initApp();
+
     await request.get('/someRoute').expect(200);
 
     expect(
-      getLoggedWarnings({
+      loggingTesting.getLoggedWarnings({
         predicate: (o) => o.message === 'some warning',
       }),
     ).toEqual([
@@ -113,6 +124,27 @@ describe('LoggerModule', () => {
         }),
         req: expect.objectContaining({ url: '/someRoute' }),
         extraParam: '✨',
+      }),
+    ]);
+  });
+
+  it('should apply an updated configuration', async () => {
+    // This tests ensures that a call to `updatePinoConfiguration` prior to initializing the app does indeed configures
+    // the logger. This is only true if the `LoggerModule` fetches the default logger asynchronously.
+    const { updatePinoConfiguration } = await import('../../logging/index.js');
+    updatePinoConfiguration({ base: { alwaysHere: '👋' } });
+    await initApp();
+
+    await request.get('/someRoute').expect(200);
+
+    expect(
+      loggingTesting.getLoggedWarnings({
+        predicate: (o) => o.message === 'some warning',
+      }),
+    ).toEqual([
+      expect.objectContaining({
+        extraParam: '✨',
+        alwaysHere: '👋',
       }),
     ]);
   });

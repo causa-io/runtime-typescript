@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+Fixes:
+
+- Ensure `updatePinoConfiguration` calls are included in the logger provided by the `LoggerModule` by loading the module asynchronously.
+
 ## v0.5.0 (2023-07-21)
 
 Features:
