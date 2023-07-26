@@ -2,6 +2,8 @@ import { jest } from '@jest/globals';
 import { ConfigService } from '@nestjs/config';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { Test, TestingModuleBuilder } from '@nestjs/testing';
+import { Logger, pino } from 'pino';
+import { LoggerModule } from '../logging/index.js';
 import { AppFactory } from './app-factory.js';
 
 /**
@@ -41,6 +43,28 @@ export function createMockConfigService(
 }
 
 /**
+ * A promise that resolves to a {@link Logger} using the `pino-pretty` formatter.
+ * If `pino-pretty` is not installed, the promise resolves to `undefined`.
+ */
+const prettyLoggerPromise: Promise<Logger | undefined> = (async () => {
+  try {
+    const { default: pinoPretty } = await import('pino-pretty');
+    return pino(
+      { level: 'debug' },
+      (pinoPretty as any)({
+        ignore: 'pid,hostname',
+        colorize: true,
+        levelFirst: true,
+        translateTime: 'SYS:HH:MM:ss.l',
+        destination: process.stdout,
+      }),
+    );
+  } catch {
+    return;
+  }
+})();
+
+/**
  * A function that overrides providers in a {@link TestingModuleBuilder}.
  */
 export type NestJsModuleOverrider = (
@@ -56,6 +80,13 @@ export type MakeTestAppFactoryOptions = {
    * injected as a replacement to the original {@link ConfigService}.
    */
   config?: Record<string, any> | ConfigService | MockedConfigService;
+
+  /**
+   * Whether to format logs as text rather than JSON.
+   * This will replace the default logger with a debug-level logger that uses the `pino-pretty` formatter.
+   * This requires `pino-pretty` to be installed.
+   */
+  prettyLogs?: boolean;
 
   /**
    * A function that overrides providers in the passed module builder.
@@ -93,6 +124,12 @@ export function makeTestAppFactory(
     let builder = Test.createTestingModule({ imports: [appModule] })
       .overrideProvider(ConfigService)
       .useValue(configService);
+
+    if (options.prettyLogs) {
+      builder = builder
+        .overrideModule(LoggerModule)
+        .useModule(LoggerModule.forRoot({ logger: await prettyLoggerPromise }));
+    }
 
     overrides.forEach((override) => {
       builder = override(builder);

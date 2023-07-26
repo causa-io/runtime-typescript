@@ -2,6 +2,7 @@ import { jest } from '@jest/globals';
 import { Controller, Get, INestApplication, Logger } from '@nestjs/common';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { Test } from '@nestjs/testing';
+import { pino } from 'pino';
 import supertest from 'supertest';
 import type * as loggingTestingType from '../../logging/testing.js';
 import type { LoggerModule as LoggerModuleType } from './logger.module.js';
@@ -42,9 +43,13 @@ describe('LoggerModule', () => {
     ({ Logger: PinoLogger } = await import('nestjs-pino'));
   });
 
-  async function initApp() {
+  async function initApp(options: { logger?: pino.Logger } = {}) {
     const testingModule = await Test.createTestingModule({
-      imports: [LoggerModule],
+      imports: [
+        options.logger
+          ? LoggerModule.forRoot({ logger: options.logger })
+          : LoggerModule,
+      ],
       controllers: [TestController],
     }).compile();
     app = testingModule.createNestApplication<NestExpressApplication>();
@@ -145,6 +150,26 @@ describe('LoggerModule', () => {
       expect.objectContaining({
         extraParam: '✨',
         alwaysHere: '👋',
+      }),
+    ]);
+  });
+
+  it('should accept a different logger', async () => {
+    const logger = pino({ base: { different: '❄️' } });
+    await initApp({ logger });
+    loggingTesting.spyOnLogger(logger);
+
+    await request.get('/someRoute').expect(200);
+
+    expect(
+      loggingTesting.getLoggedWarnings({
+        logger,
+        predicate: (o) => o.msg === 'some warning',
+      }),
+    ).toEqual([
+      expect.objectContaining({
+        extraParam: '✨',
+        different: '❄️',
       }),
     ]);
   });
