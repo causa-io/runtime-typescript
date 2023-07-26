@@ -34,7 +34,7 @@ class TestModule {}
 })
 class AppModule {}
 
-describe('test-utils', () => {
+describe('testing', () => {
   describe('makeTestAppFactory', () => {
     it('should use the provided config dictionary', async () => {
       let app!: INestApplication;
