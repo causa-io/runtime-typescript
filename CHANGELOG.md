@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+Features:
+
+- Implement the `LoggerModule.forRoot()` function to accept an optional logger during initialization.
+- Add the `prettyLogs` option for the `makeTestAppFactory()` testing utility.
+
 Fixes:
 
 - Ensure `updatePinoConfiguration` calls are included in the logger provided by the `LoggerModule` by loading the module asynchronously.
