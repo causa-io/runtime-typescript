@@ -6,7 +6,7 @@ import {
 
 /**
  * Checks that another specified property is not defined when the decorated property is set in the object to validate.
- * For the other property, even a `null` value is considered as defined .
+ * For the other property, even a `null` value is considered as defined.
  *
  * @param property The property that should not be defined when the decorated property exists.
  * @param options Additional validation options.
