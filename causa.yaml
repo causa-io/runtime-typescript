@@ -1,0 +1,21 @@
+version: 1
+
+workspace:
+  name: causa
+
+causa:
+  modules:
+    '@causa/workspace-core': '>= 0.14.1'
+    '@causa/workspace-typescript': '>= 0.4.0'
+
+project:
+  name: runtime-typescript
+  description: The package exposing the runtime SDK for Causa, focusing on service containers and event-based processing.
+  language: typescript
+  type: package
+
+javascript:
+  dependencies:
+    update:
+      packageTargets:
+        '@types/node': minor

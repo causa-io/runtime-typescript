@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+Chores:
+
+- Upgrade dependencies.
+- Configure the repository as a Causa project.
+- Fix typo in documentation.
+
 ## v0.6.0 (2023-07-26)
 
 Features:
