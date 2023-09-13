@@ -1,5 +1,5 @@
-import { ErrorDto } from '@causa/runtime/nestjs';
 import { Type } from '@nestjs/common';
+import { ErrorDto } from '../errors/index.js';
 
 /**
  * The metadata key used to store the API error description.

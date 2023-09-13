@@ -1,6 +1,6 @@
-import { ApiConstantProperty } from '@causa/runtime/nestjs';
 import { HttpStatus, Type } from '@nestjs/common';
 import { ErrorDto } from '../errors/index.js';
+import { ApiConstantProperty } from './api-constant-property.decorator.js';
 
 /**
  * The metadata key used to store the API error status code.
