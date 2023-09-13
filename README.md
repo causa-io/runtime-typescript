@@ -100,7 +100,11 @@ The logger is configured to automatically log all HTTP requests, removing the `a
 
 #### OpenAPI
 
-NestJS provides many decorator that helps building the OpenAPI documentation for a service. This provides the additional `@ApiConstantProperty` decorator.
+NestJS provides many decorator that helps building the OpenAPI documentation for a service. This package provides those additional decorators:
+
+- `@ApiConstantProperty`
+- `@ApiErrorDescription` and `@ApiErrorStatusCode`, to decorate subclasses of `ErrorDto`.
+- `@ApiErrorResponses`, to decorate controller methods and list the possible returned errors.
 
 #### Pagination
 
