@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.7.0 (2023-09-13)
+
 Features:
 
 - Implement the `@ApiErrorDescription`, `@ApiErrorStatusCode`, and `@ApiErrorResponses` decorators to enrich OpenAPI generation.
