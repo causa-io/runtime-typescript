@@ -73,7 +73,7 @@ export class Page<T, PQ extends PageQuery<any> = PageQuery> {
    * @param type The type of items in the page.
    * @returns The page type.
    */
-  static of<T>(type: { new (): T }): Type<Page<T>> {
+  static of<T>(type: Type<T>): Type<Page<T>> {
     class TypedPage extends Page<T> {}
     ApiProperty({ type: () => [type] })(TypedPage.prototype, 'items');
     Object.defineProperty(TypedPage, 'name', { value: `PageOf${type.name}` });

@@ -1,3 +1,4 @@
+import { Type } from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
 import * as uuid from 'uuid';
 import {
@@ -72,7 +73,7 @@ export class LockManager<
    * @param expirationDelay The default duration for which the lock should be acquired, in milliseconds.
    */
   constructor(
-    readonly lockType: { new (): E },
+    readonly lockType: Type<E>,
     readonly runner: TransactionRunner<T>,
     readonly expirationDelay: number,
   ) {}

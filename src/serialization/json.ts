@@ -1,3 +1,4 @@
+import { Type } from '@nestjs/common';
 import { instanceToPlain, plainToInstance } from 'class-transformer';
 import { ObjectSerializer } from './object-serializer.js';
 
@@ -35,7 +36,7 @@ export class JsonObjectSerializer implements ObjectSerializer {
     return Buffer.from(JSON.stringify(plain));
   }
 
-  async deserialize<T>(type: { new (): T }, buffer: Buffer): Promise<T> {
+  async deserialize<T>(type: Type<T>, buffer: Buffer): Promise<T> {
     const plainObject = JSON.parse(buffer.toString());
     return plainToInstance(type, plainObject);
   }

@@ -1,3 +1,4 @@
+import { Type } from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
 import * as uuid from 'uuid';
 import {
@@ -77,8 +78,8 @@ export class VersionedEntityManager<
    */
   constructor(
     readonly topic: string,
-    readonly eventType: { new (): E },
-    entityType: { new (): EventData<E> },
+    readonly eventType: Type<E>,
+    entityType: Type<EventData<E>>,
     runner: R,
   ) {
     super(entityType, async ({ data }) => data, runner);
