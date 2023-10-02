@@ -1,3 +1,4 @@
+import { Type } from '@nestjs/common';
 import { EventTransaction } from './event-transaction.js';
 import { Transaction } from './transaction.js';
 
@@ -22,7 +23,7 @@ export interface FindReplaceStateTransaction {
    * @param key The primary key of the entity to delete, as a partial entity containing all the primary key columns.
    */
   deleteWithSameKeyAs<T extends object>(
-    type: { new (): T },
+    type: Type<T>,
     key: Partial<T>,
   ): Promise<void>;
 
@@ -36,7 +37,7 @@ export interface FindReplaceStateTransaction {
    * @returns The entity if it exists, or `undefined` if it does not.
    */
   findOneWithSameKeyAs<T extends object>(
-    type: { new (): T },
+    type: Type<T>,
     entity: Partial<T>,
   ): Promise<T | undefined>;
 }

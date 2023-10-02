@@ -1,4 +1,5 @@
-import { ClassConstructor, plainToInstance } from 'class-transformer';
+import { Type } from '@nestjs/common';
+import { plainToInstance } from 'class-transformer';
 import {
   ValidationError as ClassValidationError,
   ValidatorOptions,
@@ -51,7 +52,7 @@ export async function validateObject(
  * @returns The parsed object.
  */
 export async function parseObject<T extends object>(
-  type: ClassConstructor<T>,
+  type: Type<T>,
   payload: any,
   options: ValidatorOptions = {},
 ): Promise<T> {

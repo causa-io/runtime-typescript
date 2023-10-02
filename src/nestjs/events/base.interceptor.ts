@@ -1,4 +1,9 @@
-import { CallHandler, ExecutionContext, NestInterceptor } from '@nestjs/common';
+import {
+  CallHandler,
+  ExecutionContext,
+  NestInterceptor,
+  Type,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { Request } from 'express';
 import { PinoLogger } from 'nestjs-pino';
@@ -76,7 +81,7 @@ export abstract class BaseEventHandlerInterceptor implements NestInterceptor {
    */
   protected async deserializeEventBody(
     buffer: Buffer,
-    dataType: { new (): any },
+    dataType: Type,
   ): Promise<any> {
     try {
       const body = await this.serializer.deserialize(dataType, buffer);

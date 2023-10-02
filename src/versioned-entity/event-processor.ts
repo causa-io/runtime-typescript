@@ -1,3 +1,4 @@
+import { Type } from '@nestjs/common';
 import { Event } from '../events/index.js';
 import {
   FindReplaceTransaction,
@@ -42,7 +43,7 @@ export class VersionedEntityEventProcessor<
    * @param runner The {@link TransactionRunner} used to create transactions.
    */
   constructor(
-    readonly projectionType: { new (): P },
+    readonly projectionType: Type<P>,
     readonly project: VersionedEntityProjection<T, E, P>,
     readonly runner: R,
     options: {

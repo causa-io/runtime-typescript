@@ -1,3 +1,5 @@
+import { Type } from '@nestjs/common';
+
 /**
  * Defines a class that can serialize and deserialize objects to {@link Buffer}s.
  */
@@ -9,7 +11,7 @@ export interface ObjectSerializer {
    * @param data The data to deserialize.
    * @returns The deserialized object.
    */
-  deserialize<T>(type: { new (): T }, data: Buffer): Promise<T>;
+  deserialize<T>(type: Type<T>, data: Buffer): Promise<T>;
 
   /**
    * Serializes the JavaScript object to a buffer.

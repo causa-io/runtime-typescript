@@ -1,4 +1,5 @@
-import { Type } from 'class-transformer';
+import { Type } from '@nestjs/common';
+import { Type as TypeDecorator } from 'class-transformer';
 import { IsDefined, ValidateNested, ValidatorOptions } from 'class-validator';
 import { AllowMissing } from './allow-missing.decorator.js';
 
@@ -10,7 +11,7 @@ import { AllowMissing } from './allow-missing.decorator.js';
  * @param options Validation options.
  */
 export function ValidateNestedType<T>(
-  nestedType: () => { new (): T },
+  nestedType: () => Type<T>,
   options: ValidatorOptions & {
     /**
      * If `true`, the property can be missing in the input object.
@@ -24,7 +25,7 @@ export function ValidateNestedType<T>(
     ...options,
   };
 
-  const typeDecorator = Type(nestedType);
+  const typeDecorator = TypeDecorator(nestedType);
   const validatedNestedDecorator = ValidateNested(validatorOptions);
   // `AllowMissing` is actually not needed here. By default, `class-validator` would ignore the property.
   // It is however required to apply the `IsDefined` decorator when the property is not optional.
