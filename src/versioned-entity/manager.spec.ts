@@ -198,7 +198,8 @@ describe('VersionedEntityManager', () => {
     it('should fail if the entity does not exists', async () => {
       const actualPromise = manager.update(
         'myEntityUpdated',
-        { id: 'abc', someProperty: '🔖' },
+        { id: 'abc' },
+        { someProperty: '🔖' },
         new Date(),
       );
 
@@ -214,7 +215,8 @@ describe('VersionedEntityManager', () => {
 
       const actualPromise = manager.update(
         'myEntityUpdated',
-        { id: 'abc', someProperty: '🔖' },
+        { id: 'abc' },
+        { someProperty: '🔖' },
         new Date(),
       );
 
@@ -230,7 +232,8 @@ describe('VersionedEntityManager', () => {
 
       const actualPromise = manager.update(
         'myEntityUpdated',
-        { id: 'abc', someProperty: '🔖' },
+        { id: 'abc' },
+        { someProperty: '🔖' },
         new Date('2020-01-02'),
       );
 
@@ -246,7 +249,8 @@ describe('VersionedEntityManager', () => {
 
       const actualPromise = manager.update(
         'myEntityUpdated',
-        { id: 'abc', someProperty: '🔖' },
+        { id: 'abc' },
+        { someProperty: '🔖' },
         new Date('2999-01-01'),
       );
 
@@ -264,7 +268,8 @@ describe('VersionedEntityManager', () => {
 
       const actualEvent = await manager.update(
         'myEntityUpdated',
-        { id: 'abc', someProperty: '🔖' },
+        { id: 'abc' },
+        { someProperty: '🔖' },
         existingEntity.updatedAt,
         { validationFn },
       );
@@ -300,7 +305,8 @@ describe('VersionedEntityManager', () => {
 
       const actualPromise = manager.update(
         'myEntityUpdated',
-        { id: 'abc', someProperty: '🔖' },
+        { id: 'abc' },
+        { someProperty: '🔖' },
         existingEntity.updatedAt,
         { validationFn: () => Promise.reject(new Error('🔥')) },
       );
@@ -316,7 +322,8 @@ describe('VersionedEntityManager', () => {
 
       const actualEvent = await manager.update(
         'myEntityUpdated',
-        { id: 'abc', someProperty: '🔖' },
+        { id: 'abc' },
+        { someProperty: '🔖' },
         existingEntity.updatedAt,
         {
           transaction: mockTransaction,
@@ -357,7 +364,8 @@ describe('VersionedEntityManager', () => {
 
       const actualEvent = await manager.update(
         'myEntityUpdated',
-        { id: 'abc', someProperty: '🙈' },
+        { id: 'abc' },
+        { someProperty: '🙈' },
         existingEntity.updatedAt,
       );
 

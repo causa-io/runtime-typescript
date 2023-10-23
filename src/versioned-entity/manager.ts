@@ -315,6 +315,7 @@ export class VersionedEntityManager<
    * customize the update behavior.
    *
    * @param eventName The name of the event when updating the entity.
+   * @param entityKey An object containing the primary key columns of the entity to update.
    * @param update The data to use when updating the entity.
    * @param knownUpdatedAt The known `updatedAt` date of the entity. It will be compared against the current state.
    * @param options Options when updating the entity.
@@ -322,6 +323,7 @@ export class VersionedEntityManager<
    */
   async update(
     eventName: EventName<E>,
+    entityKey: Partial<EventData<E>>,
     update: VersionedEntityUpdate<EventData<E>>,
     knownUpdatedAt: Date,
     options: VersionedEntityUpdateOptions<T, EventData<E>> = {},
@@ -330,7 +332,7 @@ export class VersionedEntityManager<
       options.transaction,
       async (transaction) => {
         const existingEntity = await this.findExistingEntityWithVersionOrFail(
-          update as Partial<EventData<E>>,
+          entityKey,
           knownUpdatedAt,
           { transaction, existingEntity: options.existingEntity },
         );
