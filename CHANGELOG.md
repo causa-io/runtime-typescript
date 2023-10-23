@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+Breaking changes:
+
+- Make the `updatedAt` version check optional in the `VersionedEntityManager`'s `update` and `delete` methods.
+- The entity ID (primary key) is now a separate argument of the `VersionedEntityManager.update` function.
+
+Features:
+
+- `VersionedEntityManager.update` can now accept a function to construct the update data.
+
 ## v0.8.0 (2023-10-02)
 
 Breaking changes:

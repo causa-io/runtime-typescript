@@ -198,8 +198,8 @@ describe('VersionedEntityManager', () => {
     it('should fail if the entity does not exists', async () => {
       const actualPromise = manager.update(
         'myEntityUpdated',
-        { id: 'abc', someProperty: '🔖' },
-        new Date(),
+        { id: 'abc' },
+        { someProperty: '🔖' },
       );
 
       await expect(actualPromise).rejects.toThrow(EntityNotFoundError);
@@ -214,8 +214,8 @@ describe('VersionedEntityManager', () => {
 
       const actualPromise = manager.update(
         'myEntityUpdated',
-        { id: 'abc', someProperty: '🔖' },
-        new Date(),
+        { id: 'abc' },
+        { someProperty: '🔖' },
       );
 
       await expect(actualPromise).rejects.toThrow(EntityNotFoundError);
@@ -230,8 +230,9 @@ describe('VersionedEntityManager', () => {
 
       const actualPromise = manager.update(
         'myEntityUpdated',
-        { id: 'abc', someProperty: '🔖' },
-        new Date('2020-01-02'),
+        { id: 'abc' },
+        { someProperty: '🔖' },
+        { checkUpdatedAt: new Date('2020-01-02') },
       );
 
       await expect(actualPromise).rejects.toThrow(IncorrectEntityVersionError);
@@ -246,8 +247,8 @@ describe('VersionedEntityManager', () => {
 
       const actualPromise = manager.update(
         'myEntityUpdated',
-        { id: 'abc', someProperty: '🔖' },
-        new Date('2999-01-01'),
+        { id: 'abc' },
+        { someProperty: '🔖' },
       );
 
       await expect(actualPromise).rejects.toThrow(TransactionOldTimestampError);
@@ -264,9 +265,9 @@ describe('VersionedEntityManager', () => {
 
       const actualEvent = await manager.update(
         'myEntityUpdated',
-        { id: 'abc', someProperty: '🔖' },
-        existingEntity.updatedAt,
-        { validationFn },
+        { id: 'abc' },
+        { someProperty: '🔖' },
+        { validationFn, checkUpdatedAt: existingEntity.updatedAt },
       );
 
       expect(actualEvent).toBeInstanceOf(MyEvent);
@@ -292,6 +293,44 @@ describe('VersionedEntityManager', () => {
       expect(validationFn).toHaveBeenCalledExactlyOnceWith(existingEntity);
     });
 
+    it('should use a function as the update', async () => {
+      const existingEntity = new MyEntity({ id: 'abc' });
+      mockStateTransaction.findOneWithSameKeyAs.mockResolvedValueOnce(
+        existingEntity,
+      );
+
+      const actualEvent = await manager.update(
+        'myEntityUpdated',
+        { id: 'abc' },
+        async (existingEntity, transaction) => ({
+          someProperty: `${
+            existingEntity.id
+          } ${transaction.timestamp.toISOString()}`,
+        }),
+      );
+
+      expect(actualEvent).toBeInstanceOf(MyEvent);
+      expect(actualEvent).toEqual(
+        expect.objectContaining({
+          id: expect.any(String),
+          producedAt: mockTransaction.timestamp,
+          name: 'myEntityUpdated',
+          data: expect.objectContaining({
+            ...existingEntity,
+            updatedAt: mockTransaction.timestamp,
+            someProperty: `abc ${mockTransaction.timestamp.toISOString()}`,
+          }),
+        }),
+      );
+      expect(actualEvent.data).toBeInstanceOf(MyEntity);
+      expect(mockStateTransaction.replace).toHaveBeenCalledExactlyOnceWith(
+        actualEvent.data,
+      );
+      expect(mockEventTransaction.bufferedEvents).toEqual([
+        { topic: 'my-topic', event: actualEvent, options: { attributes: {} } },
+      ]);
+    });
+
     it('should rethrow an error from the validation function', async () => {
       const existingEntity = new MyEntity({ id: 'abc' });
       mockStateTransaction.findOneWithSameKeyAs.mockResolvedValueOnce(
@@ -300,9 +339,29 @@ describe('VersionedEntityManager', () => {
 
       const actualPromise = manager.update(
         'myEntityUpdated',
-        { id: 'abc', someProperty: '🔖' },
-        existingEntity.updatedAt,
+        { id: 'abc' },
+        { someProperty: '🔖' },
         { validationFn: () => Promise.reject(new Error('🔥')) },
+      );
+
+      await expect(actualPromise).rejects.toThrow('🔥');
+      expect(mockStateTransaction.replace).not.toHaveBeenCalled();
+      expect(mockEventTransaction.bufferedEvents).toEqual([]);
+    });
+
+    it('should prioritize the validation function over the checkUpdatedAt option', async () => {
+      mockStateTransaction.findOneWithSameKeyAs.mockResolvedValueOnce(
+        new MyEntity({ id: 'abc', updatedAt: new Date('2020-01-01') }),
+      );
+
+      const actualPromise = manager.update(
+        'myEntityUpdated',
+        { id: 'abc' },
+        { someProperty: '🔖' },
+        {
+          validationFn: () => Promise.reject(new Error('🔥')),
+          checkUpdatedAt: new Date('2020-01-02'),
+        },
       );
 
       await expect(actualPromise).rejects.toThrow('🔥');
@@ -316,8 +375,8 @@ describe('VersionedEntityManager', () => {
 
       const actualEvent = await manager.update(
         'myEntityUpdated',
-        { id: 'abc', someProperty: '🔖' },
-        existingEntity.updatedAt,
+        { id: 'abc' },
+        { someProperty: '🔖' },
         {
           transaction: mockTransaction,
           publishOptions: { attributes: { att1: '🎁' } },
@@ -357,8 +416,8 @@ describe('VersionedEntityManager', () => {
 
       const actualEvent = await manager.update(
         'myEntityUpdated',
-        { id: 'abc', someProperty: '🙈' },
-        existingEntity.updatedAt,
+        { id: 'abc' },
+        { someProperty: '🙈' },
       );
 
       expect(actualEvent).toBeInstanceOf(MyEvent);
@@ -386,11 +445,7 @@ describe('VersionedEntityManager', () => {
 
   describe('delete', () => {
     it('should fail if the entity does not exists', async () => {
-      const actualPromise = manager.delete(
-        'myEntityDeleted',
-        { id: 'abc' },
-        new Date(),
-      );
+      const actualPromise = manager.delete('myEntityDeleted', { id: 'abc' });
 
       await expect(actualPromise).rejects.toThrow(EntityNotFoundError);
       expect(mockStateTransaction.replace).not.toHaveBeenCalled();
@@ -402,11 +457,7 @@ describe('VersionedEntityManager', () => {
         new MyEntity({ id: 'abc', deletedAt: new Date('2020-01-01') }),
       );
 
-      const actualPromise = manager.delete(
-        'myEntityDeleted',
-        { id: 'abc' },
-        new Date(),
-      );
+      const actualPromise = manager.delete('myEntityDeleted', { id: 'abc' });
 
       await expect(actualPromise).rejects.toThrow(EntityNotFoundError);
       expect(mockStateTransaction.replace).not.toHaveBeenCalled();
@@ -421,7 +472,7 @@ describe('VersionedEntityManager', () => {
       const actualPromise = manager.delete(
         'myEntityDeleted',
         { id: 'abc' },
-        new Date('2020-01-02'),
+        { checkUpdatedAt: new Date('2020-01-02') },
       );
 
       await expect(actualPromise).rejects.toThrow(IncorrectEntityVersionError);
@@ -434,11 +485,7 @@ describe('VersionedEntityManager', () => {
         new MyEntity({ id: 'abc', updatedAt: new Date('2999-01-01') }),
       );
 
-      const actualPromise = manager.delete(
-        'myEntityDeleted',
-        { id: 'abc' },
-        new Date('2999-01-01'),
-      );
+      const actualPromise = manager.delete('myEntityDeleted', { id: 'abc' });
 
       await expect(actualPromise).rejects.toThrow(TransactionOldTimestampError);
       expect(mockStateTransaction.replace).not.toHaveBeenCalled();
@@ -455,8 +502,7 @@ describe('VersionedEntityManager', () => {
       const actualEvent = await manager.delete(
         'myEntityDeleted',
         { id: 'abc', someProperty: '🙈' },
-        existingEntity.updatedAt,
-        { validationFn },
+        { validationFn, checkUpdatedAt: existingEntity.updatedAt },
       );
 
       expect(actualEvent).toBeInstanceOf(MyEvent);
@@ -491,7 +537,6 @@ describe('VersionedEntityManager', () => {
       const actualPromise = manager.delete(
         'myEntityDeleted',
         { id: 'abc' },
-        existingEntity.updatedAt,
         { validationFn: () => Promise.reject(new Error('🔥')) },
       );
 
@@ -507,7 +552,6 @@ describe('VersionedEntityManager', () => {
       const actualEvent = await manager.delete(
         'myEntityDeleted',
         { id: 'abc' },
-        existingEntity.updatedAt,
         {
           transaction: mockTransaction,
           publishOptions: { attributes: { att1: '🎁' } },

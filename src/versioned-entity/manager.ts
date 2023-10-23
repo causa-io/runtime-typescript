@@ -57,6 +57,11 @@ type VersionedEntityUpdateOptions<
    * An existing entity to use instead of looking it up from the state.
    */
   existingEntity?: P;
+
+  /**
+   * The known `updatedAt` date of the entity. It will be compared against the current state.
+   */
+  checkUpdatedAt?: Date;
 };
 
 /**
@@ -149,28 +154,17 @@ export class VersionedEntityManager<
 
   /**
    * Looks up an entity using its primary key columns and returns it.
-   * This method will throw if the entity does not exist (including soft deletes), or if it exists but has been updated
-   * since the given `knownUpdatedAt` date.
+   * This method will throw if the entity does not exist (including soft deletes).
+   * It also (optionally) enforces the given {@link VersionedEntityUpdateOptions.validationFn} and
+   * {@link VersionedEntityUpdateOptions.checkUpdatedAt} if provided.
    *
    * @param entity The entity to find. It should at least contain the primary key columns.
-   * @param knownUpdatedAt The known `updatedAt` date of the entity. It will be compared against the current state.
    * @param options Options when finding the entity.
    * @returns The found entity.
    */
-  protected async findExistingEntityWithVersionOrFail(
+  protected async findExistingEntityOrFail(
     entity: Partial<EventData<E>>,
-    knownUpdatedAt: Date,
-    options: {
-      /**
-       * The transaction to use.
-       */
-      transaction?: T;
-
-      /**
-       * An existing entity to use instead of looking it up.
-       */
-      existingEntity?: EventData<E>;
-    } = {},
+    options: VersionedEntityUpdateOptions<T, EventData<E>> = {},
   ): Promise<EventData<E>> {
     return await this.runner.runInNewOrExisting(
       options.transaction,
@@ -186,11 +180,19 @@ export class VersionedEntityManager<
           throw new EntityNotFoundError(this.projectionType, entity);
         }
 
-        if (existingEntity.updatedAt.getTime() !== knownUpdatedAt.getTime()) {
+        if (options.validationFn) {
+          await options.validationFn(existingEntity);
+        }
+
+        if (
+          options.checkUpdatedAt &&
+          existingEntity.updatedAt.getTime() !==
+            options.checkUpdatedAt.getTime()
+        ) {
           throw new IncorrectEntityVersionError(
             this.projectionType,
             entity,
-            knownUpdatedAt,
+            options.checkUpdatedAt,
             existingEntity.updatedAt,
           );
         }
@@ -315,28 +317,34 @@ export class VersionedEntityManager<
    * customize the update behavior.
    *
    * @param eventName The name of the event when updating the entity.
-   * @param update The data to use when updating the entity.
-   * @param knownUpdatedAt The known `updatedAt` date of the entity. It will be compared against the current state.
+   * @param entityKey An object containing the primary key columns of the entity to update.
+   * @param update The data to use when updating the entity, or a function returning the data.
    * @param options Options when updating the entity.
    * @returns The processed and published event corresponding to the update.
    */
   async update(
     eventName: EventName<E>,
-    update: VersionedEntityUpdate<EventData<E>>,
-    knownUpdatedAt: Date,
+    entityKey: Partial<EventData<E>>,
+    update:
+      | VersionedEntityUpdate<EventData<E>>
+      | ((
+          existingEntity: EventData<E>,
+          transaction: T,
+        ) => Promise<VersionedEntityUpdate<EventData<E>>>),
     options: VersionedEntityUpdateOptions<T, EventData<E>> = {},
   ): Promise<E> {
     return await this.runner.runInNewOrExisting(
       options.transaction,
       async (transaction) => {
-        const existingEntity = await this.findExistingEntityWithVersionOrFail(
-          update as Partial<EventData<E>>,
-          knownUpdatedAt,
-          { transaction, existingEntity: options.existingEntity },
-        );
+        const existingEntity = await this.findExistingEntityOrFail(entityKey, {
+          transaction,
+          existingEntity: options.existingEntity,
+          checkUpdatedAt: options.checkUpdatedAt,
+          validationFn: options.validationFn,
+        });
 
-        if (options.validationFn) {
-          await options.validationFn(existingEntity);
+        if (typeof update === 'function') {
+          update = await update(existingEntity, transaction);
         }
 
         const entity = plainToInstance(
@@ -363,28 +371,23 @@ export class VersionedEntityManager<
    *
    * @param eventName The name of the event when deleting the entity.
    * @param entityKey An object containing the primary key columns of the entity to delete.
-   * @param knownUpdatedAt The known `updatedAt` date of the entity. It will be compared against the current state.
    * @param options Options when deleting the entity.
    * @returns The processed and published event corresponding to the deletion.
    */
   async delete(
     eventName: EventName<E>,
     entityKey: Partial<EventData<E>>,
-    knownUpdatedAt: Date,
     options: VersionedEntityUpdateOptions<T, EventData<E>> = {},
   ): Promise<E> {
     return await this.runner.runInNewOrExisting(
       options.transaction,
       async (transaction) => {
-        const existingEntity = await this.findExistingEntityWithVersionOrFail(
-          entityKey,
-          knownUpdatedAt,
-          { transaction, existingEntity: options.existingEntity },
-        );
-
-        if (options.validationFn) {
-          await options.validationFn(existingEntity);
-        }
+        const existingEntity = await this.findExistingEntityOrFail(entityKey, {
+          transaction,
+          existingEntity: options.existingEntity,
+          checkUpdatedAt: options.checkUpdatedAt,
+          validationFn: options.validationFn,
+        });
 
         const entity = plainToInstance(this.projectionType, {
           ...existingEntity,
