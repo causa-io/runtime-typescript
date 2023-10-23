@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.9.0 (2023-10-23)
+
 Breaking changes:
 
 - Make the `updatedAt` version check optional in the `VersionedEntityManager`'s `update` and `delete` methods.
