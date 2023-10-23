@@ -293,6 +293,44 @@ describe('VersionedEntityManager', () => {
       expect(validationFn).toHaveBeenCalledExactlyOnceWith(existingEntity);
     });
 
+    it('should use a function as the update', async () => {
+      const existingEntity = new MyEntity({ id: 'abc' });
+      mockStateTransaction.findOneWithSameKeyAs.mockResolvedValueOnce(
+        existingEntity,
+      );
+
+      const actualEvent = await manager.update(
+        'myEntityUpdated',
+        { id: 'abc' },
+        async (existingEntity, transaction) => ({
+          someProperty: `${
+            existingEntity.id
+          } ${transaction.timestamp.toISOString()}`,
+        }),
+      );
+
+      expect(actualEvent).toBeInstanceOf(MyEvent);
+      expect(actualEvent).toEqual(
+        expect.objectContaining({
+          id: expect.any(String),
+          producedAt: mockTransaction.timestamp,
+          name: 'myEntityUpdated',
+          data: expect.objectContaining({
+            ...existingEntity,
+            updatedAt: mockTransaction.timestamp,
+            someProperty: `abc ${mockTransaction.timestamp.toISOString()}`,
+          }),
+        }),
+      );
+      expect(actualEvent.data).toBeInstanceOf(MyEntity);
+      expect(mockStateTransaction.replace).toHaveBeenCalledExactlyOnceWith(
+        actualEvent.data,
+      );
+      expect(mockEventTransaction.bufferedEvents).toEqual([
+        { topic: 'my-topic', event: actualEvent, options: { attributes: {} } },
+      ]);
+    });
+
     it('should rethrow an error from the validation function', async () => {
       const existingEntity = new MyEntity({ id: 'abc' });
       mockStateTransaction.findOneWithSameKeyAs.mockResolvedValueOnce(

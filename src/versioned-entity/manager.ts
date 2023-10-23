@@ -318,14 +318,19 @@ export class VersionedEntityManager<
    *
    * @param eventName The name of the event when updating the entity.
    * @param entityKey An object containing the primary key columns of the entity to update.
-   * @param update The data to use when updating the entity.
+   * @param update The data to use when updating the entity, or a function returning the data.
    * @param options Options when updating the entity.
    * @returns The processed and published event corresponding to the update.
    */
   async update(
     eventName: EventName<E>,
     entityKey: Partial<EventData<E>>,
-    update: VersionedEntityUpdate<EventData<E>>,
+    update:
+      | VersionedEntityUpdate<EventData<E>>
+      | ((
+          existingEntity: EventData<E>,
+          transaction: T,
+        ) => Promise<VersionedEntityUpdate<EventData<E>>>),
     options: VersionedEntityUpdateOptions<T, EventData<E>> = {},
   ): Promise<E> {
     return await this.runner.runInNewOrExisting(
@@ -338,6 +343,9 @@ export class VersionedEntityManager<
           validationFn: options.validationFn,
         });
 
+        if (typeof update === 'function') {
+          update = await update(existingEntity, transaction);
+        }
 
         const entity = plainToInstance(
           this.projectionType,
