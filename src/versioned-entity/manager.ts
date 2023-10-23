@@ -26,22 +26,23 @@ import {
 /**
  * Options when performing a generic write operation on a versioned entity.
  */
-type VersionedEntityOperationOptions<T extends FindReplaceTransaction> = {
-  /**
-   * The transaction to use.
-   */
-  transaction?: T;
+export type VersionedEntityOperationOptions<T extends FindReplaceTransaction> =
+  {
+    /**
+     * The transaction to use.
+     */
+    transaction?: T;
 
-  /**
-   * Options when publishing the event.
-   */
-  publishOptions?: PublishOptions;
-};
+    /**
+     * Options when publishing the event.
+     */
+    publishOptions?: PublishOptions;
+  };
 
 /**
  * Options when performing an update operation on a versioned entity.
  */
-type VersionedEntityUpdateOptions<
+export type VersionedEntityUpdateOptions<
   T extends FindReplaceTransaction,
   P extends VersionedEntity,
 > = VersionedEntityOperationOptions<T> & {
@@ -50,8 +51,9 @@ type VersionedEntityUpdateOptions<
    * This function should throw if the update should not be allowed.
    *
    * @param existingEntity The current state of the entity.
+   * @param transaction The current transaction.
    */
-  validationFn?: (existingEntity: P) => Promise<void>;
+  validationFn?: (existingEntity: P, transaction: T) => Promise<void>;
 
   /**
    * An existing entity to use instead of looking it up from the state.
@@ -181,7 +183,7 @@ export class VersionedEntityManager<
         }
 
         if (options.validationFn) {
-          await options.validationFn(existingEntity);
+          await options.validationFn(existingEntity, transaction);
         }
 
         if (

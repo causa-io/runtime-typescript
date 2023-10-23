@@ -290,7 +290,10 @@ describe('VersionedEntityManager', () => {
       expect(mockEventTransaction.bufferedEvents).toEqual([
         { topic: 'my-topic', event: actualEvent, options: { attributes: {} } },
       ]);
-      expect(validationFn).toHaveBeenCalledExactlyOnceWith(existingEntity);
+      expect(validationFn).toHaveBeenCalledExactlyOnceWith(
+        existingEntity,
+        mockTransaction,
+      );
     });
 
     it('should use a function as the update', async () => {
@@ -525,7 +528,10 @@ describe('VersionedEntityManager', () => {
       expect(mockEventTransaction.bufferedEvents).toEqual([
         { topic: 'my-topic', event: actualEvent, options: { attributes: {} } },
       ]);
-      expect(validationFn).toHaveBeenCalledExactlyOnceWith(existingEntity);
+      expect(validationFn).toHaveBeenCalledExactlyOnceWith(
+        existingEntity,
+        mockTransaction,
+      );
     });
 
     it('should rethrow an error from the validation function', async () => {

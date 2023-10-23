@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+Features:
+
+- Export `VersionedEntityOperationOptions` and `VersionedEntityUpdateOptions`.
+- Pass the current `transaction` to `VersionedEntityUpdateOptions.validationFn`.
+
 ## v0.9.0 (2023-10-23)
 
 Breaking changes:
