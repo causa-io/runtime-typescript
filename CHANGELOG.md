@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.10.0 (2023-10-23)
+
 Features:
 
 - Export `VersionedEntityOperationOptions` and `VersionedEntityUpdateOptions`.
