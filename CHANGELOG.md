@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.11.0 (2023-11-08)
+
 Features:
 
 - Implement the `@EventAttributes` decorator to retrieve event attributes from a route handler.
