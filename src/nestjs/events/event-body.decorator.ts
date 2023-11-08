@@ -1,16 +1,5 @@
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
-
-/**
- * An (express) request with an added (parsed) event.
- * This type is used by the {@link EventBody} decorator to retrieve the parsed event.
- * The {@link RequestWithEvent.eventBody} should be added by the event handler interceptor.
- */
-export type RequestWithEvent = {
-  /**
-   * The parsed event.
-   */
-  eventBody: any;
-};
+import { RequestWithEvent } from './request-with-event.js';
 
 /**
  * The metadata key in which the type of the event for a handler is stored.

@@ -7,36 +7,23 @@ import {
   NestInterceptor,
   Post,
 } from '@nestjs/common';
-import { APP_INTERCEPTOR, Reflector } from '@nestjs/core';
+import { APP_INTERCEPTOR } from '@nestjs/core';
 import { Test } from '@nestjs/testing';
-import { Transform } from 'class-transformer';
-import { IsString } from 'class-validator';
-import { Request } from 'express';
 import { Observable } from 'rxjs';
 import supertest from 'supertest';
-import { parseObject } from '../../index.js';
-import { EVENT_BODY_TYPE_KEY, EventBody } from './event-body.decorator.js';
+import { EventAttributes } from './event-attributes.decorator.js';
 import { RequestWithEvent } from './request-with-event.js';
-
-class MyEvent {
-  // This ensures that the event body is parsed and validated.
-  @Transform(({ value }) => value.toUpperCase())
-  @IsString()
-  someValue!: string;
-}
 
 @Controller()
 class MyController {
   @Post()
-  async handleEvent(@EventBody() body: MyEvent) {
-    return body;
+  async handleEvent(@EventAttributes() attributes: Record<string, string>) {
+    return attributes.someAttribute;
   }
 }
 
 @Injectable()
 class MyEventInterceptor implements NestInterceptor {
-  constructor(private readonly reflector: Reflector) {}
-
   async intercept(
     context: ExecutionContext,
     next: CallHandler,
@@ -45,18 +32,13 @@ class MyEventInterceptor implements NestInterceptor {
       .switchToHttp()
       .getRequest<Request & RequestWithEvent>();
 
-    const dataType = this.reflector.get(
-      EVENT_BODY_TYPE_KEY,
-      context.getHandler(),
-    );
-
-    request.eventBody = await parseObject(dataType, request.body);
+    request.eventAttributes = request.body as unknown as Record<string, string>;
 
     return next.handle();
   }
 }
 
-describe('EventBody', () => {
+describe('EventAttributes', () => {
   let app: INestApplication;
   let request: supertest.SuperTest<supertest.Test>;
 
@@ -74,10 +56,7 @@ describe('EventBody', () => {
     await app?.close();
   });
 
-  it('should define the metadata and retrieve the event body', async () => {
-    await request.post('/').send({ someValue: 'hello' }).expect(201, {
-      someValue: 'HELLO',
-    });
-    await request.post('/').send({ someValue: 123 }).expect(500);
+  it('should retrieve the event attributes', async () => {
+    await request.post('/').send({ someAttribute: '🎁' }).expect(201, '🎁');
   });
 });

@@ -27,6 +27,7 @@ import {
   BaseEventHandlerInterceptor,
   ParsedEventRequest,
 } from './base.interceptor.js';
+import { EventAttributes } from './event-attributes.decorator.js';
 import { EventBody } from './event-body.decorator.js';
 
 @Injectable()
@@ -52,6 +53,9 @@ class MyEventHandlerInterceptor extends BaseEventHandlerInterceptor {
 
     return {
       body: Buffer.from(JSON.stringify(request.body)),
+      attributes: request.headers['x-attributes']
+        ? JSON.parse(request.headers['x-attributes'] as string)
+        : undefined,
     };
   }
 }
@@ -70,14 +74,17 @@ class MyController {
   constructor(private readonly logger: PinoLogger) {}
 
   @Post()
-  async handleEvent(@EventBody() body: MyEvent) {
+  async handleEvent(
+    @EventBody() body: MyEvent,
+    @EventAttributes() attributes: Record<string, string>,
+  ) {
     if (body.someValue === '♻️') {
       throw new RetryableError('♻️', 500);
     } else if (body.someValue === '💥') {
       throw new Error('💥');
     }
 
-    this.logger.info('👋');
+    this.logger.info({ attributes }, '👋');
     return body;
   }
 
@@ -119,6 +126,22 @@ describe('BaseEventHandlerInterceptor', () => {
     expect(getLoggedInfos({ predicate: (o) => o.message === '👋' })).toEqual([
       expect.objectContaining({
         eventId: '1234',
+        attributes: {},
+      }),
+    ]);
+  });
+
+  it('should parse attributes', async () => {
+    await request
+      .post('/')
+      .set('x-attributes', JSON.stringify({ someAttribute: 'yay!' }))
+      .send({ id: '1234', someValue: 'hello' })
+      .expect(201, { id: '1234', someValue: 'HELLO' });
+
+    expect(getLoggedInfos({ predicate: (o) => o.message === '👋' })).toEqual([
+      expect.objectContaining({
+        eventId: '1234',
+        attributes: { someAttribute: 'yay!' },
       }),
     ]);
   });

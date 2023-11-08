@@ -14,10 +14,8 @@ import { EventAttributes, InvalidEventError } from '../../events/index.js';
 import { ObjectSerializer } from '../../serialization/index.js';
 import { ValidationError, validateObject } from '../../validation/index.js';
 import { ServiceUnavailableError } from '../errors/index.js';
-import {
-  EVENT_BODY_TYPE_KEY,
-  RequestWithEvent,
-} from './event-body.decorator.js';
+import { EVENT_BODY_TYPE_KEY } from './event-body.decorator.js';
+import { RequestWithEvent } from './request-with-event.js';
 
 /**
  * The intercepted request, parsed as event pushed to the endpoint.
@@ -134,6 +132,7 @@ export abstract class BaseEventHandlerInterceptor implements NestInterceptor {
         parsedEvent.body,
         dataType,
       );
+      request.eventAttributes = parsedEvent.attributes ?? {};
 
       return next.handle().pipe(
         catchError((error) => {
