@@ -132,6 +132,7 @@ export abstract class BaseEventHandlerInterceptor implements NestInterceptor {
         parsedEvent.body,
         dataType,
       );
+      request.eventAttributes = parsedEvent.attributes ?? {};
 
       return next.handle().pipe(
         catchError((error) => {
