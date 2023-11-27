@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.12.0 (2023-11-27)
+
 Breaking changes:
 
 - Return the projection (or `null`) rather than a boolean in `VersionedEntityEventProcessor.processEvent`.
