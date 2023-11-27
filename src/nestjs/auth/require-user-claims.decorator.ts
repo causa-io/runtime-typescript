@@ -4,7 +4,7 @@ import { UserClaimRequirements } from '../../auth/index.js';
 /**
  * The metadata key for the {@link RequireUserClaims} decorator.
  */
-export const USER_CLAIM_REQUIREMENTS_KEY = 'userClaims';
+export const USER_CLAIM_REQUIREMENTS_KEY = 'userClaims'; // njsscan-ignore: node_username
 
 /**
  * Ensures the decorated routes are only called by an authenticated user that satisfies the given claim requirements.
