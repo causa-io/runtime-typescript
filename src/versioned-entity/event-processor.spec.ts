@@ -133,9 +133,9 @@ describe('VersionedEntityEventProcessor', () => {
         new MyEntity({ updatedAt: new Date('2020-01-02') }),
       );
 
-      const actualWasProcessed = await processor.processEvent(event);
+      const actualProjection = await processor.processEvent(event);
 
-      expect(actualWasProcessed).toBeFalse();
+      expect(actualProjection).toBeNull();
       expect(projectionFn).toHaveBeenCalledExactlyOnceWith(
         event,
         mockTransaction,
@@ -162,9 +162,9 @@ describe('VersionedEntityEventProcessor', () => {
       const expectedEntity = await projectionFn(event);
       projectionFn.mockClear();
 
-      const actualWasProcessed = await processor.processEvent(event);
+      const actualProjection = await processor.processEvent(event);
 
-      expect(actualWasProcessed).toBeTrue();
+      expect(actualProjection).toEqual(expectedEntity);
       expect(projectionFn).toHaveBeenCalledExactlyOnceWith(
         event,
         mockTransaction,
@@ -193,11 +193,11 @@ describe('VersionedEntityEventProcessor', () => {
       const expectedEntity = await projectionFn(event);
       projectionFn.mockClear();
 
-      const actualWasProcessed = await processor.processEvent(event, {
+      const actualProjection = await processor.processEvent(event, {
         skipVersionCheck: true,
       });
 
-      expect(actualWasProcessed).toBeTrue();
+      expect(actualProjection).toEqual(expectedEntity);
       expect(projectionFn).toHaveBeenCalledExactlyOnceWith(
         event,
         mockTransaction,
@@ -246,9 +246,9 @@ describe('VersionedEntityEventProcessor', () => {
       const expectedEntity = await projectionFn(event);
       const processor = new MyProcessor();
 
-      const actualWasProcessed = await processor.processEvent(event);
+      const actualProjection = await processor.processEvent(event);
 
-      expect(actualWasProcessed).toBeTrue();
+      expect(actualProjection).toEqual(expectedEntity);
       expect(updateStateSpy).toHaveBeenCalledExactlyOnceWith(
         expectedEntity,
         mockTransaction,
