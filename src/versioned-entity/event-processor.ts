@@ -1,5 +1,4 @@
 import { Type } from '@nestjs/common';
-import { Event } from '../events/index.js';
 import {
   FindReplaceTransaction,
   TransactionRunner,
@@ -12,7 +11,7 @@ import { VersionedEntity } from './versioned-entity.js';
  */
 type VersionedEntityProjection<
   T extends FindReplaceTransaction,
-  E extends Event,
+  E extends object,
   P extends VersionedEntity,
 > = (event: E, transaction: T) => Promise<P>;
 
@@ -24,7 +23,7 @@ type VersionedEntityProjection<
  */
 export class VersionedEntityEventProcessor<
   T extends FindReplaceTransaction,
-  E extends Event,
+  E extends object,
   P extends VersionedEntity,
   R extends TransactionRunner<T> = TransactionRunner<T>,
 > {
