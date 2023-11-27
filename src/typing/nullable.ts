@@ -25,10 +25,10 @@ export type NullableAsOptional_<T> = Omit<T, NullableKeys<T>> &
 export type NullableAsOptional<T> = T extends Array<any>
   ? Array<NullableAsOptional<T[number]>>
   : T extends Date
-  ? Date
-  : T extends object
-  ? NullableAsOptional_<{ [K in keyof T]: NullableAsOptional<T[K]> }>
-  : T;
+    ? Date
+    : T extends object
+      ? NullableAsOptional_<{ [K in keyof T]: NullableAsOptional<T[K]> }>
+      : T;
 
 /**
  * A type containing only the keys in `T` that are optional.
@@ -51,7 +51,7 @@ export type OptionalAsNullable_<T> = Omit<T, OptionalKeys<T>> & {
 export type OptionalAsNullable<T> = T extends Array<any>
   ? Array<OptionalAsNullable<T[number]>>
   : T extends Date
-  ? Date
-  : T extends object
-  ? OptionalAsNullable_<{ [K in keyof T]: OptionalAsNullable<T[K]> }>
-  : T;
+    ? Date
+    : T extends object
+      ? OptionalAsNullable_<{ [K in keyof T]: OptionalAsNullable<T[K]> }>
+      : T;

@@ -1,5 +1,4 @@
 import { Type } from '@nestjs/common';
-import { Event } from '../events/index.js';
 import {
   FindReplaceTransaction,
   TransactionRunner,
@@ -12,7 +11,7 @@ import { VersionedEntity } from './versioned-entity.js';
  */
 type VersionedEntityProjection<
   T extends FindReplaceTransaction,
-  E extends Event,
+  E extends object,
   P extends VersionedEntity,
 > = (event: E, transaction: T) => Promise<P>;
 
@@ -24,7 +23,7 @@ type VersionedEntityProjection<
  */
 export class VersionedEntityEventProcessor<
   T extends FindReplaceTransaction,
-  E extends Event,
+  E extends object,
   P extends VersionedEntity,
   R extends TransactionRunner<T> = TransactionRunner<T>,
 > {
@@ -112,7 +111,8 @@ export class VersionedEntityEventProcessor<
    *
    * @param event The event to process.
    * @param options Options for processing the event.
-   * @returns `true` if the event was processed, `false` if it was skipped because a more recent state already exists.
+   * @returns The projection if the event was processed, `null` if it was skipped because a more recent state already
+   *   exists.
    */
   async processEvent(
     event: E,
@@ -128,7 +128,7 @@ export class VersionedEntityEventProcessor<
        */
       skipVersionCheck?: boolean;
     } = {},
-  ): Promise<boolean> {
+  ): Promise<P | null> {
     return await this.runner.runInNewOrExisting(
       options.transaction,
       async (transaction) => {
@@ -141,13 +141,13 @@ export class VersionedEntityEventProcessor<
             });
 
           if (!isProjectionMoreRecent) {
-            return false;
+            return null;
           }
         }
 
         await this.updateState(projection, transaction);
 
-        return true;
+        return projection;
       },
     );
   }
