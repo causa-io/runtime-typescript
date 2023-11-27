@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+Breaking changes:
+
+- Return the projection (or `null`) rather than a boolean in `VersionedEntityEventProcessor.processEvent`.
+
+Features:
+
+- Loosen the constraint on the `VersionedEntityEventProcessor` event type.
+
 ## v0.11.0 (2023-11-08)
 
 Features:
