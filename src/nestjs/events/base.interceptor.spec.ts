@@ -4,6 +4,7 @@ import {
   INestApplication,
   Injectable,
   Post,
+  Type,
 } from '@nestjs/common';
 import { APP_INTERCEPTOR, Reflector } from '@nestjs/core';
 import { Test } from '@nestjs/testing';
@@ -21,7 +22,7 @@ import {
   getLoggedWarnings,
   spyOnLogger,
 } from '../../logging/testing.js';
-import { JsonObjectSerializer } from '../../serialization/index.js';
+import { parseObject } from '../../validation/index.js';
 import { LoggerModule } from '../logging/index.js';
 import {
   BaseEventHandlerInterceptor,
@@ -32,15 +33,13 @@ import { EventBody } from './event-body.decorator.js';
 
 @Injectable()
 class MyEventHandlerInterceptor extends BaseEventHandlerInterceptor {
-  constructor(
-    protected readonly reflector: Reflector,
-    protected readonly logger: PinoLogger,
-  ) {
-    super(new JsonObjectSerializer(), reflector, logger);
+  constructor(reflector: Reflector, logger: PinoLogger) {
+    super('myHandler', reflector, logger);
   }
 
   protected async parseEventFromContext(
     context: ExecutionContext,
+    dataType: Type,
   ): Promise<ParsedEventRequest> {
     const request = context.switchToHttp().getRequest<Request>();
 
@@ -51,12 +50,18 @@ class MyEventHandlerInterceptor extends BaseEventHandlerInterceptor {
       throw new Error('❓');
     }
 
-    return {
-      body: Buffer.from(JSON.stringify(request.body)),
-      attributes: request.headers['x-attributes']
-        ? JSON.parse(request.headers['x-attributes'] as string)
-        : undefined,
-    };
+    const body = await this.wrapParsing(async () => {
+      this.assignEventId(request.body.id);
+      return await parseObject(dataType, request.body, {
+        forbidNonWhitelisted: false,
+      });
+    });
+
+    const attributes = request.headers['x-attributes']
+      ? JSON.parse(request.headers['x-attributes'] as string)
+      : {};
+
+    return { body, attributes };
   }
 }
 
