@@ -30,6 +30,7 @@ import {
 } from './base.interceptor.js';
 import { EventAttributes } from './event-attributes.decorator.js';
 import { EventBody } from './event-body.decorator.js';
+import { UseEventHandler } from './use-event-handler.decorator.js';
 
 @Injectable()
 class MyEventHandlerInterceptor extends BaseEventHandlerInterceptor {
@@ -96,6 +97,18 @@ class MyController {
   @Post('/other')
   async other() {
     return;
+  }
+
+  @Post('/otherHandler')
+  @UseEventHandler('otherHandler')
+  async otherHandler(@EventBody() body: any) {
+    return { body };
+  }
+
+  @Post('/correctHandler')
+  @UseEventHandler('myHandler')
+  async correctHandler(@EventBody() body: MyEvent) {
+    return body;
   }
 }
 
@@ -178,6 +191,24 @@ describe('BaseEventHandlerInterceptor', () => {
     expect(
       getLoggedInfos({ predicate: (o) => o.message === '👋' }),
     ).toBeEmpty();
+    expect(getLoggedErrors()).toBeEmpty();
+  });
+
+  it('should not process a route for a different event handler', async () => {
+    await request.post('/otherHandler').expect(201, {});
+
+    expect(
+      getLoggedInfos({ predicate: (o) => o.message === '👋' }),
+    ).toBeEmpty();
+    expect(getLoggedErrors()).toBeEmpty();
+  });
+
+  it('should process a route for the correct event handler', async () => {
+    await request
+      .post('/correctHandler')
+      .send({ id: '1234', someValue: 'hello' })
+      .expect(201, { id: '1234', someValue: 'HELLO' });
+
     expect(getLoggedErrors()).toBeEmpty();
   });
 

@@ -15,6 +15,7 @@ import { ValidationError } from '../../validation/index.js';
 import { ServiceUnavailableError } from '../errors/index.js';
 import { EVENT_BODY_TYPE_KEY } from './event-body.decorator.js';
 import { RequestWithEvent } from './request-with-event.js';
+import { EVENT_HANDLER_KEY } from './use-event-handler.decorator.js';
 
 /**
  * The intercepted request, parsed as event pushed to the endpoint.
@@ -118,6 +119,14 @@ export abstract class BaseEventHandlerInterceptor implements NestInterceptor {
     context: ExecutionContext,
     next: CallHandler,
   ): Promise<Observable<any>> {
+    const handlerId = this.reflector.getAllAndOverride<string | undefined>(
+      EVENT_HANDLER_KEY,
+      [context.getHandler(), context.getClass()],
+    );
+    if (handlerId !== undefined && handlerId !== this.id) {
+      return next.handle();
+    }
+
     const dataType = this.reflector.get(
       EVENT_BODY_TYPE_KEY,
       context.getHandler(),
