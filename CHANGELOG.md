@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.13.0 (2023-12-08)
+
 Breaking changes:
 
 - Loosen the `EventPublisher` interface and `EventBody` decorator to accept any type as event.
