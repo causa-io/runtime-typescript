@@ -18,7 +18,7 @@ const bodyDecorator = createParamDecorator(
 
 /**
  * Decorates a route handler's parameter to populate it with a parsed event.
- * The type of the parameter should be a concrete class of an `Event`.
+ * Although it is recommended to use concrete subclasses of `Event` as the type of the parameter, any type can be used.
  */
 export const EventBody = () => {
   return (
