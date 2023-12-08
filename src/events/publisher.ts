@@ -1,5 +1,3 @@
-import { Event } from './event.js';
-
 /**
  * A set of attributes that can be sent along with an event.
  * This can help with filtering events or for deserialization. However, the content of the event itself should be enough
@@ -37,8 +35,13 @@ export interface EventPublisher {
    * Publishes a new event.
    *
    * @param topic The topic to publish the event to.
-   * @param event The event to publish.
+   * @param event The event to publish. Although it is recommended to use concrete subclasses of `Event` as events, any
+   *   type that can be serialized is supported.
    * @param options Additional publishing options.
    */
-  publish(topic: string, event: Event, options?: PublishOptions): Promise<void>;
+  publish(
+    topic: string,
+    event: object,
+    options?: PublishOptions,
+  ): Promise<void>;
 }
