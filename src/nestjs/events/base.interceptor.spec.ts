@@ -4,6 +4,7 @@ import {
   INestApplication,
   Injectable,
   Post,
+  Type,
 } from '@nestjs/common';
 import { APP_INTERCEPTOR, Reflector } from '@nestjs/core';
 import { Test } from '@nestjs/testing';
@@ -21,7 +22,7 @@ import {
   getLoggedWarnings,
   spyOnLogger,
 } from '../../logging/testing.js';
-import { JsonObjectSerializer } from '../../serialization/index.js';
+import { parseObject } from '../../validation/index.js';
 import { LoggerModule } from '../logging/index.js';
 import {
   BaseEventHandlerInterceptor,
@@ -29,18 +30,17 @@ import {
 } from './base.interceptor.js';
 import { EventAttributes } from './event-attributes.decorator.js';
 import { EventBody } from './event-body.decorator.js';
+import { UseEventHandler } from './use-event-handler.decorator.js';
 
 @Injectable()
 class MyEventHandlerInterceptor extends BaseEventHandlerInterceptor {
-  constructor(
-    protected readonly reflector: Reflector,
-    protected readonly logger: PinoLogger,
-  ) {
-    super(new JsonObjectSerializer(), reflector, logger);
+  constructor(reflector: Reflector, logger: PinoLogger) {
+    super('myHandler', reflector, logger);
   }
 
   protected async parseEventFromContext(
     context: ExecutionContext,
+    dataType: Type,
   ): Promise<ParsedEventRequest> {
     const request = context.switchToHttp().getRequest<Request>();
 
@@ -51,12 +51,18 @@ class MyEventHandlerInterceptor extends BaseEventHandlerInterceptor {
       throw new Error('❓');
     }
 
-    return {
-      body: Buffer.from(JSON.stringify(request.body)),
-      attributes: request.headers['x-attributes']
-        ? JSON.parse(request.headers['x-attributes'] as string)
-        : undefined,
-    };
+    const body = await this.wrapParsing(async () => {
+      this.assignEventId(request.body.id);
+      return await parseObject(dataType, request.body, {
+        forbidNonWhitelisted: false,
+      });
+    });
+
+    const attributes = request.headers['x-attributes']
+      ? JSON.parse(request.headers['x-attributes'] as string)
+      : {};
+
+    return { body, attributes };
   }
 }
 
@@ -91,6 +97,18 @@ class MyController {
   @Post('/other')
   async other() {
     return;
+  }
+
+  @Post('/otherHandler')
+  @UseEventHandler('otherHandler')
+  async otherHandler(@EventBody() body: any) {
+    return { body };
+  }
+
+  @Post('/correctHandler')
+  @UseEventHandler('myHandler')
+  async correctHandler(@EventBody() body: MyEvent) {
+    return body;
   }
 }
 
@@ -173,6 +191,24 @@ describe('BaseEventHandlerInterceptor', () => {
     expect(
       getLoggedInfos({ predicate: (o) => o.message === '👋' }),
     ).toBeEmpty();
+    expect(getLoggedErrors()).toBeEmpty();
+  });
+
+  it('should not process a route for a different event handler', async () => {
+    await request.post('/otherHandler').expect(201, {});
+
+    expect(
+      getLoggedInfos({ predicate: (o) => o.message === '👋' }),
+    ).toBeEmpty();
+    expect(getLoggedErrors()).toBeEmpty();
+  });
+
+  it('should process a route for the correct event handler', async () => {
+    await request
+      .post('/correctHandler')
+      .send({ id: '1234', someValue: 'hello' })
+      .expect(201, { id: '1234', someValue: 'HELLO' });
+
     expect(getLoggedErrors()).toBeEmpty();
   });
 

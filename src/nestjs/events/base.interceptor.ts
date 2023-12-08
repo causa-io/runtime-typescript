@@ -11,25 +11,25 @@ import { Observable, of, throwError, timer } from 'rxjs';
 import { catchError, mergeMap } from 'rxjs/operators';
 import { RetryableError } from '../../errors/index.js';
 import { EventAttributes, InvalidEventError } from '../../events/index.js';
-import { ObjectSerializer } from '../../serialization/index.js';
-import { ValidationError, validateObject } from '../../validation/index.js';
+import { ValidationError } from '../../validation/index.js';
 import { ServiceUnavailableError } from '../errors/index.js';
 import { EVENT_BODY_TYPE_KEY } from './event-body.decorator.js';
 import { RequestWithEvent } from './request-with-event.js';
+import { EVENT_HANDLER_KEY } from './use-event-handler.decorator.js';
 
 /**
  * The intercepted request, parsed as event pushed to the endpoint.
  */
 export type ParsedEventRequest = {
   /**
-   * The body of the event.
+   * The parsed body of the event.
    */
-  body: Buffer;
+  body: object;
 
   /**
    * Attributes sent along with the event.
    */
-  attributes?: EventAttributes;
+  attributes: EventAttributes;
 };
 
 /**
@@ -46,55 +46,60 @@ export abstract class BaseEventHandlerInterceptor implements NestInterceptor {
   /**
    * Creates a new {@link BaseEventHandlerInterceptor}.
    *
-   * @param serializer The {@link ObjectSerializer} to use to deserialize the events.
+   * @param id The unique ID of the interceptor.
    * @param reflector The {@link Reflector} to use to retrieve the event body type.
    * @param logger The logger to use.
    */
   constructor(
-    protected readonly serializer: ObjectSerializer,
+    readonly id: string,
     protected readonly reflector: Reflector,
     protected readonly logger: PinoLogger,
   ) {}
+
+  /**
+   * Assigns the ID of the event to the logger.
+   * Using this method ensures all interceptors log the event ID in the same way.
+   *
+   * @param id The ID of the event.
+   */
+  protected assignEventId(id: string) {
+    this.logger.assign({ eventId: id });
+  }
 
   /**
    * Parses the event from the request.
    *
    * This should be implemented by subclasses. An {@link InvalidEventError} can be thrown if the message broker sends an
    * invalid event. In this case, it will not be retried. Any other error will not be caught.
+   * {@link BaseEventHandlerInterceptor.wrapParsing} should be used to catch any error during parsing and validation.
+   * {@link BaseEventHandlerInterceptor.assignEventId} should be used to assign the event ID to the logger, as soon as
+   *   it is known.
    *
    * @param context The NestJS {@link ExecutionContext}.
+   * @param dataType The type of the event to parse, set by the `EventBody` decorator.
+   *   The type is obtained using reflection. If not available, this will be {@link Object}.
    */
   protected abstract parseEventFromContext(
     context: ExecutionContext,
+    dataType: Type,
   ): Promise<ParsedEventRequest>;
 
   /**
-   * Deserializes a buffer into the given event type, and validates it using {@link validateObject}.
-   * During validation, non-whitelisted properties are not forbidden, as the event may contain additional properties
-   * due to (compatible) schema changes. These properties are simply removed from the returned event.
+   * Wraps the parsing of the event body in a try/catch block.
+   * If parsing fails, an error is logged and an {@link InvalidEventError} is thrown. This means the event processing
+   * will not be retried (the parsing would keep failing).
+   * This method also handles {@link ValidationError}s by logging the validation messages along with the error.
    *
-   * @param buffer The buffer to deserialize.
-   * @param dataType The type of the event to deserialize.
-   * @returns The deserialized event.
+   * @param parseFn The function parsing, validating, and returning the event body.
+   * @returns The result of the parsing function.
    */
-  protected async deserializeEventBody(
-    buffer: Buffer,
-    dataType: Type,
-  ): Promise<any> {
+  protected async wrapParsing<T>(parseFn: () => Promise<T>): Promise<T> {
     try {
-      const body = await this.serializer.deserialize(dataType, buffer);
-
-      if (body.id) {
-        this.logger.assign({ eventId: body.id });
-      }
-
-      await validateObject(body, {
-        forbidNonWhitelisted: false,
-      });
+      const result = await parseFn();
 
       this.logger.info('Successfully parsed event body.');
 
-      return body;
+      return result;
     } catch (error: any) {
       this.logger.error(
         {
@@ -114,9 +119,13 @@ export abstract class BaseEventHandlerInterceptor implements NestInterceptor {
     context: ExecutionContext,
     next: CallHandler,
   ): Promise<Observable<any>> {
-    const request = context
-      .switchToHttp()
-      .getRequest<Request & RequestWithEvent>();
+    const handlerId = this.reflector.getAllAndOverride<string | undefined>(
+      EVENT_HANDLER_KEY,
+      [context.getHandler(), context.getClass()],
+    );
+    if (handlerId !== undefined && handlerId !== this.id) {
+      return next.handle();
+    }
 
     const dataType = this.reflector.get(
       EVENT_BODY_TYPE_KEY,
@@ -127,12 +136,13 @@ export abstract class BaseEventHandlerInterceptor implements NestInterceptor {
     }
 
     try {
-      const parsedEvent = await this.parseEventFromContext(context);
-      request.eventBody = await this.deserializeEventBody(
-        parsedEvent.body,
-        dataType,
-      );
-      request.eventAttributes = parsedEvent.attributes ?? {};
+      const parsedEvent = await this.parseEventFromContext(context, dataType);
+
+      const request = context
+        .switchToHttp()
+        .getRequest<Request & RequestWithEvent>();
+      request.eventBody = parsedEvent.body;
+      request.eventAttributes = parsedEvent.attributes;
 
       return next.handle().pipe(
         catchError((error) => {

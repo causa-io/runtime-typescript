@@ -25,10 +25,17 @@ class MyEvent {
   someValue!: string;
 }
 
+interface MyEventInterface {}
+
 @Controller()
 class MyController {
   @Post()
   async handleEvent(@EventBody() body: MyEvent) {
+    return body;
+  }
+
+  @Post('/untyped')
+  async handleUntypedEvent(@EventBody() body: MyEventInterface) {
     return body;
   }
 }
@@ -50,7 +57,10 @@ class MyEventInterceptor implements NestInterceptor {
       context.getHandler(),
     );
 
-    request.eventBody = await parseObject(dataType, request.body);
+    request.eventBody =
+      dataType === Object
+        ? { anObject: '👓' }
+        : await parseObject(dataType, request.body);
 
     return next.handle();
   }
@@ -79,5 +89,11 @@ describe('EventBody', () => {
       someValue: 'HELLO',
     });
     await request.post('/').send({ someValue: 123 }).expect(500);
+  });
+
+  it('should decorate a parameter with an untyped event', async () => {
+    await request.post('/untyped').send({ someValue: 'hello' }).expect(201, {
+      anObject: '👓',
+    });
   });
 });

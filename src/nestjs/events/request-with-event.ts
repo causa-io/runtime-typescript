@@ -8,7 +8,7 @@ export type RequestWithEvent = {
   /**
    * The parsed event.
    */
-  eventBody: any;
+  eventBody: object;
 
   /**
    * The attributes sent along with the event.
