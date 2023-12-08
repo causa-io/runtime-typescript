@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+Breaking changes:
+
+- Loosen the `EventPublisher` interface and `EventBody` decorator to accept any type as event.
+- Refactor the `BaseEventHandlerInterceptor` to provide more flexibility to concrete subclasses. `parseEventFromContext` should now return the parsed and validated event instead of a `Buffer`. The `BaseEventHandlerInterceptor` no longer requires a serializer, we should be managed by subclasses if needed.
+
+Features:
+
+- Implement the `@UseEventHandler` decorator to specify the event handler interceptor to use with a given route or controller.
+
 ## v0.12.0 (2023-11-27)
 
 Breaking changes:
