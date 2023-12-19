@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+Fixes:
+
+- Validate inputs more thoroughly in `validateObject` and `parseObject`.
+
 ## v0.13.0 (2023-12-08)
 
 Breaking changes:
