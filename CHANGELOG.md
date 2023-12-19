@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.13.1 (2023-12-19)
+
 Fixes:
 
 - Validate inputs more thoroughly in `validateObject` and `parseObject`.
