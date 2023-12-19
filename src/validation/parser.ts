@@ -34,6 +34,10 @@ export async function validateObject(
   obj: object,
   options: ValidatorOptions = {},
 ): Promise<void> {
+  if (typeof obj !== 'object' || obj === null) {
+    throw new ValidationError(['input must be an object']);
+  }
+
   const errors = await validate(obj, { ...validatorOptions, ...options });
 
   if (errors.length > 0) {
@@ -53,10 +57,16 @@ export async function validateObject(
  */
 export async function parseObject<T extends object>(
   type: Type<T>,
-  payload: any,
+  payload: unknown,
   options: ValidatorOptions = {},
 ): Promise<T> {
   const instance = plainToInstance(type, payload);
+
+  // This can occur because `plainToInstance` handles some special cases, like the input being a `string`, `Date` or
+  // `Buffer`. This is not the desired behavior here.
+  if (instance.constructor !== type) {
+    throw new ValidationError(['payload must be a plain object']);
+  }
 
   await validateObject(instance, options);
 

@@ -50,6 +50,30 @@ describe('parser', () => {
       });
     });
 
+    it('should not allow a non-object input', async () => {
+      const actualPromise = validateObject('👋' as any);
+
+      await expect(actualPromise).rejects.toThrow(ValidationError);
+      await expect(actualPromise).rejects.toMatchObject({
+        validationMessages: expect.toSatisfy((messages: string[]) => {
+          expect(messages).toEqual(['input must be an object']);
+          return true;
+        }),
+      });
+    });
+
+    it('should not validate a null object', async () => {
+      const actualPromise = validateObject(null as any);
+
+      await expect(actualPromise).rejects.toThrow(ValidationError);
+      await expect(actualPromise).rejects.toMatchObject({
+        validationMessages: expect.toSatisfy((messages: string[]) => {
+          expect(messages).toEqual(['input must be an object']);
+          return true;
+        }),
+      });
+    });
+
     it('should accept custom options', async () => {
       const obj = new MyObject({
         stringProperty: '✅',
@@ -99,6 +123,40 @@ describe('parser', () => {
             'property unknownProperty should not exist',
             'stringProperty must be a string',
           ]);
+          return true;
+        }),
+      });
+    });
+
+    it('should throw if the passed payload is not an object', async () => {
+      const actualPromise = parseObject(MyObject, '👋');
+
+      await expect(actualPromise).rejects.toThrow(ValidationError);
+      await expect(actualPromise).rejects.toMatchObject({
+        validationMessages: expect.toSatisfy((messages: string[]) => {
+          expect(messages).toEqual(['payload must be a plain object']);
+          return true;
+        }),
+      });
+    });
+
+    it('should throw if the passed payload cannot be converted because of class-transform special cases', async () => {
+      const actualPromise = parseObject(MyObject, new Date());
+
+      await expect(actualPromise).rejects.toThrow(ValidationError);
+      await expect(actualPromise).rejects.toMatchObject({
+        validationMessages: expect.toSatisfy((messages: string[]) => {
+          expect(messages).toEqual(['payload must be a plain object']);
+          return true;
+        }),
+      });
+
+      const actualPromise2 = parseObject(MyObject, Buffer.from(''));
+
+      await expect(actualPromise2).rejects.toThrow(ValidationError);
+      await expect(actualPromise2).rejects.toMatchObject({
+        validationMessages: expect.toSatisfy((messages: string[]) => {
+          expect(messages).toEqual(['payload must be a plain object']);
           return true;
         }),
       });
