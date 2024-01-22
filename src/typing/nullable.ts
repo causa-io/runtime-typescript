@@ -22,13 +22,14 @@ export type NullableAsOptional_<T> = Omit<T, NullableKeys<T>> &
 /**
  * A type where nullable properties of `T` (and its children, recursively) are made optional.
  */
-export type NullableAsOptional<T> = T extends Array<any>
-  ? Array<NullableAsOptional<T[number]>>
-  : T extends Date
-    ? Date
-    : T extends object
-      ? NullableAsOptional_<{ [K in keyof T]: NullableAsOptional<T[K]> }>
-      : T;
+export type NullableAsOptional<T> =
+  T extends Array<any>
+    ? Array<NullableAsOptional<T[number]>>
+    : T extends Date
+      ? Date
+      : T extends object
+        ? NullableAsOptional_<{ [K in keyof T]: NullableAsOptional<T[K]> }>
+        : T;
 
 /**
  * A type containing only the keys in `T` that are optional.
@@ -48,10 +49,11 @@ export type OptionalAsNullable_<T> = Omit<T, OptionalKeys<T>> & {
 /**
  * A type where optional properties of `T` (and its children, recursively) are made nullable but required.
  */
-export type OptionalAsNullable<T> = T extends Array<any>
-  ? Array<OptionalAsNullable<T[number]>>
-  : T extends Date
-    ? Date
-    : T extends object
-      ? OptionalAsNullable_<{ [K in keyof T]: OptionalAsNullable<T[K]> }>
-      : T;
+export type OptionalAsNullable<T> =
+  T extends Array<any>
+    ? Array<OptionalAsNullable<T[number]>>
+    : T extends Date
+      ? Date
+      : T extends object
+        ? OptionalAsNullable_<{ [K in keyof T]: OptionalAsNullable<T[K]> }>
+        : T;
