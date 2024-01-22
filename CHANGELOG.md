@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+Breaking changes:
+
+- Provide OpenAPI 3.1.0 documentation for `Page` instead of 3.0.X.
+
+Features:
+
+- Use `examples` rather than `example` in `@ApiConstantProperty` to provide OpenAPI 3.1.0 compatibility.
+
 ## v0.13.1 (2023-12-19)
 
 Fixes:

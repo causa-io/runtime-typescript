@@ -20,7 +20,7 @@ describe('ApiConstantProperty', () => {
         myProp: {
           const: '🗽',
           description: '📚',
-          example: '🗽',
+          examples: ['🗽'],
           type: 'string',
         },
       },
@@ -41,7 +41,7 @@ describe('ApiConstantProperty', () => {
       type: 'object',
       properties: {
         myProp: {
-          example: 400,
+          examples: [400],
           const: 400,
           type: 'number',
           description: '➗',
@@ -69,7 +69,7 @@ describe('ApiConstantProperty', () => {
       type: 'object',
       properties: {
         myProp: {
-          example: { someComplexStuff: '🤷' },
+          examples: [{ someComplexStuff: '🤷' }],
           const: { someComplexStuff: '🤷' },
           type: 'object',
           description: '📚',
@@ -85,6 +85,6 @@ describe('ApiConstantProperty', () => {
         const: { someComplexStuff: '🤷' },
         description: '💣',
       });
-    }).toThrowError();
+    }).toThrow();
   });
 });

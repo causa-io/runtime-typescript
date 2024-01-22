@@ -17,13 +17,13 @@ describe('OpenAPI', () => {
               statusCode: {
                 description: 'The HTTP status code of the error.',
                 const: 418,
-                example: 418,
+                examples: [418],
                 type: 'number',
               },
               errorCode: {
                 const: '🫖',
                 description: 'An error identifier, as a string.',
-                example: '🫖',
+                examples: ['🫖'],
                 type: 'string',
               },
               message: {
@@ -55,7 +55,7 @@ describe('OpenAPI', () => {
               intProp: { description: '1️⃣', type: 'number' },
               constProp: {
                 const: '🧊',
-                example: '🧊',
+                examples: ['🧊'],
                 type: 'string',
                 description: '⛄',
               },
@@ -71,14 +71,14 @@ describe('OpenAPI', () => {
             properties: {
               errorCode: {
                 const: 'notFound',
-                example: 'notFound',
+                examples: ['notFound'],
                 type: 'string',
                 description: 'An error identifier, as a string.',
               },
               statusCode: {
                 description: 'The HTTP status code of the error.',
                 const: 404,
-                example: 404,
+                examples: [404],
                 type: 'number',
               },
               message: {

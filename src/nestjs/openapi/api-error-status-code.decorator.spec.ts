@@ -44,7 +44,7 @@ describe('ApiErrorStatusCode', () => {
       type: 'object',
       properties: {
         statusCode: {
-          example: 400,
+          examples: [400],
           const: 400,
           type: 'number',
           description: expect.any(String),

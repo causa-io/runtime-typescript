@@ -22,7 +22,7 @@ export function ApiConstantProperty(
   }
 
   return ApiProperty({
-    example: value,
+    examples: [value],
     const: value,
     type: constType,
     ...baseOptions,

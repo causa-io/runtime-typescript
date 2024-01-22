@@ -46,7 +46,7 @@ describe('LockManager', () => {
 
       const actualPromise = manager.acquire(id);
 
-      await expect(actualPromise).rejects.toThrowError(LockAcquisitionError);
+      await expect(actualPromise).rejects.toThrow(LockAcquisitionError);
       const actualLock = await mockStateTransaction.findOneWithSameKeyAs(
         MyLock,
         { id },
@@ -135,7 +135,7 @@ describe('LockManager', () => {
         },
       });
 
-      await expect(actualPromise).rejects.toThrowError('💥');
+      await expect(actualPromise).rejects.toThrow('💥');
       const actualLock = await mockStateTransaction.findOneWithSameKeyAs(
         MyLock,
         { id },
@@ -211,7 +211,7 @@ describe('LockManager', () => {
 
       const actualPromise = manager.checkNotAcquiredOrFail(id, mockTransaction);
 
-      await expect(actualPromise).rejects.toThrowError(LockAcquisitionError);
+      await expect(actualPromise).rejects.toThrow(LockAcquisitionError);
     });
 
     it('should not throw for an existing but expired lock', async () => {
@@ -259,7 +259,7 @@ describe('LockManager', () => {
         },
       );
 
-      await expect(actualPromise).rejects.toThrowError('💥');
+      await expect(actualPromise).rejects.toThrow('💥');
     });
   });
 
@@ -269,8 +269,8 @@ describe('LockManager', () => {
 
       const releaseLockPromise = manager.release({ id, lock: uuid.v4() });
 
-      await expect(releaseLockPromise).rejects.toThrowError(LockReleaseError);
-      await expect(releaseLockPromise).rejects.toThrowError(
+      await expect(releaseLockPromise).rejects.toThrow(LockReleaseError);
+      await expect(releaseLockPromise).rejects.toThrow(
         'The lock could not be found.',
       );
       const actualLock = await mockStateTransaction.findOneWithSameKeyAs(
@@ -296,8 +296,8 @@ describe('LockManager', () => {
         { delete: false },
       );
 
-      await expect(releaseLockPromise).rejects.toThrowError(LockReleaseError);
-      await expect(releaseLockPromise).rejects.toThrowError(
+      await expect(releaseLockPromise).rejects.toThrow(LockReleaseError);
+      await expect(releaseLockPromise).rejects.toThrow(
         'The lock does not match.',
       );
       const actualLock = await mockStateTransaction.findOneWithSameKeyAs(
