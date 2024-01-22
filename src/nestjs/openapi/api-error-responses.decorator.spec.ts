@@ -81,7 +81,7 @@ describe('ApiErrorResponses', () => {
       type: 'object',
       properties: {
         statusCode: {
-          example: 418,
+          examples: [418],
           const: 418,
           type: 'number',
           description: expect.any(String),
@@ -93,7 +93,7 @@ describe('ApiErrorResponses', () => {
       type: 'object',
       properties: {
         statusCode: {
-          example: 400,
+          examples: [400],
           const: 400,
           type: 'number',
           description: expect.any(String),
@@ -105,7 +105,7 @@ describe('ApiErrorResponses', () => {
       type: 'object',
       properties: {
         statusCode: {
-          example: 400,
+          examples: [400],
           const: 400,
           type: 'number',
           description: expect.any(String),
@@ -117,7 +117,7 @@ describe('ApiErrorResponses', () => {
       type: 'object',
       properties: {
         statusCode: {
-          example: 404,
+          examples: [404],
           const: 404,
           type: 'number',
           description: expect.any(String),
