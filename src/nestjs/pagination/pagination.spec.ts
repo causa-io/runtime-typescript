@@ -10,6 +10,7 @@ import { IsInt, IsNumberString, IsString, IsUUID } from 'class-validator';
 import 'jest-extended';
 import 'reflect-metadata';
 import supertest from 'supertest';
+import TestAgent from 'supertest/lib/agent.js';
 import { AllowMissing, IsDateType } from '../../validation/index.js';
 import { createApp } from '../factory/index.js';
 import { generateOpenApiDocument } from '../openapi/utils.test.js';
@@ -177,7 +178,7 @@ describe('Page', () => {
 
   describe('serialization', () => {
     let app: INestApplication;
-    let request: supertest.SuperTest<supertest.Test>;
+    let request: TestAgent<supertest.Test>;
 
     beforeEach(async () => {
       app = await createApp(MyModule);
@@ -266,8 +267,7 @@ describe('Page', () => {
                 nextPageQuery: {
                   description:
                     'The query to make to fetch the next page of results.',
-                  type: 'string',
-                  nullable: true,
+                  oneOf: [{ type: 'string' }, { type: 'null' }],
                 },
                 items: {
                   description: 'The items in the current page.',

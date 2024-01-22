@@ -34,8 +34,7 @@ export class Page<T, PQ extends PageQuery<any> = PageQuery> {
   })
   @ApiProperty({
     description: 'The query to make to fetch the next page of results.',
-    type: String,
-    nullable: true,
+    oneOf: [{ type: 'string' }, { type: 'null' }],
   })
   readonly nextPageQuery: PQ | null;
 
