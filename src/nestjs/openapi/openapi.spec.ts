@@ -18,7 +18,7 @@ describe('OpenAPI', () => {
                 description: 'The HTTP status code of the error.',
                 const: 418,
                 examples: [418],
-                type: 'number',
+                type: 'integer',
               },
               errorCode: {
                 const: '🫖',
@@ -79,7 +79,7 @@ describe('OpenAPI', () => {
                 description: 'The HTTP status code of the error.',
                 const: 404,
                 examples: [404],
-                type: 'number',
+                type: 'integer',
               },
               message: {
                 type: 'string',

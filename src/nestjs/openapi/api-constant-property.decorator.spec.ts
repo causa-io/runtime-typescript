@@ -30,6 +30,29 @@ describe('ApiConstantProperty', () => {
 
   it('should set the correct type for a number value', async () => {
     class MyDto {
+      @ApiConstantProperty({ const: 123.456, description: '➗' })
+      myProp!: 123.456;
+    }
+    const testModule = makeModuleWithResponseDto(MyDto);
+
+    const actualDocument = await generateOpenApiDocument(testModule);
+
+    expect(actualDocument.components?.schemas?.MyDto).toMatchObject({
+      type: 'object',
+      properties: {
+        myProp: {
+          examples: [123.456],
+          const: 123.456,
+          type: 'number',
+          description: '➗',
+        },
+      },
+      required: ['myProp'],
+    });
+  });
+
+  it('should set the type to integer for an integer value', async () => {
+    class MyDto {
       @ApiConstantProperty({ const: 400, description: '➗' })
       myProp!: 400;
     }
@@ -43,7 +66,7 @@ describe('ApiConstantProperty', () => {
         myProp: {
           examples: [400],
           const: 400,
-          type: 'number',
+          type: 'integer',
           description: '➗',
         },
       },
