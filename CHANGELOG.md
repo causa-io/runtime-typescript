@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.15.0 (2024-02-08)
+
 Breaking changes:
 
 - Depend on `reflect-metadata` `0.2.1`.
