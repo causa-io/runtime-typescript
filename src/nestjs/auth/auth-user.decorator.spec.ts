@@ -4,6 +4,7 @@ import { AuthGuard, PassportModule, PassportStrategy } from '@nestjs/passport';
 import { Test } from '@nestjs/testing';
 import { Strategy } from 'passport-http-bearer';
 import supertest from 'supertest';
+import TestAgent from 'supertest/lib/agent.js';
 import { User } from '../../auth/index.js';
 import { AuthUser } from './auth-user.decorator.js';
 
@@ -23,7 +24,7 @@ class BearerStrategy extends PassportStrategy(Strategy) {
 
 describe('AuthUser', () => {
   let app: INestApplication;
-  let request: supertest.SuperTest<supertest.Test>;
+  let request: TestAgent<supertest.Test>;
 
   beforeEach(async () => {
     const module = await Test.createTestingModule({

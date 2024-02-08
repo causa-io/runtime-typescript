@@ -11,6 +11,7 @@ import { APP_INTERCEPTOR } from '@nestjs/core';
 import { Test } from '@nestjs/testing';
 import { Observable } from 'rxjs';
 import supertest from 'supertest';
+import TestAgent from 'supertest/lib/agent.js';
 import { EventAttributes } from './event-attributes.decorator.js';
 import { RequestWithEvent } from './request-with-event.js';
 
@@ -40,7 +41,7 @@ class MyEventInterceptor implements NestInterceptor {
 
 describe('EventAttributes', () => {
   let app: INestApplication;
-  let request: supertest.SuperTest<supertest.Test>;
+  let request: TestAgent<supertest.Test>;
 
   beforeEach(async () => {
     const testModule = await Test.createTestingModule({

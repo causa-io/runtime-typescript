@@ -14,6 +14,7 @@ import { IsString } from 'class-validator';
 import { Request } from 'express';
 import { Observable } from 'rxjs';
 import supertest from 'supertest';
+import TestAgent from 'supertest/lib/agent.js';
 import { parseObject } from '../../index.js';
 import { EVENT_BODY_TYPE_KEY, EventBody } from './event-body.decorator.js';
 import { RequestWithEvent } from './request-with-event.js';
@@ -68,7 +69,7 @@ class MyEventInterceptor implements NestInterceptor {
 
 describe('EventBody', () => {
   let app: INestApplication;
-  let request: supertest.SuperTest<supertest.Test>;
+  let request: TestAgent<supertest.Test>;
 
   beforeEach(async () => {
     const testModule = await Test.createTestingModule({
