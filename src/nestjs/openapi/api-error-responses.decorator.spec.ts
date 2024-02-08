@@ -83,7 +83,7 @@ describe('ApiErrorResponses', () => {
         statusCode: {
           examples: [418],
           const: 418,
-          type: 'number',
+          type: 'integer',
           description: expect.any(String),
         },
       },
@@ -95,7 +95,7 @@ describe('ApiErrorResponses', () => {
         statusCode: {
           examples: [400],
           const: 400,
-          type: 'number',
+          type: 'integer',
           description: expect.any(String),
         },
       },
@@ -107,7 +107,7 @@ describe('ApiErrorResponses', () => {
         statusCode: {
           examples: [400],
           const: 400,
-          type: 'number',
+          type: 'integer',
           description: expect.any(String),
         },
       },
@@ -119,7 +119,7 @@ describe('ApiErrorResponses', () => {
         statusCode: {
           examples: [404],
           const: 404,
-          type: 'number',
+          type: 'integer',
           description: expect.any(String),
         },
       },

@@ -2,6 +2,7 @@ import { Controller, Get, INestApplication, Module } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { Strategy } from 'passport-http-bearer';
 import supertest from 'supertest';
+import TestAgent from 'supertest/lib/agent.js';
 import { User } from '../../auth/index.js';
 import { createApp } from '../factory/index.js';
 import { makeTestAppFactory } from '../factory/testing.js';
@@ -34,7 +35,7 @@ class AppModule {}
 
 describe('AuthModule', () => {
   let app: INestApplication;
-  let request: supertest.SuperTest<supertest.Test>;
+  let request: TestAgent<supertest.Test>;
 
   beforeEach(async () => {
     app = await createApp(AppModule, {

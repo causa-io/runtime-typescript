@@ -4,6 +4,7 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { Test } from '@nestjs/testing';
 import { pino } from 'pino';
 import supertest from 'supertest';
+import TestAgent from 'supertest/lib/agent.js';
 import type * as loggingTestingType from '../../logging/testing.js';
 import type { LoggerModule as LoggerModuleType } from './logger.module.js';
 
@@ -31,7 +32,7 @@ describe('LoggerModule', () => {
   }
 
   let app: INestApplication;
-  let request: supertest.SuperTest<supertest.Test>;
+  let request: TestAgent<supertest.Test>;
 
   beforeEach(async () => {
     healthFun = () => 'OK';

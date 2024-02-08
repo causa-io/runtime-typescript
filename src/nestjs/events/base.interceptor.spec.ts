@@ -14,6 +14,7 @@ import { Request } from 'express';
 import 'jest-extended';
 import { PinoLogger } from 'nestjs-pino';
 import supertest from 'supertest';
+import TestAgent from 'supertest/lib/agent.js';
 import { RetryableError } from '../../errors/index.js';
 import { InvalidEventError } from '../../events/index.js';
 import {
@@ -114,7 +115,7 @@ class MyController {
 
 describe('BaseEventHandlerInterceptor', () => {
   let app: INestApplication;
-  let request: supertest.SuperTest<supertest.Test>;
+  let request: TestAgent<supertest.Test>;
 
   beforeEach(async () => {
     spyOnLogger();

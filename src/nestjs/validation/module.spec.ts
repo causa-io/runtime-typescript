@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { IsInt, IsPhoneNumber, MaxLength } from 'class-validator';
 import supertest from 'supertest';
+import TestAgent from 'supertest/lib/agent.js';
 import {
   AllowMissing,
   IsNullable,
@@ -57,7 +58,7 @@ class MyModule {}
 
 describe('object', () => {
   let app: INestApplication;
-  let request: supertest.SuperTest<supertest.Test>;
+  let request: TestAgent<supertest.Test>;
 
   beforeAll(async () => {
     app = await createApp(MyModule);

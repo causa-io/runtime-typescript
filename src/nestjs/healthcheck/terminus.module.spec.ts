@@ -5,6 +5,7 @@ import {
   HealthCheckService,
 } from '@nestjs/terminus';
 import supertest from 'supertest';
+import TestAgent from 'supertest/lib/agent.js';
 import { getLoggedErrors, spyOnLogger } from '../../testing.js';
 import { createApp } from '../index.js';
 import { LoggerModule } from '../logging/index.js';
@@ -30,7 +31,7 @@ class MyModule {}
 
 describe('terminsModuleWithLogger', () => {
   let app: INestApplication;
-  let request: supertest.SuperTest<supertest.Test>;
+  let request: TestAgent<supertest.Test>;
 
   beforeEach(async () => {
     spyOnLogger();

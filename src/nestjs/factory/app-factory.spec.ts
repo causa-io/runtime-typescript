@@ -11,6 +11,7 @@ import { Transform } from 'class-transformer';
 import { IsPhoneNumber } from 'class-validator';
 import { PinoLogger } from 'nestjs-pino';
 import supertest from 'supertest';
+import TestAgent from 'supertest/lib/agent.js';
 import { EntityAlreadyExistsError } from '../../errors/index.js';
 import { getLoggedObjects, spyOnLogger } from '../../logging/testing.js';
 import { createApp } from './app-factory.js';
@@ -60,7 +61,7 @@ class AppModule {}
 describe('app-factory', () => {
   let app: INestApplication;
   let previousEnv: NodeJS.ProcessEnv;
-  let request: supertest.SuperTest<supertest.Test>;
+  let request: TestAgent<supertest.Test>;
 
   beforeEach(async () => {
     spyOnLogger();

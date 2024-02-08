@@ -19,6 +19,10 @@ export function ApiConstantProperty(
         `Unhandled type inferred from constant value '${value}'.`,
       );
     }
+
+    if (constType === 'number' && Number.isInteger(value)) {
+      constType = 'integer';
+    }
   }
 
   return ApiProperty({

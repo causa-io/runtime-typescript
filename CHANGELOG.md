@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+Breaking changes:
+
+- Depend on `reflect-metadata` `0.2.1`.
+- Set the OpenAPI type as `integer` instead of `number` when relevant for constant types.
+
 ## v0.14.0 (2024-01-22)
 
 Breaking changes:

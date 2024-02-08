@@ -4,6 +4,7 @@ import { Test } from '@nestjs/testing';
 import 'jest-extended';
 import { Logger as PinoLogger } from 'nestjs-pino';
 import supertest from 'supertest';
+import TestAgent from 'supertest/lib/agent.js';
 import {
   EntityAlreadyExistsError,
   EntityNotFoundError,
@@ -61,7 +62,7 @@ class TestController {
 
 describe('ExceptionFilterModule', () => {
   let app: INestApplication;
-  let request: supertest.SuperTest<supertest.Test>;
+  let request: TestAgent<supertest.Test>;
 
   beforeEach(async () => {
     spyOnLogger();

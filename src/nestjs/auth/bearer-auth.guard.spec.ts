@@ -5,6 +5,7 @@ import { PassportModule, PassportStrategy } from '@nestjs/passport';
 import { Test } from '@nestjs/testing';
 import { Strategy } from 'passport-http-bearer';
 import supertest from 'supertest';
+import TestAgent from 'supertest/lib/agent.js';
 import { BearerAuthGuard } from './bearer-auth.guard.js';
 import { Public } from './public.decorator.js';
 
@@ -39,7 +40,7 @@ class BearerStrategy extends PassportStrategy(Strategy) {
 
 describe('BearerAuthGuard', () => {
   let app: INestApplication;
-  let request: supertest.SuperTest<supertest.Test>;
+  let request: TestAgent<supertest.Test>;
   let validateSpy: jest.SpiedFunction<typeof BearerStrategy.prototype.validate>;
 
   beforeEach(async () => {
