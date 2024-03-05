@@ -89,7 +89,12 @@ export class VersionedEntityManager<
     entityType: Type<EventData<E>>,
     runner: R,
   ) {
-    super(entityType, async ({ data }) => data, runner);
+    super(entityType, runner);
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  protected async project(event: E, transaction: T): Promise<EventData<E>> {
+    return event.data;
   }
 
   /**

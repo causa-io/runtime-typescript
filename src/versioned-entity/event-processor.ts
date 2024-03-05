@@ -7,21 +7,12 @@ import { KeyOfType } from '../typing/index.js';
 import { VersionedEntity } from './versioned-entity.js';
 
 /**
- * A function that builds a projection from an event.
- */
-type VersionedEntityProjection<
-  T extends FindReplaceTransaction,
-  E extends object,
-  P extends VersionedEntity,
-> = (event: E, transaction: T) => Promise<P>;
-
-/**
  * A class that processes events for a versioned entity and builds the corresponding state.
  *
  * It can be subclassed to customize how the state is built, in which case
  * {@link VersionedEntityEventProcessor.updateState} should be overridden.
  */
-export class VersionedEntityEventProcessor<
+export abstract class VersionedEntityEventProcessor<
   T extends FindReplaceTransaction,
   E extends object,
   P extends VersionedEntity,
@@ -37,13 +28,10 @@ export class VersionedEntityEventProcessor<
    *
    * @param projectionType The class of the state to build, which should be a type accepted by the state transaction.
    *   This is usually equal to the entity (data) in the event, but it can be different.
-   * @param project A function that builds the state (projection) from the event data.
-   *   This is usually the identity function, but it can be different.
    * @param runner The {@link TransactionRunner} used to create transactions.
    */
   constructor(
     readonly projectionType: Type<P>,
-    readonly project: VersionedEntityProjection<T, E, P>,
     readonly runner: R,
     options: {
       /**
@@ -56,6 +44,15 @@ export class VersionedEntityEventProcessor<
     this.projectionVersionColumn =
       options.projectionVersionColumn ?? ('updatedAt' as any);
   }
+
+  /**
+   * A function that builds a projection from an event.
+   * This is usually the identity function, but it can be different.
+   *
+   * @param event The event from which to build the projection.
+   * @param transaction The transaction to use if additional data must be fetched.
+   */
+  protected abstract project(event: E, transaction: T): Promise<P>;
 
   /**
    * Checks whether the given projection is strictly more recent than the state, based on their

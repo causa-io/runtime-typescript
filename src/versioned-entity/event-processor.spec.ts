@@ -51,19 +51,21 @@ const projectionFn = jest.fn(
     }),
 );
 
+export class MyProcessor extends VersionedEntityEventProcessor<
+  MockTransaction,
+  MyEvent,
+  MyEntity
+> {
+  project(event: MyEvent, transaction: MockTransaction): Promise<MyEntity> {
+    return (projectionFn as any)(event, transaction);
+  }
+}
+
 describe('VersionedEntityEventProcessor', () => {
-  let processor: VersionedEntityEventProcessor<
-    MockTransaction,
-    MyEvent,
-    MyEntity
-  >;
+  let processor: MyProcessor;
 
   beforeEach(() => {
-    processor = new VersionedEntityEventProcessor(
-      MyEntity,
-      projectionFn,
-      new MockRunner(),
-    );
+    processor = new MyProcessor(MyEntity, new MockRunner());
   });
 
   describe('isProjectionMoreRecentThanState', () => {
@@ -215,13 +217,9 @@ describe('VersionedEntityEventProcessor', () => {
   describe('updateState', () => {
     it('should allow overriding the updateState method', async () => {
       const updateStateSpy = jest.fn();
-      class MyProcessor extends VersionedEntityEventProcessor<
-        MockTransaction,
-        MyEvent,
-        MyEntity
-      > {
+      class MyOtherProcessor extends MyProcessor {
         constructor() {
-          super(MyEntity, projectionFn, new MockRunner());
+          super(MyEntity, new MockRunner());
         }
 
         async updateState(
@@ -244,7 +242,7 @@ describe('VersionedEntityEventProcessor', () => {
         },
       };
       const expectedEntity = await projectionFn(event);
-      const processor = new MyProcessor();
+      const processor = new MyOtherProcessor();
 
       const actualProjection = await processor.processEvent(event);
 
