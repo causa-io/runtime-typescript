@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.16.0 (2024-03-06)
+
 Breaking changes:
 
 - Change the `VersionedEntityEventProcessor` API, which now forces extending the class.
