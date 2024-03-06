@@ -1,4 +1,7 @@
-export { VersionedEntityEventProcessor } from './event-processor.js';
+export {
+  VersionedEntityEventProcessor,
+  VersionedEntityProjectionOptions,
+} from './event-processor.js';
 export {
   VersionedEntityManager,
   VersionedEntityOperationOptions,

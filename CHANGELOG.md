@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+Fixes:
+
+- Export `VersionedEntityProjectionOptions`.
+
 ## v0.16.0 (2024-03-06)
 
 Breaking changes:
