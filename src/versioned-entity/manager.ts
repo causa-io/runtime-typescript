@@ -16,7 +16,10 @@ import {
   FindReplaceTransaction,
   TransactionRunner,
 } from '../transaction/index.js';
-import { VersionedEntityEventProcessor } from './event-processor.js';
+import {
+  VersionedEntityEventProcessor,
+  VersionedEntityProjectionOptions,
+} from './event-processor.js';
 import {
   VersionedEntity,
   VersionedEntityCreation,
@@ -89,7 +92,17 @@ export class VersionedEntityManager<
     entityType: Type<EventData<E>>,
     runner: R,
   ) {
-    super(entityType, async ({ data }) => data, runner);
+    super(entityType, runner);
+  }
+
+  protected async project(
+    event: E,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    transaction: T,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    options?: VersionedEntityProjectionOptions<EventData<E>>,
+  ): Promise<EventData<E>> {
+    return event.data;
   }
 
   /**

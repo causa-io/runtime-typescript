@@ -7,21 +7,25 @@ import { KeyOfType } from '../typing/index.js';
 import { VersionedEntity } from './versioned-entity.js';
 
 /**
- * A function that builds a projection from an event.
+ * Options for the {@link VersionedEntityEventProcessor.project} method.
  */
-type VersionedEntityProjection<
-  T extends FindReplaceTransaction,
-  E extends object,
-  P extends VersionedEntity,
-> = (event: E, transaction: T) => Promise<P>;
+export type VersionedEntityProjectionOptions<P extends VersionedEntity> = {
+  /**
+   * The existing state before processing the event.
+   * This is only passed if {@link VersionedEntityEventProcessor.stateKeyForEvent} is implemented and returns a key, and
+   * when the state already exists.
+   */
+  state?: P;
+};
 
 /**
  * A class that processes events for a versioned entity and builds the corresponding state.
  *
- * It can be subclassed to customize how the state is built, in which case
- * {@link VersionedEntityEventProcessor.updateState} should be overridden.
+ * {@link VersionedEntityEventProcessor.project} should be implemented to build the state from the event.
+ * {@link VersionedEntityEventProcessor.updateState} can be overridden to customize how the state is updated
+ *   (e.g. update secondary indexes as well).
  */
-export class VersionedEntityEventProcessor<
+export abstract class VersionedEntityEventProcessor<
   T extends FindReplaceTransaction,
   E extends object,
   P extends VersionedEntity,
@@ -29,68 +33,69 @@ export class VersionedEntityEventProcessor<
 > {
   /**
    * The name of the column that should be used to compare the state and the projection's versions.
+   * Defaults to `updatedAt`.
    */
-  protected readonly projectionVersionColumn: KeyOfType<P, Date>;
+  protected readonly projectionVersionColumn: KeyOfType<P, Date> =
+    'updatedAt' as any;
 
   /**
    * Creates a new {@link VersionedEntityEventProcessor}.
    *
    * @param projectionType The class of the state to build, which should be a type accepted by the state transaction.
    *   This is usually equal to the entity (data) in the event, but it can be different.
-   * @param project A function that builds the state (projection) from the event data.
-   *   This is usually the identity function, but it can be different.
    * @param runner The {@link TransactionRunner} used to create transactions.
    */
   constructor(
     readonly projectionType: Type<P>,
-    readonly project: VersionedEntityProjection<T, E, P>,
     readonly runner: R,
-    options: {
-      /**
-       * The name of the column that should be used to compare the state and the projection's versions.
-       * Defaults to `updatedAt`.
-       */
-      projectionVersionColumn?: KeyOfType<P, Date>;
-    } = {},
-  ) {
-    this.projectionVersionColumn =
-      options.projectionVersionColumn ?? ('updatedAt' as any);
+  ) {}
+
+  /**
+   * A method that returns the key used to fetch the existing state for the given event.
+   * This only needs to be implemented if the existing state should be passed to
+   * {@link VersionedEntityEventProcessor.project}.
+   *
+   * @param event The event for which the key should be built.
+   * @returns The partial projection, containing the properties defining the key for the projection / state.
+   */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  protected stateKeyForEvent(event: E): Partial<P> | null {
+    return null;
   }
+
+  /**
+   * A function that builds a projection from an event.
+   * This is usually the identity function, but it can be different.
+   *
+   * @param event The event from which to build the projection.
+   * @param transaction The transaction to use if additional data must be fetched.
+   * @param options Options when building the projection.
+   */
+  protected abstract project(
+    event: E,
+    transaction: T,
+    options?: VersionedEntityProjectionOptions<P>,
+  ): Promise<P>;
 
   /**
    * Checks whether the given projection is strictly more recent than the state, based on their
    * {@link VersionedEntityEventProcessor.projectionVersionColumn} values.
    *
    * @param projection The projection to compare.
-   * @param options Options for the comparison.
+   * @param state The state to compare, or `undefined` if it does not exist.
    * @returns `true` if the projection is more recent than the state, `false` otherwise.
    */
-  async isProjectionMoreRecentThanState(
+  protected isProjectionMoreRecentThanState(
     projection: P,
-    options: {
-      /**
-       * The transaction to use to fetch the state.
-       */
-      transaction?: T;
-    } = {},
-  ): Promise<boolean> {
-    return await this.runner.runInNewOrExisting(
-      options.transaction,
-      async (transaction) => {
-        const state = await transaction.stateTransaction.findOneWithSameKeyAs(
-          this.projectionType,
-          projection,
-        );
+    state: P | undefined,
+  ): boolean {
+    if (!state) {
+      return true;
+    }
 
-        if (!state) {
-          return true;
-        }
-
-        return (
-          state[this.projectionVersionColumn] <
-          projection[this.projectionVersionColumn]
-        );
-      },
+    return (
+      state[this.projectionVersionColumn] <
+      projection[this.projectionVersionColumn]
     );
   }
 
@@ -132,13 +137,26 @@ export class VersionedEntityEventProcessor<
     return await this.runner.runInNewOrExisting(
       options.transaction,
       async (transaction) => {
-        const projection = await this.project(event, transaction);
+        const stateKey = this.stateKeyForEvent(event);
+        let state = stateKey
+          ? await transaction.stateTransaction.findOneWithSameKeyAs(
+              this.projectionType,
+              stateKey,
+            )
+          : undefined;
+
+        const projection = await this.project(event, transaction, { state });
 
         if (!options.skipVersionCheck) {
-          const isProjectionMoreRecent =
-            await this.isProjectionMoreRecentThanState(projection, {
-              transaction,
-            });
+          state ??= await transaction.stateTransaction.findOneWithSameKeyAs(
+            this.projectionType,
+            projection,
+          );
+
+          const isProjectionMoreRecent = this.isProjectionMoreRecentThanState(
+            projection,
+            state,
+          );
 
           if (!isProjectionMoreRecent) {
             return null;
