@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+Breaking changes:
+
+- Change the `VersionedEntityEventProcessor` API, which now forces extending the class.
+
+Features:
+
+- Optionally enable fetching the state before computing the projection in the `VersionedEntityEventProcessor`.
+
 ## v0.15.0 (2024-02-08)
 
 Breaking changes:
