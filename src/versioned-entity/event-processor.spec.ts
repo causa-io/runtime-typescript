@@ -1,6 +1,7 @@
 import { jest } from '@jest/globals';
 import 'jest-extended';
 import { Event } from '../events/index.js';
+import { KeyOfType } from '../typing/index.js';
 import { VersionedEntityEventProcessor } from './event-processor.js';
 import {
   MockRunner,
@@ -63,6 +64,10 @@ export class MyProcessor extends VersionedEntityEventProcessor<
   MyEvent,
   MyEntity
 > {
+  constructor() {
+    super(MyEntity, new MockRunner());
+  }
+
   protected stateKeyForEvent(event: MyEvent): Partial<MyEntity> | null {
     return keyFn(event);
   }
@@ -80,7 +85,7 @@ describe('VersionedEntityEventProcessor', () => {
   let processor: MyProcessor;
 
   beforeEach(() => {
-    processor = new MyProcessor(MyEntity, new MockRunner());
+    processor = new MyProcessor();
   });
 
   describe('processEvent', () => {
@@ -264,10 +269,6 @@ describe('VersionedEntityEventProcessor', () => {
     it('should allow overriding the updateState method', async () => {
       const updateStateSpy = jest.fn();
       class MyOtherProcessor extends MyProcessor {
-        constructor() {
-          super(MyEntity, new MockRunner());
-        }
-
         async updateState(
           projection: MyEntity,
           transaction: MockTransaction,
@@ -298,6 +299,46 @@ describe('VersionedEntityEventProcessor', () => {
         mockTransaction,
       );
       expect(updateStateSpy.mock.calls[0][0]).toBeInstanceOf(MyEntity);
+    });
+  });
+
+  describe('projectionVersionColumn', () => {
+    it('should use a custom version column', async () => {
+      class MyOtherProcessor extends MyProcessor {
+        // This doesn't make much sense, but it makes sure a different date column is used.
+        protected readonly projectionVersionColumn: KeyOfType<MyEntity, Date> =
+          'createdAt';
+      }
+      const processor = new MyOtherProcessor();
+      const event: MyEvent = {
+        id: '123',
+        name: '📫',
+        producedAt: new Date('2020-01-01'),
+        data: {
+          id: '123',
+          createdAt: new Date('2020-01-01'),
+          updatedAt: new Date('2020-01-02'),
+          deletedAt: null,
+          originalProperty: '👋',
+        },
+      };
+      mockStateTransaction.findOneWithSameKeyAs.mockResolvedValueOnce(
+        new MyEntity({
+          // `createdAt` is newer in the state, which should prevent the update.
+          createdAt: new Date('2020-01-02'),
+          updatedAt: new Date('2020-01-01'),
+        }),
+      );
+
+      const actualProjection = await processor.processEvent(event);
+
+      expect(actualProjection).toBeNull();
+      expect(projectionFn).toHaveBeenCalledExactlyOnceWith(
+        event,
+        mockTransaction,
+        {},
+      );
+      expect(mockStateTransaction.replace).not.toHaveBeenCalled();
     });
   });
 });

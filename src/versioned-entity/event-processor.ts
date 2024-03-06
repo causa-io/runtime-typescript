@@ -33,8 +33,10 @@ export abstract class VersionedEntityEventProcessor<
 > {
   /**
    * The name of the column that should be used to compare the state and the projection's versions.
+   * Defaults to `updatedAt`.
    */
-  protected readonly projectionVersionColumn: KeyOfType<P, Date>;
+  protected readonly projectionVersionColumn: KeyOfType<P, Date> =
+    'updatedAt' as any;
 
   /**
    * Creates a new {@link VersionedEntityEventProcessor}.
@@ -46,17 +48,7 @@ export abstract class VersionedEntityEventProcessor<
   constructor(
     readonly projectionType: Type<P>,
     readonly runner: R,
-    options: {
-      /**
-       * The name of the column that should be used to compare the state and the projection's versions.
-       * Defaults to `updatedAt`.
-       */
-      projectionVersionColumn?: KeyOfType<P, Date>;
-    } = {},
-  ) {
-    this.projectionVersionColumn =
-      options.projectionVersionColumn ?? ('updatedAt' as any);
-  }
+  ) {}
 
   /**
    * A method that returns the key used to fetch the existing state for the given event.
