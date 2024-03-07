@@ -3,6 +3,7 @@ import {
   INestApplication,
   Module,
   ModuleMetadata,
+  NestApplicationOptions,
 } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_INTERCEPTOR, NestFactory } from '@nestjs/core';
@@ -46,8 +47,12 @@ function createAppModule(businessModule: any): any {
 
 /**
  * A function that takes a NestJS module and returns a NestJS application.
+ * The passed options should be forwarded to the {@link NestFactory.create} call.
  */
-export type AppFactory = (module: any) => Promise<INestApplication>;
+export type AppFactory = (
+  module: any,
+  options?: NestApplicationOptions,
+) => Promise<INestApplication>;
 
 /**
  * Options for the {@link createApp} function.
@@ -58,14 +63,20 @@ export type CreateAppOptions = {
    * By default this uses `express`.
    */
   appFactory?: AppFactory;
+
+  /**
+   * Options to pass to the {@link CreateAppOptions.appFactory}, then forwarded to the {@link NestFactory.create} call.
+   */
+  nestApplicationOptions?: NestApplicationOptions;
 };
 
 /**
  * The default {@link AppFactory}, which uses `express`.
  */
-export const DEFAULT_APP_FACTORY: AppFactory = async (appModule) => {
+export const DEFAULT_APP_FACTORY: AppFactory = async (appModule, options) => {
   const app = await NestFactory.create<NestExpressApplication>(appModule, {
     bufferLogs: true,
+    ...options,
   });
 
   app.disable('x-powered-by');
@@ -90,7 +101,7 @@ export async function createApp(
 
   const AppModule = createAppModule(businessModule);
 
-  const app = await appFactory(AppModule);
+  const app = await appFactory(AppModule, options.nestApplicationOptions);
 
   const logger = app.get(Logger);
 

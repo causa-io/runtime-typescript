@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+Features:
+
+- Accept `NestApplicationOptions` in the `createApp` function. Custom `appFactory` should accept those options and forward them to the `NestFactory` call.
+
 ## v0.16.1 (2024-03-06)
 
 Fixes:

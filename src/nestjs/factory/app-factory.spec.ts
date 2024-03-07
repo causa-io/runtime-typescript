@@ -67,7 +67,9 @@ describe('app-factory', () => {
     spyOnLogger();
     previousEnv = { ...process.env };
     process.env.SOME_CONF_VALUE = '🔧';
-    app = await createApp(AppModule);
+    app = await createApp(AppModule, {
+      nestApplicationOptions: { cors: true },
+    });
     request = supertest(app.getHttpServer());
   });
 
@@ -78,6 +80,7 @@ describe('app-factory', () => {
 
   it('should not return the x-powered-by header', async () => {
     const actualResponse = await request.get('/test').expect(200);
+
     expect(actualResponse.headers).not.toHaveProperty('x-powered-by');
   });
 
@@ -129,9 +132,18 @@ describe('app-factory', () => {
   });
 
   it('should transform the response', async () => {
-    return request
+    await request
       .post('/test')
       .send({ phoneNumber: '+33600000000' })
       .expect(201, { phoneNumber: '📞: +33600000000' });
+  });
+
+  it('should apply nest application options', async () => {
+    const actualResponse = await request.get('/test').expect(200);
+
+    expect(actualResponse.headers).toHaveProperty(
+      'access-control-allow-origin',
+      '*',
+    );
   });
 });
