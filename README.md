@@ -86,11 +86,13 @@ Note that the `AuthModule` is not automatically added because it is only relevan
 
 `createApp` can also be used in combination with `makeTestAppFactory` from `@causa/runtime/nestjs/testing` through the `appFactory` option. This allows to override some of the modules (e.g. to mock services, use temporary resources, etc).
 
-#### Healthcheck
+#### Health check
 
-NestJS provides the [`@nestjs/terminus`](https://github.com/nestjs/terminus) package to implement health checks, and not much can be added generically on top. The implementation of the actual healthcheck may depend on the tech stack for example. However the `terminusModuleWithLogger` module provides Terminus properly configured with the pino logger.
+NestJS provides the [`@nestjs/terminus`](https://github.com/nestjs/terminus) package to implement health checks, and not much can be added generically on top. The implementation of the actual health check may depend on the tech stack for example. However the `terminusModuleWithLogger` module provides Terminus properly configured with the pino logger.
 
-When implementing a healthcheck route, it should be exposed under the `HEALTHCHECK_ENDPOINT`, such that only error responses are logged by pino.
+When implementing a health check route, it should be exposed under the `HEALTHCHECK_ENDPOINT`, such that only error responses are logged by pino.
+
+The `HealthCheckModule` can also be used to implement the health check route. In this case, only indicators, extending the `BaseHealthIndicatorService`, have to be implemented.
 
 #### Logging
 

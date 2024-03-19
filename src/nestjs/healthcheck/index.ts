@@ -4,4 +4,6 @@
  */
 export const HEALTHCHECK_ENDPOINT = 'health';
 
+export { BaseHealthIndicatorService } from './base-health-indicator.service.js';
+export { HealthCheckModule } from './module.js';
 export * from './terminus.module.js';

@@ -6,6 +6,10 @@ Breaking changes:
 
 - Rename `VersionedEntityEventProcessor` to `VersionedEventProcessor` and ease type constraints.
 
+Features:
+
+- Provide the `HealthCheckModule`, to ease the definition of health check endpoints.
+
 ## v0.17.0 (2024-03-07)
 
 Features:
