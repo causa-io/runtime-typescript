@@ -16,9 +16,10 @@ import {
   FindReplaceTransaction,
   TransactionRunner,
 } from '../transaction/index.js';
+import { KeyOfType } from '../typing/index.js';
 import {
-  VersionedEntityEventProcessor,
-  VersionedEntityProjectionOptions,
+  VersionedEventProcessor,
+  VersionedProjectionOptions,
 } from './event-processor.js';
 import {
   VersionedEntity,
@@ -77,7 +78,7 @@ export class VersionedEntityManager<
   T extends FindReplaceTransaction,
   E extends Event<string, VersionedEntity>,
   R extends TransactionRunner<T> = TransactionRunner<T>,
-> extends VersionedEntityEventProcessor<T, E, EventData<E>, R> {
+> extends VersionedEventProcessor<T, E, EventData<E>, R> {
   /**
    * Creates a new {@link VersionedEntityManager}.
    *
@@ -92,7 +93,7 @@ export class VersionedEntityManager<
     entityType: Type<EventData<E>>,
     runner: R,
   ) {
-    super(entityType, runner);
+    super(entityType, runner, 'updatedAt' as KeyOfType<EventData<E>, Date>);
   }
 
   protected async project(
@@ -100,7 +101,7 @@ export class VersionedEntityManager<
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     transaction: T,
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    options?: VersionedEntityProjectionOptions<EventData<E>>,
+    options?: VersionedProjectionOptions<EventData<E>>,
   ): Promise<EventData<E>> {
     return event.data;
   }
