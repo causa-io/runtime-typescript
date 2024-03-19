@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.18.0 (2024-03-19)
+
 Breaking changes:
 
 - Rename `VersionedEntityEventProcessor` to `VersionedEventProcessor` and ease type constraints.
