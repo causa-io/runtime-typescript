@@ -29,7 +29,7 @@ class MyController {
 })
 class MyModule {}
 
-describe('terminsModuleWithLogger', () => {
+describe('terminusModuleWithLogger', () => {
   let app: INestApplication;
   let request: TestAgent<supertest.Test>;
 
