@@ -1,6 +1,6 @@
 export {
-  VersionedEntityEventProcessor,
-  VersionedEntityProjectionOptions,
+  VersionedEventProcessor,
+  VersionedProjectionOptions,
 } from './event-processor.js';
 export {
   VersionedEntityManager,

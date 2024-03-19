@@ -2,7 +2,7 @@ import { jest } from '@jest/globals';
 import 'jest-extended';
 import { Event } from '../events/index.js';
 import { KeyOfType } from '../typing/index.js';
-import { VersionedEntityEventProcessor } from './event-processor.js';
+import { VersionedEventProcessor } from './event-processor.js';
 import {
   MockRunner,
   MockTransaction,
@@ -59,13 +59,13 @@ const projectionFn = jest.fn(
   ) => Promise<MyEntity>,
 );
 
-export class MyProcessor extends VersionedEntityEventProcessor<
+export class MyProcessor extends VersionedEventProcessor<
   MockTransaction,
   MyEvent,
   MyEntity
 > {
-  constructor() {
-    super(MyEntity, new MockRunner());
+  constructor(property: KeyOfType<MyEntity, Date> = 'updatedAt') {
+    super(MyEntity, new MockRunner(), property);
   }
 
   protected stateKeyForEvent(event: MyEvent): Partial<MyEntity> | null {
@@ -306,8 +306,9 @@ describe('VersionedEntityEventProcessor', () => {
     it('should use a custom version column', async () => {
       class MyOtherProcessor extends MyProcessor {
         // This doesn't make much sense, but it makes sure a different date column is used.
-        protected readonly projectionVersionColumn: KeyOfType<MyEntity, Date> =
-          'createdAt';
+        constructor() {
+          super('createdAt');
+        }
       }
       const processor = new MyOtherProcessor();
       const event: MyEvent = {
