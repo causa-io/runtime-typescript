@@ -4,56 +4,51 @@ import {
   TransactionRunner,
 } from '../transaction/index.js';
 import { KeyOfType } from '../typing/index.js';
-import { VersionedEntity } from './versioned-entity.js';
 
 /**
- * Options for the {@link VersionedEntityEventProcessor.project} method.
+ * Options for the {@link VersionedEventProcessor.project} method.
  */
-export type VersionedEntityProjectionOptions<P extends VersionedEntity> = {
+export type VersionedProjectionOptions<P extends object> = {
   /**
    * The existing state before processing the event.
-   * This is only passed if {@link VersionedEntityEventProcessor.stateKeyForEvent} is implemented and returns a key, and
-   * when the state already exists.
+   * This is only passed if {@link VersionedEventProcessor.stateKeyForEvent} is implemented and returns a key, and when
+   * the state already exists.
    */
   state?: P;
 };
 
 /**
- * A class that processes events for a versioned entity and builds the corresponding state.
+ * A class that processes (timestamp) versioned events and builds a corresponding state.
  *
- * {@link VersionedEntityEventProcessor.project} should be implemented to build the state from the event.
- * {@link VersionedEntityEventProcessor.updateState} can be overridden to customize how the state is updated
+ * {@link VersionedEventProcessor.project} should be implemented to build the state from the event.
+ * {@link VersionedEventProcessor.updateState} can be overridden to customize how the state is updated
  *   (e.g. update secondary indexes as well).
  */
-export abstract class VersionedEntityEventProcessor<
+export abstract class VersionedEventProcessor<
   T extends FindReplaceTransaction,
   E extends object,
-  P extends VersionedEntity,
+  P extends object,
   R extends TransactionRunner<T> = TransactionRunner<T>,
 > {
   /**
-   * The name of the column that should be used to compare the state and the projection's versions.
-   * Defaults to `updatedAt`.
-   */
-  protected readonly projectionVersionColumn: KeyOfType<P, Date> =
-    'updatedAt' as any;
-
-  /**
-   * Creates a new {@link VersionedEntityEventProcessor}.
+   * Creates a new {@link VersionedEventProcessor}.
    *
    * @param projectionType The class of the state to build, which should be a type accepted by the state transaction.
-   *   This is usually equal to the entity (data) in the event, but it can be different.
+   *   This is usually equal to the data in the event, but it can be different.
    * @param runner The {@link TransactionRunner} used to create transactions.
+   * @param projectionVersionProperty The name of the property that should be used to compare the state and the
+   *   projection's versions.
    */
   constructor(
     readonly projectionType: Type<P>,
     readonly runner: R,
+    readonly projectionVersionProperty: KeyOfType<P, Date>,
   ) {}
 
   /**
    * A method that returns the key used to fetch the existing state for the given event.
    * This only needs to be implemented if the existing state should be passed to
-   * {@link VersionedEntityEventProcessor.project}.
+   * {@link VersionedEventProcessor.project}.
    *
    * @param event The event for which the key should be built.
    * @returns The partial projection, containing the properties defining the key for the projection / state.
@@ -65,7 +60,7 @@ export abstract class VersionedEntityEventProcessor<
 
   /**
    * A function that builds a projection from an event.
-   * This is usually the identity function, but it can be different.
+   * This is usually the identity function on the event's data, but it can be different.
    *
    * @param event The event from which to build the projection.
    * @param transaction The transaction to use if additional data must be fetched.
@@ -74,12 +69,12 @@ export abstract class VersionedEntityEventProcessor<
   protected abstract project(
     event: E,
     transaction: T,
-    options?: VersionedEntityProjectionOptions<P>,
+    options?: VersionedProjectionOptions<P>,
   ): Promise<P>;
 
   /**
    * Checks whether the given projection is strictly more recent than the state, based on their
-   * {@link VersionedEntityEventProcessor.projectionVersionColumn} values.
+   * {@link VersionedEventProcessor.projectionVersionProperty} values.
    *
    * @param projection The projection to compare.
    * @param state The state to compare, or `undefined` if it does not exist.
@@ -94,8 +89,8 @@ export abstract class VersionedEntityEventProcessor<
     }
 
     return (
-      state[this.projectionVersionColumn] <
-      projection[this.projectionVersionColumn]
+      state[this.projectionVersionProperty] <
+      projection[this.projectionVersionProperty]
     );
   }
 
