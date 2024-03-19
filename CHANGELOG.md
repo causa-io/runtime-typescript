@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+Breaking changes:
+
+- Rename `VersionedEntityEventProcessor` to `VersionedEventProcessor` and ease type constraints.
+
 ## v0.17.0 (2024-03-07)
 
 Features:
