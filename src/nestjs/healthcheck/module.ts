@@ -1,5 +1,6 @@
 import { Controller, DynamicModule, Get, Module, Type } from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
+import { ApiExcludeController } from '@nestjs/swagger';
 import {
   HealthCheckResult,
   HealthCheckService,
@@ -27,6 +28,7 @@ export class HealthCheckModule {
   static forIndicators(
     indicatorTypes: Type<BaseHealthIndicatorService>[],
   ): DynamicModule {
+    @ApiExcludeController()
     @Controller(HEALTHCHECK_ENDPOINT)
     class HealthcheckController {
       private readonly indicatorFunctions: HealthIndicatorFunction[];

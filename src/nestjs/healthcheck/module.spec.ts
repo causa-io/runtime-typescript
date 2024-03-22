@@ -7,6 +7,7 @@ import { getLoggedErrors, spyOnLogger } from '../../testing.js';
 import { AuthModule } from '../auth/index.js';
 import { createApp } from '../factory/index.js';
 import { LoggerModule } from '../logging/index.js';
+import { generateOpenApiDocument } from '../openapi/utils.test.js';
 import { BaseHealthIndicatorService } from './base-health-indicator.service.js';
 import { HealthCheckModule } from './module.js';
 
@@ -79,5 +80,13 @@ describe('HealthcheckModule', () => {
         }),
       }),
     ]);
+  });
+
+  it('should exclude the health endpoint from the OpenAPI documentation', async () => {
+    const actualDocument = await generateOpenApiDocument(
+      HealthCheckModule.forIndicators([]),
+    );
+
+    expect(actualDocument.paths).toEqual({});
   });
 });

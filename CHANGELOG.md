@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+Fixes:
+
+- Remove the health check endpoint exposed by the `HealthCheckModule` from OpenAPI.
+
 ## v0.18.0 (2024-03-19)
 
 Breaking changes:
