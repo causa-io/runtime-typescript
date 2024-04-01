@@ -23,7 +23,7 @@ export type VersionedEntity = {
  * An object containing all the entity's properties required for a creation, apart from those that will be automatically
  * filled.
  */
-export type VersionedEntityCreation<T extends VersionedEntity> = Omit<
+export type VersionedEntityCreation<T extends object> = Omit<
   T,
   'createdAt' | 'updatedAt' | 'deletedAt'
 >;
@@ -33,6 +33,6 @@ export type VersionedEntityCreation<T extends VersionedEntity> = Omit<
  * It should contain the primary key of the entity.
  * Lifecycle fields that are automatically filled cannot be specified.
  */
-export type VersionedEntityUpdate<T extends VersionedEntity> = Partial<
+export type VersionedEntityUpdate<T extends object> = Partial<
   Omit<T, 'createdAt' | 'updatedAt'>
 >;
