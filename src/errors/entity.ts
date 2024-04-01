@@ -76,3 +76,8 @@ export class IncorrectEntityVersionError extends EntityError {
     super(entityType, key, `The provided entity version is incorrect.`);
   }
 }
+
+/**
+ * An error thrown when trying to perform an operation on an entity that is not supported.
+ */
+export class UnsupportedEntityOperationError extends EntityError {}

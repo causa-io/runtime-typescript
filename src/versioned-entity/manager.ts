@@ -5,6 +5,7 @@ import {
   EntityAlreadyExistsError,
   EntityNotFoundError,
   IncorrectEntityVersionError,
+  UnsupportedEntityOperationError,
 } from '../errors/index.js';
 import {
   Event,
@@ -28,6 +29,15 @@ import {
 } from './versioned-entity.js';
 
 /**
+ * A versioned entity where the only mandatory timestamp is `updatedAt`.
+ */
+export type VersionedEntityWithOptionalTimestamps = Pick<
+  VersionedEntity,
+  'updatedAt'
+> &
+  Partial<Omit<VersionedEntity, 'updatedAt'>>;
+
+/**
  * Options when performing a generic write operation on a versioned entity.
  */
 export type VersionedEntityOperationOptions<T extends FindReplaceTransaction> =
@@ -48,7 +58,7 @@ export type VersionedEntityOperationOptions<T extends FindReplaceTransaction> =
  */
 export type VersionedEntityUpdateOptions<
   T extends FindReplaceTransaction,
-  P extends VersionedEntity,
+  P extends VersionedEntityWithOptionalTimestamps,
 > = VersionedEntityOperationOptions<T> & {
   /**
    * A validation function that will be called with the current state of the entity in the database.
@@ -71,14 +81,34 @@ export type VersionedEntityUpdateOptions<
 };
 
 /**
+ * Options when creating a {@link VersionedEntityManager}.
+ */
+export type VersionedEntityManagerOptions = Pick<
+  VersionedEntityManager<any, any, any>,
+  'hasCreationTimestampProperty' | 'hasDeletionTimestampProperty'
+>;
+
+/**
  * A manager that can be used to operate on versioned entities.
  * It provides CRUD-like methods that publish events and update the state accordingly.
  */
 export class VersionedEntityManager<
   T extends FindReplaceTransaction,
-  E extends Event<string, VersionedEntity>,
+  E extends Event<string, VersionedEntityWithOptionalTimestamps>,
   R extends TransactionRunner<T> = TransactionRunner<T>,
 > extends VersionedEventProcessor<T, E, EventData<E>, R> {
+  /**
+   * Whether the `createdAt` property should be populated when creating an entity.
+   */
+  readonly hasCreationTimestampProperty: boolean;
+
+  /**
+   * Whether the `deletedAt` property exists on the entity.
+   * This determines whether the entity can be soft-deleted.
+   * If this is `false`, {@link VersionedEntityManager.delete} will throw an error.
+   */
+  readonly hasDeletionTimestampProperty: boolean;
+
   /**
    * Creates a new {@link VersionedEntityManager}.
    *
@@ -88,12 +118,43 @@ export class VersionedEntityManager<
    * @param runner The {@link TransactionRunner} used to create transactions.
    */
   constructor(
+    topic: string,
+    eventType: Type<E>,
+    entityType: Type<EventData<E> & VersionedEntity>,
+    runner: R,
+  );
+
+  /**
+   * Creates a new {@link VersionedEntityManager}.
+   *
+   * @param topic The topic to which the event should be published.
+   * @param eventType The type of event to publish.
+   * @param entityType The type of entity to manage, which should also be the type of data in the event.
+   * @param runner The {@link TransactionRunner} used to create transactions.
+   * @param options Options for the entity to manage.
+   */
+  constructor(
+    topic: string,
+    eventType: Type<E>,
+    entityType: Type<EventData<E>>,
+    runner: R,
+    options: VersionedEntityManagerOptions,
+  );
+
+  constructor(
     readonly topic: string,
     readonly eventType: Type<E>,
     entityType: Type<EventData<E>>,
     runner: R,
+    options: VersionedEntityManagerOptions = {
+      hasCreationTimestampProperty: true,
+      hasDeletionTimestampProperty: true,
+    },
   ) {
     super(entityType, runner, 'updatedAt' as KeyOfType<EventData<E>, Date>);
+
+    this.hasCreationTimestampProperty = options.hasCreationTimestampProperty;
+    this.hasDeletionTimestampProperty = options.hasDeletionTimestampProperty;
   }
 
   protected async project(
@@ -161,7 +222,8 @@ export class VersionedEntityManager<
 
         transaction.validatePastDateOrFail(existingEntity.updatedAt);
 
-        if (existingEntity.deletedAt === null) {
+        // This could `null` for a soft-deleted entity, or `undefined` if `deletedAt` is not a property of the entity.
+        if (existingEntity.deletedAt == null) {
           throw new EntityAlreadyExistsError(this.projectionType, entity);
         }
       },
@@ -192,7 +254,7 @@ export class VersionedEntityManager<
             entity,
           ));
 
-        if (!existingEntity || existingEntity.deletedAt !== null) {
+        if (!existingEntity || existingEntity.deletedAt != null) {
           throw new EntityNotFoundError(this.projectionType, entity);
         }
 
@@ -289,9 +351,11 @@ export class VersionedEntityManager<
 
         const entity = plainToInstance(this.projectionType, {
           ...creation,
-          createdAt: transaction.timestamp,
           updatedAt: transaction.timestamp,
-          deletedAt: null,
+          ...(this.hasCreationTimestampProperty
+            ? { createdAt: transaction.timestamp }
+            : {}),
+          ...(this.hasDeletionTimestampProperty ? { deletedAt: null } : {}),
         });
 
         const event = await this.makeProcessAndPublishEvent(eventName, entity, {
@@ -384,6 +448,8 @@ export class VersionedEntityManager<
   /**
    * Deletes an entity and creates a new event, publishes the event, and processes it using
    * {@link VersionedEntityManager.processEvent}.
+   * This method will throw an error if the entity does not have a `deletedAt` property (i.e.
+   * {@link VersionedEntityManager.hasDeletionTimestampProperty} is `false`).
    *
    * @param eventName The name of the event when deleting the entity.
    * @param entityKey An object containing the primary key columns of the entity to delete.
@@ -395,6 +461,14 @@ export class VersionedEntityManager<
     entityKey: Partial<EventData<E>>,
     options: VersionedEntityUpdateOptions<T, EventData<E>> = {},
   ): Promise<E> {
+    if (!this.hasDeletionTimestampProperty) {
+      throw new UnsupportedEntityOperationError(
+        this.projectionType,
+        entityKey,
+        'The entity does not support deletion.',
+      );
+    }
+
     return await this.runner.runInNewOrExisting(
       options.transaction,
       async (transaction) => {
