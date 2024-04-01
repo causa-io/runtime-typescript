@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.19.0 (2024-04-01)
+
 Features:
 
 - Support entities without `createdAt` or `deletedAt` in the `VersionedEntityManager`.
