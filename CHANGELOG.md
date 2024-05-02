@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+Features:
+
+- Implement the `ProtobufjsObjectSerializer`.
+
 ## v0.19.0 (2024-04-01)
 
 Features:
