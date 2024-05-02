@@ -7,6 +7,7 @@ import {
   Post,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { Transform } from 'class-transformer';
 import { IsPhoneNumber } from 'class-validator';
 import { PinoLogger } from 'nestjs-pino';
@@ -69,6 +70,8 @@ describe('app-factory', () => {
     process.env.SOME_CONF_VALUE = '🔧';
     app = await createApp(AppModule, {
       nestApplicationOptions: { cors: true },
+      extraConfiguration: (app: NestExpressApplication) =>
+        app.useBodyParser('json', { limit: 100 }),
     });
     request = supertest(app.getHttpServer());
   });
@@ -145,5 +148,12 @@ describe('app-factory', () => {
       'access-control-allow-origin',
       '*',
     );
+  });
+
+  it('should enforce extra configuration', async () => {
+    await request
+      .post('/test')
+      .send({ phoneNumber: '📱'.repeat(100) })
+      .expect(413);
   });
 });
