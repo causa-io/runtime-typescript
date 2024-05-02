@@ -8,16 +8,10 @@ import {
 import { ConfigModule } from '@nestjs/config';
 import { APP_INTERCEPTOR, NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
-import { json } from 'express';
 import { Logger } from 'nestjs-pino';
 import { ExceptionFilterModule } from '../errors/index.js';
 import { LoggerModule } from '../logging/index.js';
 import { ValidationModule } from '../validation/index.js';
-
-/**
- * The configuration for `body-parser` of the maximum size of input payloads when parsing JSON.
- */
-const DEFAULT_PAYLOAD_LIMIT = '5mb';
 
 /**
  * Creates the global module for a NestJS application.
@@ -80,7 +74,6 @@ export const DEFAULT_APP_FACTORY: AppFactory = async (appModule, options) => {
   });
 
   app.disable('x-powered-by');
-  app.use(json({ limit: DEFAULT_PAYLOAD_LIMIT }));
 
   return app;
 };
