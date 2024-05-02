@@ -2,9 +2,20 @@
 
 ## Unreleased
 
+Breaking changes:
+
+- Remove `json` parser override.
+- Treat `http-errors`-like errors as known in the `GlobalFilter`.
+- Add the application type to `CreateAppOptions`.
+
 Features:
 
 - Implement the `ProtobufjsObjectSerializer`.
+- Accept `extraConfiguration` in `CreateAppOptions`.
+
+Fixes:
+
+- `makeTestAppFactory` now returns a factory that supports `NestApplicationOptions`.
 
 ## v0.19.0 (2024-04-01)
 
