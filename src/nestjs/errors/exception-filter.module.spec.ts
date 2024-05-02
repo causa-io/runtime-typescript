@@ -58,6 +58,11 @@ class TestController {
   async customError() {
     throw new MyError();
   }
+
+  @Get('/HttpErrors')
+  async httpErrors() {
+    throw { statusCode: 413, message: '🍔' };
+  }
 }
 
 describe('ExceptionFilterModule', () => {
@@ -78,63 +83,42 @@ describe('ExceptionFilterModule', () => {
   });
 
   it('should return 409 when an EntityAlreadyExistsError is thrown', async () => {
-    await request
-      .get('/VersionNotMatchingError')
-      .expect(409)
-      .expect(({ body }) => {
-        expect(body).toEqual({
-          statusCode: 409,
-          message:
-            'The provided version does not match the version of the resource on the server.',
-          errorCode: 'incorrectVersion',
-        });
-      });
+    await request.get('/VersionNotMatchingError').expect(409, {
+      statusCode: 409,
+      message:
+        'The provided version does not match the version of the resource on the server.',
+      errorCode: 'incorrectVersion',
+    });
 
     expect(getLoggedErrors()).toBeEmpty();
   });
 
   it('should return 409 when an EntityAlreadyExistsError is thrown', async () => {
-    await request
-      .get('/EntityAlreadyExistsError')
-      .expect(409)
-      .expect(({ body }) => {
-        expect(body).toEqual({
-          statusCode: 409,
-          message:
-            'The request conflicts with existing resource(s) on the server.',
-          errorCode: 'conflict',
-        });
-      });
+    await request.get('/EntityAlreadyExistsError').expect(409, {
+      statusCode: 409,
+      message: 'The request conflicts with existing resource(s) on the server.',
+      errorCode: 'conflict',
+    });
 
     expect(getLoggedErrors()).toBeEmpty();
   });
 
   it('should return 404 when an EntityNotFoundError is thrown', async () => {
-    await request
-      .get('/EntityNotFoundError')
-      .expect(404)
-      .expect(({ body }) => {
-        expect(body).toEqual({
-          statusCode: 404,
-          message: 'The requested resource was not found on the server.',
-          errorCode: 'notFound',
-        });
-      });
+    await request.get('/EntityNotFoundError').expect(404, {
+      statusCode: 404,
+      message: 'The requested resource was not found on the server.',
+      errorCode: 'notFound',
+    });
 
     expect(getLoggedErrors()).toBeEmpty();
   });
 
   it('should return 500 with the correct format', async () => {
-    await request
-      .get('/InternalServerError')
-      .expect(500)
-      .expect(({ body }) => {
-        expect(body).toEqual({
-          statusCode: 500,
-          message: 'An unexpected error occurred on the server.',
-          errorCode: 'internalServerError',
-        });
-      });
+    await request.get('/InternalServerError').expect(500, {
+      statusCode: 500,
+      message: 'An unexpected error occurred on the server.',
+      errorCode: 'internalServerError',
+    });
 
     expect(getLoggedErrors({ predicate: (o) => o.message === '💥' })).toEqual([
       expect.objectContaining({
@@ -148,16 +132,20 @@ describe('ExceptionFilterModule', () => {
   });
 
   it('should not convert a custom HTTP error to an InternalServerError', async () => {
-    await request
-      .get('/CustomError')
-      .expect(418)
-      .expect(({ body }) => {
-        expect(body).toEqual({
-          statusCode: 418,
-          message: '🫖',
-          errorCode: 'teapot',
-        });
-      });
+    await request.get('/CustomError').expect(418, {
+      statusCode: 418,
+      message: '🫖',
+      errorCode: 'teapot',
+    });
+
+    expect(getLoggedErrors()).toBeEmpty();
+  });
+
+  it('should handle http-errors', async () => {
+    await request.get('/HttpErrors').expect(413, {
+      statusCode: 413,
+      message: '🍔',
+    });
 
     expect(getLoggedErrors()).toBeEmpty();
   });
