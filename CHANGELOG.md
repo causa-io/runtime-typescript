@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.20.0 (2024-05-03)
+
 Breaking changes:
 
 - Remove `json` parser override.
