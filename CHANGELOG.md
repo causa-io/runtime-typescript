@@ -12,6 +12,7 @@ Features:
 
 - Implement the `ProtobufjsObjectSerializer`.
 - Accept `extraConfiguration` in `CreateAppOptions`.
+- Implement the `CloudEventsEventHandlerInterceptor`.
 
 Fixes:
 
