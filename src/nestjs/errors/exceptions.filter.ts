@@ -51,20 +51,30 @@ export class GlobalFilter extends BaseExceptionFilter {
   private static readonly globalFilterLogger = new Logger('ExceptionsHandler');
 
   catch(exception: any, host: ArgumentsHost) {
+    let converted: any;
     if (exception instanceof HttpException) {
-      super.catch(exception, host);
-      return;
-    }
-
-    // All uncaught errors that don't inherit from `HttpException` will be converted to a generic `InternalServerError`.
-    // This will disable the behavior in `BaseExceptionFilter.handleUnknownError`.
-    // The following lines ensure the error is logged.
-    if (this.isExceptionObject(exception)) {
-      GlobalFilter.globalFilterLogger.error(exception.message, exception.stack);
+      converted = exception;
+    } else if (this.isHttpError(exception)) {
+      converted = new HttpException(
+        { statusCode: exception.statusCode, message: exception.message },
+        exception.statusCode,
+      );
     } else {
-      GlobalFilter.globalFilterLogger.error(exception);
+      converted = new InternalServerError();
+
+      // All uncaught errors that don't inherit from `HttpException` will be converted to a generic `InternalServerError`.
+      // This will disable the behavior in `BaseExceptionFilter.handleUnknownError`.
+      // The following lines ensure the error is logged.
+      if (this.isExceptionObject(exception)) {
+        GlobalFilter.globalFilterLogger.error(
+          exception.message,
+          exception.stack,
+        );
+      } else {
+        GlobalFilter.globalFilterLogger.error(exception);
+      }
     }
 
-    super.catch(new InternalServerError(), host);
+    super.catch(converted, host);
   }
 }

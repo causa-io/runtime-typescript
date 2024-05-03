@@ -5,6 +5,7 @@ import {
   Module,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import supertest from 'supertest';
 import { createApp } from './app-factory.js';
 import { createMockConfigService, makeTestAppFactory } from './testing.js';
 
@@ -36,91 +37,77 @@ class AppModule {}
 
 describe('testing', () => {
   describe('makeTestAppFactory', () => {
-    it('should use the provided config dictionary', async () => {
-      let app!: INestApplication;
-      let actualConfigValue: string;
-      try {
-        app = await createApp(AppModule, {
-          appFactory: makeTestAppFactory({ config: { MY_VAR: '🎉' } }),
-        });
-        const actualController = app.get(TestController);
-        actualConfigValue = actualController.configValue;
-      } finally {
-        await app?.close();
-      }
+    let app!: INestApplication;
 
-      expect(actualConfigValue).toEqual('🎉');
+    afterEach(async () => {
+      await app?.close();
+    });
+
+    it('should use the provided config dictionary', async () => {
+      app = await createApp(AppModule, {
+        appFactory: makeTestAppFactory({ config: { MY_VAR: '🎉' } }),
+      });
+
+      const actualController = app.get(TestController);
+      expect(actualController.configValue).toEqual('🎉');
     });
 
     it('use the provided config service', async () => {
-      let app!: INestApplication;
-      let actualConfigValue: string;
-      try {
-        app = await createApp(AppModule, {
-          appFactory: makeTestAppFactory({
-            config: createMockConfigService({ MY_VAR: '🍦' }),
-          }),
-        });
-        const actualController = app.get(TestController);
-        actualConfigValue = actualController.configValue;
-      } finally {
-        await app?.close();
-      }
+      app = await createApp(AppModule, {
+        appFactory: makeTestAppFactory({
+          config: createMockConfigService({ MY_VAR: '🍦' }),
+        }),
+      });
 
-      expect(actualConfigValue).toEqual('🍦');
+      const actualController = app.get(TestController);
+      expect(actualController.configValue).toEqual('🍦');
     });
 
     it('should allow overriding providers', async () => {
-      let app!: INestApplication;
-      let actualServiceOutput: string;
-      try {
-        app = await createApp(AppModule, {
-          appFactory: makeTestAppFactory({
-            config: { MY_VAR: '🍦' },
-            overrides: (builder) =>
-              builder
-                .overrideProvider(MyService)
-                .useValue({ computeStuff: () => '🤡' }),
-          }),
-        });
-        const actualController = app.get(TestController);
-        actualServiceOutput = actualController.serviceOutput;
-      } finally {
-        await app?.close();
-      }
+      app = await createApp(AppModule, {
+        appFactory: makeTestAppFactory({
+          config: { MY_VAR: '🍦' },
+          overrides: (builder) =>
+            builder
+              .overrideProvider(MyService)
+              .useValue({ computeStuff: () => '🤡' }),
+        }),
+      });
 
-      expect(actualServiceOutput).toEqual('🤡');
+      const actualController = app.get(TestController);
+      expect(actualController.serviceOutput).toEqual('🤡');
     });
 
     it('should allow overriding several providers', async () => {
-      let app!: INestApplication;
-      let actualServiceOutput: string;
-      let actualConfigValue: string;
-      try {
-        app = await createApp(AppModule, {
-          appFactory: makeTestAppFactory({
-            config: { MY_VAR: '🍦' },
-            overrides: [
-              (builder) =>
-                builder
-                  .overrideProvider(MyService)
-                  .useValue({ computeStuff: () => '🤡' }),
-              (builder) =>
-                builder
-                  .overrideProvider(ConfigService)
-                  .useValue({ getOrThrow: () => '🐛' }),
-            ],
-          }),
-        });
-        const actualController = app.get(TestController);
-        actualServiceOutput = actualController.serviceOutput;
-        actualConfigValue = actualController.configValue;
-      } finally {
-        await app?.close();
-      }
+      app = await createApp(AppModule, {
+        appFactory: makeTestAppFactory({
+          config: { MY_VAR: '🍦' },
+          overrides: [
+            (builder) =>
+              builder
+                .overrideProvider(MyService)
+                .useValue({ computeStuff: () => '🤡' }),
+            (builder) =>
+              builder
+                .overrideProvider(ConfigService)
+                .useValue({ getOrThrow: () => '🐛' }),
+          ],
+        }),
+      });
 
-      expect(actualServiceOutput).toEqual('🤡');
-      expect(actualConfigValue).toEqual('🐛');
+      const actualController = app.get(TestController);
+      expect(actualController.serviceOutput).toEqual('🤡');
+      expect(actualController.configValue).toEqual('🐛');
+    });
+
+    it('should pass the provided nest application options', async () => {
+      app = await createApp(AppModule, {
+        appFactory: makeTestAppFactory({ config: { MY_VAR: '🍦' } }),
+        nestApplicationOptions: { cors: true },
+      });
+      const request = supertest(app.getHttpServer());
+
+      await request.options('/test').expect(204);
     });
   });
 

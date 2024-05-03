@@ -120,7 +120,7 @@ export function makeTestAppFactory(
       : [options.overrides]
     : [];
 
-  return async (appModule) => {
+  return async (appModule, nestApplicationOptions) => {
     let builder = Test.createTestingModule({ imports: [appModule] })
       .overrideProvider(ConfigService)
       .useValue(configService);
@@ -137,6 +137,8 @@ export function makeTestAppFactory(
 
     const moduleRef = await builder.compile();
 
-    return moduleRef.createNestApplication<NestExpressApplication>();
+    return moduleRef.createNestApplication<NestExpressApplication>(
+      nestApplicationOptions,
+    );
   };
 }

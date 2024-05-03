@@ -8,16 +8,10 @@ import {
 import { ConfigModule } from '@nestjs/config';
 import { APP_INTERCEPTOR, NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
-import { json } from 'express';
 import { Logger } from 'nestjs-pino';
 import { ExceptionFilterModule } from '../errors/index.js';
 import { LoggerModule } from '../logging/index.js';
 import { ValidationModule } from '../validation/index.js';
-
-/**
- * The configuration for `body-parser` of the maximum size of input payloads when parsing JSON.
- */
-const DEFAULT_PAYLOAD_LIMIT = '5mb';
 
 /**
  * Creates the global module for a NestJS application.
@@ -49,38 +43,45 @@ function createAppModule(businessModule: any): any {
  * A function that takes a NestJS module and returns a NestJS application.
  * The passed options should be forwarded to the {@link NestFactory.create} call.
  */
-export type AppFactory = (
+export type AppFactory<T extends INestApplication = INestApplication> = (
   module: any,
   options?: NestApplicationOptions,
-) => Promise<INestApplication>;
+) => Promise<T>;
 
 /**
  * Options for the {@link createApp} function.
  */
-export type CreateAppOptions = {
+export type CreateAppOptions<T extends INestApplication = INestApplication> = {
   /**
    * The function to use to create an application.
    * By default this uses `express`.
    */
-  appFactory?: AppFactory;
+  appFactory?: AppFactory<T>;
 
   /**
    * Options to pass to the {@link CreateAppOptions.appFactory}, then forwarded to the {@link NestFactory.create} call.
    */
   nestApplicationOptions?: NestApplicationOptions;
+
+  /**
+   * A function that applies extra configuration to the Nest application.
+   */
+  extraConfiguration?: (app: T) => void;
 };
 
 /**
  * The default {@link AppFactory}, which uses `express`.
  */
-export const DEFAULT_APP_FACTORY: AppFactory = async (appModule, options) => {
+export const DEFAULT_APP_FACTORY: AppFactory<NestExpressApplication> = async (
+  appModule,
+  options,
+) => {
   const app = await NestFactory.create<NestExpressApplication>(appModule, {
     bufferLogs: true,
     ...options,
   });
 
   app.disable('x-powered-by');
-  app.use(json({ limit: DEFAULT_PAYLOAD_LIMIT }));
 
   return app;
 };
@@ -93,9 +94,9 @@ export const DEFAULT_APP_FACTORY: AppFactory = async (appModule, options) => {
  * @param options Options when creating the application.
  * @returns The {@link INestApplication}.
  */
-export async function createApp(
+export async function createApp<T extends INestApplication = INestApplication>(
   businessModule: any,
-  options: CreateAppOptions = {},
+  options: CreateAppOptions<T> = {},
 ): Promise<INestApplication> {
   const appFactory = options.appFactory ?? DEFAULT_APP_FACTORY;
 
@@ -103,8 +104,11 @@ export async function createApp(
 
   const app = await appFactory(AppModule, options.nestApplicationOptions);
 
-  const logger = app.get(Logger);
+  if (options.extraConfiguration) {
+    options.extraConfiguration(app as any);
+  }
 
+  const logger = app.get(Logger);
   app.useLogger(logger);
   app.enableShutdownHooks();
 
