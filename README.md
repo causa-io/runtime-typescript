@@ -76,6 +76,8 @@ As previously stated, this package does not provide any broker-specific implemen
 
 The `BaseEventHandlerInterceptor` class is a `NestInterceptor` that provides a base for an interceptor meant to be used with brokers pushing messages as HTTP requests (e.g. Pub/Sub with a [push subscription](https://cloud.google.com/pubsub/docs/push)).
 
+The `CloudEventsEventHandlerInterceptor` subclasses the `BaseEventHandlerInterceptor` to support CloudEvents events with HTTP binding.
+
 When the `@EventBody` decorator is used on a route's parameter, it indicates that this route responds to HTTP requests made by a message broker pushing events. An interceptor that inherits from `BaseEventHandlerInterceptor` catches those requests and parses the incoming events, ensuring the route handler receives a typed event, ready to be processed.
 
 #### Application factory
