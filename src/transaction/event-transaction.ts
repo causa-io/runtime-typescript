@@ -12,5 +12,5 @@ export interface EventTransaction {
    * @param event The event to publish.
    * @param options Options for publishing the event.
    */
-  publish(topic: string, event: Event, options: PublishOptions): Promise<void>;
+  publish(topic: string, event: Event, options?: PublishOptions): Promise<void>;
 }
