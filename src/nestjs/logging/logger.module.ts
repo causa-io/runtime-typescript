@@ -35,7 +35,6 @@ function createModuleMetadata(options: ModuleOptions = {}): ModuleMetadata {
               ignore: (req) =>
                 (req as any).originalUrl === `/${HEALTHCHECK_ENDPOINT}`,
             },
-            redact: { paths: ['req.headers.authorization'] },
           },
         }),
       }),
