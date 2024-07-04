@@ -6,6 +6,11 @@ Breaking change:
 
 - Make `EventTransaction.publish` `options` optional.
 
+Features:
+
+- Support merging of the `redact.paths` `pino` option.
+- Move redaction of the `authorization` header to the base `pino` configuration.
+
 ## v0.20.0 (2024-05-03)
 
 Breaking changes:

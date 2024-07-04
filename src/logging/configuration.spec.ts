@@ -2,9 +2,9 @@ import { jest } from '@jest/globals';
 import { mkdtemp, rm, writeFile } from 'fs/promises';
 import { resolve } from 'path';
 import { DestinationStream, Logger, pino } from 'pino';
-import type {
-  getPinoConfiguration as getPinoConfigurationType,
-  updatePinoConfiguration as updatePinoConfigurationType,
+import {
+  type getPinoConfiguration as getPinoConfigurationType,
+  type updatePinoConfiguration as updatePinoConfigurationType,
 } from './configuration.js';
 
 describe('configuration', () => {
@@ -60,6 +60,14 @@ describe('configuration', () => {
         },
       });
     });
+
+    it('should redact authorization headers by default', () => {
+      logger.info({ req: { headers: { authorization: 'Bearer 123' } } });
+
+      expect(loggedLines[0]).toMatchObject({
+        req: { headers: { authorization: '[Redacted]' } },
+      });
+    });
   });
 
   describe('updatePinoConfiguration', () => {
@@ -82,6 +90,23 @@ describe('configuration', () => {
         serviceContext: {
           service: 'my-service',
           version: '0.1.2',
+        },
+      });
+    });
+
+    it('should merge redact paths', () => {
+      updatePinoConfiguration({ redact: { paths: ['req.headers.cookie'] } });
+
+      const logger = pino(getPinoConfiguration(), pinoStream);
+      logger.info({
+        req: { headers: { cookie: 'secret', authorization: 'Bearer' } },
+      });
+      expect(loggedLines[0]).toMatchObject({
+        req: {
+          headers: {
+            authorization: '[Redacted]',
+            cookie: '[Redacted]',
+          },
         },
       });
     });
