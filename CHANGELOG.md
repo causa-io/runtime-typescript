@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.21.0 (2024-07-04)
+
 Breaking change:
 
 - Make `EventTransaction.publish` `options` optional.
