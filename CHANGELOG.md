@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+Breaking changes:
+
+- Convert uncaught `RetryableError`s to `ServiceUnavailableError`s in the global exception filter, and log them as warnings.
+
+Features:
+
+- Uniformize logging by making the global exception filter log the stack in the `error` field.
+
 ## v0.21.0 (2024-07-04)
 
 Breaking change:
