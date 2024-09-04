@@ -120,13 +120,11 @@ describe('ExceptionFilterModule', () => {
       errorCode: 'internalServerError',
     });
 
-    expect(getLoggedErrors({ predicate: (o) => o.message === '💥' })).toEqual([
+    expect(getLoggedErrors()).toEqual([
       expect.objectContaining({
         req: expect.objectContaining({ url: '/InternalServerError' }),
-        err: expect.objectContaining({
-          message: '💥',
-          stack: expect.stringContaining('💥'),
-        }),
+        error: expect.stringContaining('💥'),
+        message: '💥',
       }),
     ]);
   });
