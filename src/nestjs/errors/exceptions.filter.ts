@@ -4,12 +4,14 @@ import {
   EntityAlreadyExistsError,
   EntityNotFoundError,
   IncorrectEntityVersionError,
+  RetryableError,
 } from '../../errors/index.js';
 import {
   ConflictError,
   IncorrectVersionError,
   InternalServerError,
   NotFoundError,
+  ServiceUnavailableError,
 } from './errors.dto.js';
 
 /**
@@ -59,6 +61,13 @@ export class GlobalFilter extends BaseExceptionFilter {
         { statusCode: exception.statusCode, message: exception.message },
         exception.statusCode,
       );
+    } else if (exception instanceof RetryableError) {
+      converted = new ServiceUnavailableError();
+
+      const logObject = { error: exception?.stack };
+      const message =
+        'A retryable error was caught by the global exception filter.';
+      GlobalFilter.globalFilterLogger.warn(logObject, message);
     } else {
       converted = new InternalServerError();
 
