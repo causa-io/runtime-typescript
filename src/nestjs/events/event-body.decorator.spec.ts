@@ -26,8 +26,6 @@ class MyEvent {
   someValue!: string;
 }
 
-interface MyEventInterface {}
-
 @Controller()
 class MyController {
   @Post()
@@ -36,7 +34,7 @@ class MyController {
   }
 
   @Post('/untyped')
-  async handleUntypedEvent(@EventBody() body: MyEventInterface) {
+  async handleUntypedEvent(@EventBody() body: any) {
     return body;
   }
 }

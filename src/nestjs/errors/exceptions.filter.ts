@@ -4,12 +4,14 @@ import {
   EntityAlreadyExistsError,
   EntityNotFoundError,
   IncorrectEntityVersionError,
+  RetryableError,
 } from '../../errors/index.js';
 import {
   ConflictError,
   IncorrectVersionError,
   InternalServerError,
   NotFoundError,
+  ServiceUnavailableError,
 } from './errors.dto.js';
 
 /**
@@ -59,20 +61,24 @@ export class GlobalFilter extends BaseExceptionFilter {
         { statusCode: exception.statusCode, message: exception.message },
         exception.statusCode,
       );
+    } else if (exception instanceof RetryableError) {
+      converted = new ServiceUnavailableError();
+
+      const logObject = { error: exception?.stack };
+      const message =
+        'A retryable error was caught by the global exception filter.';
+      GlobalFilter.globalFilterLogger.warn(logObject, message);
     } else {
       converted = new InternalServerError();
 
-      // All uncaught errors that don't inherit from `HttpException` will be converted to a generic `InternalServerError`.
-      // This will disable the behavior in `BaseExceptionFilter.handleUnknownError`.
+      // All uncaught errors that don't inherit from `HttpException` will be converted to a generic
+      // `InternalServerError`. This will disable the behavior in `BaseExceptionFilter.handleUnknownError`.
       // The following lines ensure the error is logged.
-      if (this.isExceptionObject(exception)) {
-        GlobalFilter.globalFilterLogger.error(
-          exception.message,
-          exception.stack,
-        );
-      } else {
-        GlobalFilter.globalFilterLogger.error(exception);
-      }
+      const logObject = { error: exception?.stack };
+      const message = exception?.message?.length
+        ? exception.message
+        : 'An unhandled error was caught by the global exception filter.';
+      GlobalFilter.globalFilterLogger.error(logObject, message);
     }
 
     super.catch(converted, host);

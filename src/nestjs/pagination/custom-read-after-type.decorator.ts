@@ -34,7 +34,7 @@ function decorateReadAfterPropertyWithClassTransformer(
         const jsonString = Buffer.from(value, 'base64').toString();
         const plainValue = JSON.parse(jsonString);
         return plainToInstance(readAfterType, plainValue);
-      } catch (error) {
+      } catch {
         throw new ValidationError(`Invalid pagination key '${propertyName}'.`, [
           propertyName,
         ]);

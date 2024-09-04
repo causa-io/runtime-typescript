@@ -9,8 +9,13 @@ import {
   EntityAlreadyExistsError,
   EntityNotFoundError,
   IncorrectEntityVersionError,
+  RetryableError,
 } from '../../errors/index.js';
-import { getLoggedErrors, spyOnLogger } from '../../logging/testing.js';
+import {
+  getLoggedErrors,
+  getLoggedWarnings,
+  spyOnLogger,
+} from '../../logging/testing.js';
 import { LoggerModule } from '../logging/index.js';
 import { ExceptionFilterModule } from './exception-filter.module.js';
 import { ErrorResponse, HttpError } from './http-error.js';
@@ -62,6 +67,11 @@ class TestController {
   @Get('/HttpErrors')
   async httpErrors() {
     throw { statusCode: 413, message: '🍔' };
+  }
+
+  @Get('/RetryableError')
+  async retryableError() {
+    throw new RetryableError('♻️');
   }
 }
 
@@ -120,15 +130,30 @@ describe('ExceptionFilterModule', () => {
       errorCode: 'internalServerError',
     });
 
-    expect(getLoggedErrors({ predicate: (o) => o.message === '💥' })).toEqual([
+    expect(getLoggedErrors()).toEqual([
       expect.objectContaining({
         req: expect.objectContaining({ url: '/InternalServerError' }),
-        err: expect.objectContaining({
-          message: '💥',
-          stack: expect.stringContaining('💥'),
-        }),
+        error: expect.stringContaining('💥'),
+        message: '💥',
       }),
     ]);
+  });
+
+  it('should return 503 and log a retryable error as a warning', async () => {
+    await request.get('/RetryableError').expect(503, {
+      statusCode: 503,
+      message: 'The server is currently unable to handle the request.',
+      errorCode: 'serviceUnavailable',
+    });
+
+    expect(getLoggedWarnings()).toEqual([
+      expect.objectContaining({
+        req: expect.objectContaining({ url: '/RetryableError' }),
+        error: expect.stringContaining('♻️'),
+        message: 'A retryable error was caught by the global exception filter.',
+      }),
+    ]);
+    expect(getLoggedErrors()).toBeEmpty();
   });
 
   it('should not convert a custom HTTP error to an InternalServerError', async () => {

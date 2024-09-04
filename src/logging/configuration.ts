@@ -36,7 +36,7 @@ export function updatePinoConfiguration(options: Partial<LoggerOptions>): void {
     ...new Set([
       ...(Array.isArray(pinoConfiguration.redact)
         ? pinoConfiguration.redact
-        : pinoConfiguration.redact?.paths ?? []),
+        : (pinoConfiguration.redact?.paths ?? [])),
       ...(newRedactOptions?.paths ?? []),
     ]),
   ];
