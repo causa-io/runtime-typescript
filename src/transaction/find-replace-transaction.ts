@@ -1,5 +1,5 @@
-import { Type } from '@nestjs/common';
-import { EventTransaction } from './event-transaction.js';
+import type { Type } from '@nestjs/common';
+import type { EventTransaction } from './event-transaction.js';
 import { Transaction } from './transaction.js';
 
 /**

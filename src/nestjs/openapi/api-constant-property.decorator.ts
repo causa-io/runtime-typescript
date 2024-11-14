@@ -1,4 +1,4 @@
-import { ApiProperty, ApiPropertyOptions } from '@nestjs/swagger';
+import { ApiProperty, type ApiPropertyOptions } from '@nestjs/swagger';
 
 /**
  * Decorates a property to mark it as constant in the OpenAPI documentation.
@@ -10,7 +10,7 @@ export function ApiConstantProperty(
 ): PropertyDecorator {
   const { const: value, ...baseOptions } = options;
 
-  let constType = options.type;
+  let constType: ApiPropertyOptions['type'] | string = options.type;
   if (!constType) {
     constType = typeof value;
 

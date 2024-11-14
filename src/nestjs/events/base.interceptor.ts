@@ -1,20 +1,20 @@
 import {
-  CallHandler,
-  ExecutionContext,
-  NestInterceptor,
-  Type,
+  type CallHandler,
+  type ExecutionContext,
+  type NestInterceptor,
+  type Type,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { Request } from 'express';
+import type { Request } from 'express';
 import { PinoLogger } from 'nestjs-pino';
 import { Observable, of, throwError, timer } from 'rxjs';
 import { catchError, mergeMap } from 'rxjs/operators';
 import { RetryableError } from '../../errors/index.js';
-import { EventAttributes, InvalidEventError } from '../../events/index.js';
+import { type EventAttributes, InvalidEventError } from '../../events/index.js';
 import { ValidationError } from '../../validation/index.js';
 import { ServiceUnavailableError } from '../errors/index.js';
 import { EVENT_BODY_TYPE_KEY } from './event-body.decorator.js';
-import { RequestWithEvent } from './request-with-event.js';
+import type { RequestWithEvent } from './request-with-event.js';
 import { EVENT_HANDLER_KEY } from './use-event-handler.decorator.js';
 
 /**

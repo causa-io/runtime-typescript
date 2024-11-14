@@ -2,7 +2,7 @@ import { HttpStatus } from '@nestjs/common';
 import { ApiProperty } from '@nestjs/swagger';
 import { IsString } from 'class-validator';
 import { ApiConstantProperty } from '../openapi/index.js';
-import { ErrorResponse, HttpError } from './http-error.js';
+import { type ErrorResponse, HttpError } from './http-error.js';
 
 /**
  * The base class for all error DTOs, providing OpenAPI metadata.

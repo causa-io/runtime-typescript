@@ -1,5 +1,5 @@
 import 'jest-extended';
-import { Logger, pino } from 'pino';
+import { type Logger, pino } from 'pino';
 import { getDefaultLogger } from './logger.js';
 import {
   getLoggedErrors,

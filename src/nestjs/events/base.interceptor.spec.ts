@@ -1,16 +1,16 @@
 import {
   Controller,
-  ExecutionContext,
-  INestApplication,
+  type ExecutionContext,
+  type INestApplication,
   Injectable,
   Post,
-  Type,
+  type Type,
 } from '@nestjs/common';
 import { APP_INTERCEPTOR, Reflector } from '@nestjs/core';
 import { Test } from '@nestjs/testing';
 import { Transform } from 'class-transformer';
 import { IsString } from 'class-validator';
-import { Request } from 'express';
+import type { Request } from 'express';
 import 'jest-extended';
 import { PinoLogger } from 'nestjs-pino';
 import supertest from 'supertest';
@@ -27,7 +27,7 @@ import { parseObject } from '../../validation/index.js';
 import { LoggerModule } from '../logging/index.js';
 import {
   BaseEventHandlerInterceptor,
-  ParsedEventRequest,
+  type ParsedEventRequest,
 } from './base.interceptor.js';
 import { EventAttributes } from './event-attributes.decorator.js';
 import { EventBody } from './event-body.decorator.js';

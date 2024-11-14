@@ -1,8 +1,8 @@
 import {
   Controller,
-  INestApplication,
+  type INestApplication,
   Module,
-  NestApplicationOptions,
+  type NestApplicationOptions,
   Post,
   UseInterceptors,
 } from '@nestjs/common';
@@ -10,7 +10,7 @@ import { IsString } from 'class-validator';
 import 'jest-extended';
 import supertest from 'supertest';
 import TestAgent from 'supertest/lib/agent.js';
-import { EventAttributes } from '../../events/index.js';
+import type { EventAttributes } from '../../events/index.js';
 import { JsonObjectSerializer } from '../../serialization/index.js';
 import { getLoggedErrors, getLoggedInfos, spyOnLogger } from '../../testing.js';
 import { createApp } from '../factory/index.js';

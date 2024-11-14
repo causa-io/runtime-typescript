@@ -1,9 +1,9 @@
-import { Controller, Get, INestApplication, Module } from '@nestjs/common';
+import { Controller, Get, type INestApplication, Module } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { Strategy } from 'passport-http-bearer';
 import supertest from 'supertest';
 import TestAgent from 'supertest/lib/agent.js';
-import { User } from '../../auth/index.js';
+import type { User } from '../../auth/index.js';
 import { createApp } from '../factory/index.js';
 import { makeTestAppFactory } from '../factory/testing.js';
 import { AuthModule } from './auth.module.js';

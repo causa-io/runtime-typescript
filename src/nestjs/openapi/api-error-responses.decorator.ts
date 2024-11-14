@@ -1,4 +1,4 @@
-import { Type } from '@nestjs/common';
+import type { Type } from '@nestjs/common';
 import { ApiExtraModels, ApiResponse, refs } from '@nestjs/swagger';
 import { ErrorDto } from '../index.js';
 import { getApiErrorDescription } from './api-error-description.decorator.js';

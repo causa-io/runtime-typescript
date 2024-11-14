@@ -1,4 +1,4 @@
-import { DestinationStream, Logger, destination, pino } from 'pino';
+import { type DestinationStream, type Logger, destination, pino } from 'pino';
 import { getPinoConfiguration } from './configuration.js';
 
 /**

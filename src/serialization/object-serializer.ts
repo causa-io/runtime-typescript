@@ -1,4 +1,4 @@
-import { Type } from '@nestjs/common';
+import type { Type } from '@nestjs/common';
 
 /**
  * Defines a class that can serialize and deserialize objects to {@link Buffer}s.

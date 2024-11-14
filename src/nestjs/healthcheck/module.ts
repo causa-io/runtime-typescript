@@ -1,10 +1,16 @@
-import { Controller, DynamicModule, Get, Module, Type } from '@nestjs/common';
+import {
+  Controller,
+  type DynamicModule,
+  Get,
+  Module,
+  type Type,
+} from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
 import { ApiExcludeController } from '@nestjs/swagger';
 import {
-  HealthCheckResult,
+  type HealthCheckResult,
   HealthCheckService,
-  HealthIndicatorFunction,
+  type HealthIndicatorFunction,
 } from '@nestjs/terminus';
 import { Public } from '../auth/index.js';
 import { BaseHealthIndicatorService } from './base-health-indicator.service.js';

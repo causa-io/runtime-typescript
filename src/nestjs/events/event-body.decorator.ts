@@ -1,5 +1,5 @@
-import { createParamDecorator, ExecutionContext } from '@nestjs/common';
-import { RequestWithEvent } from './request-with-event.js';
+import { createParamDecorator, type ExecutionContext } from '@nestjs/common';
+import type { RequestWithEvent } from './request-with-event.js';
 
 /**
  * The metadata key in which the type of the event for a handler is stored.

@@ -1,12 +1,12 @@
-import { Type } from '@nestjs/common';
+import type { Type } from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
 import * as uuid from 'uuid';
 import {
-  FindReplaceTransaction,
+  type FindReplaceTransaction,
   Transaction,
   TransactionRunner,
 } from '../transaction/index.js';
-import { LockEntity } from './entity.js';
+import type { LockEntity } from './entity.js';
 import { LockAcquisitionError, LockReleaseError } from './errors.js';
 
 /**

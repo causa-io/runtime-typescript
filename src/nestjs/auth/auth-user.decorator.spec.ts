@@ -1,11 +1,11 @@
-import { Controller, Get, INestApplication } from '@nestjs/common';
+import { Controller, Get, type INestApplication } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { AuthGuard, PassportModule, PassportStrategy } from '@nestjs/passport';
 import { Test } from '@nestjs/testing';
 import { Strategy } from 'passport-http-bearer';
 import supertest from 'supertest';
 import TestAgent from 'supertest/lib/agent.js';
-import { User } from '../../auth/index.js';
+import type { User } from '../../auth/index.js';
 import { AuthUser } from './auth-user.decorator.js';
 
 @Controller('test')

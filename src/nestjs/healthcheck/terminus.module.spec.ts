@@ -1,7 +1,7 @@
-import { Controller, Get, INestApplication, Module } from '@nestjs/common';
+import { Controller, Get, type INestApplication, Module } from '@nestjs/common';
 import {
   HealthCheckError,
-  HealthCheckResult,
+  type HealthCheckResult,
   HealthCheckService,
 } from '@nestjs/terminus';
 import supertest from 'supertest';

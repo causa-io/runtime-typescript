@@ -1,6 +1,6 @@
-import { Event, PublishOptions } from '../events/index.js';
+import type { Event, PublishOptions } from '../events/index.js';
 import { TransactionOldTimestampError } from './errors.js';
-import { EventTransaction } from './event-transaction.js';
+import type { EventTransaction } from './event-transaction.js';
 
 /**
  * A transaction object in which both state changes and events can be staged, and committed all at once.

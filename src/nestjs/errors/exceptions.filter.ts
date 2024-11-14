@@ -1,4 +1,9 @@
-import { ArgumentsHost, Catch, HttpException, Logger } from '@nestjs/common';
+import {
+  type ArgumentsHost,
+  Catch,
+  HttpException,
+  Logger,
+} from '@nestjs/common';
 import { BaseExceptionFilter } from '@nestjs/core';
 import {
   EntityAlreadyExistsError,

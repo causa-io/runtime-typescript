@@ -1,5 +1,10 @@
-import { Controller, Get, HttpStatus, INestApplication } from '@nestjs/common';
-import { NestExpressApplication } from '@nestjs/platform-express';
+import {
+  Controller,
+  Get,
+  HttpStatus,
+  type INestApplication,
+} from '@nestjs/common';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import { Test } from '@nestjs/testing';
 import 'jest-extended';
 import { Logger as PinoLogger } from 'nestjs-pino';
@@ -18,7 +23,7 @@ import {
 } from '../../logging/testing.js';
 import { LoggerModule } from '../logging/index.js';
 import { ExceptionFilterModule } from './exception-filter.module.js';
-import { ErrorResponse, HttpError } from './http-error.js';
+import { type ErrorResponse, HttpError } from './http-error.js';
 
 class MyErrorDto implements ErrorResponse {
   readonly statusCode = HttpStatus.I_AM_A_TEAPOT;

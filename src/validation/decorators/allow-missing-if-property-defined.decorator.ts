@@ -1,4 +1,4 @@
-import { ValidateIf, ValidationOptions } from 'class-validator';
+import { ValidateIf, type ValidationOptions } from 'class-validator';
 
 /**
  * Allows the decorated property to be missing only if another property of the object is defined.

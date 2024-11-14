@@ -1,9 +1,9 @@
 import { jest } from '@jest/globals';
-import { Event, PublishOptions } from '../events/index.js';
+import type { Event, PublishOptions } from '../events/index.js';
 import {
   BufferEventTransaction,
-  EventTransaction,
-  FindReplaceStateTransaction,
+  type EventTransaction,
+  type FindReplaceStateTransaction,
   Transaction,
   TransactionRunner,
 } from '../transaction/index.js';

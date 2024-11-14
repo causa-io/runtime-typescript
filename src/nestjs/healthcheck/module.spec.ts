@@ -1,5 +1,5 @@
-import { INestApplication, Module } from '@nestjs/common';
-import { HealthCheckError, HealthIndicatorResult } from '@nestjs/terminus';
+import { type INestApplication, Module } from '@nestjs/common';
+import { HealthCheckError, type HealthIndicatorResult } from '@nestjs/terminus';
 import 'jest-extended';
 import supertest from 'supertest';
 import TestAgent from 'supertest/lib/agent.js';

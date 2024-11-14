@@ -1,4 +1,4 @@
-import { EventTransaction } from './event-transaction.js';
+import type { EventTransaction } from './event-transaction.js';
 import { Transaction } from './transaction.js';
 
 /**

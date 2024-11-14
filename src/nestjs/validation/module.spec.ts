@@ -1,7 +1,7 @@
 import {
   Body,
   Controller,
-  INestApplication,
+  type INestApplication,
   Module,
   Post,
 } from '@nestjs/common';

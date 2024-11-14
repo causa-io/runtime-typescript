@@ -18,4 +18,7 @@ javascript:
   dependencies:
     update:
       packageTargets:
+        # The following types should be manually updated to the next major version when the corresponding tool / package
+        # is updated.
         '@types/node': minor
+        '@types/express': minor

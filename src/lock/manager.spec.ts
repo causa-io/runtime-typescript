@@ -1,12 +1,12 @@
 import { jest } from '@jest/globals';
 import 'jest-extended';
 import * as uuid from 'uuid';
-import { LockEntity } from './entity.js';
+import type { LockEntity } from './entity.js';
 import { LockAcquisitionError, LockReleaseError } from './errors.js';
 import { LockManager } from './manager.js';
 import {
   MockRunner,
-  MockTransaction,
+  type MockTransaction,
   mockStateTransaction,
   mockTransaction,
 } from './utils.test.js';

@@ -1,23 +1,23 @@
 import {
-  CallHandler,
+  type CallHandler,
   Controller,
-  ExecutionContext,
-  INestApplication,
+  type ExecutionContext,
+  type INestApplication,
   Injectable,
-  NestInterceptor,
+  type NestInterceptor,
   Post,
 } from '@nestjs/common';
 import { APP_INTERCEPTOR, Reflector } from '@nestjs/core';
 import { Test } from '@nestjs/testing';
 import { Transform } from 'class-transformer';
 import { IsString } from 'class-validator';
-import { Request } from 'express';
+import type { Request } from 'express';
 import { Observable } from 'rxjs';
 import supertest from 'supertest';
 import TestAgent from 'supertest/lib/agent.js';
 import { parseObject } from '../../index.js';
 import { EVENT_BODY_TYPE_KEY, EventBody } from './event-body.decorator.js';
-import { RequestWithEvent } from './request-with-event.js';
+import type { RequestWithEvent } from './request-with-event.js';
 
 class MyEvent {
   // This ensures that the event body is parsed and validated.

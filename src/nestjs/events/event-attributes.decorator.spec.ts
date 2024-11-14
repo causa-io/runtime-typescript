@@ -1,10 +1,10 @@
 import {
-  CallHandler,
+  type CallHandler,
   Controller,
-  ExecutionContext,
-  INestApplication,
+  type ExecutionContext,
+  type INestApplication,
   Injectable,
-  NestInterceptor,
+  type NestInterceptor,
   Post,
 } from '@nestjs/common';
 import { APP_INTERCEPTOR } from '@nestjs/core';
@@ -13,7 +13,7 @@ import { Observable } from 'rxjs';
 import supertest from 'supertest';
 import TestAgent from 'supertest/lib/agent.js';
 import { EventAttributes } from './event-attributes.decorator.js';
-import { RequestWithEvent } from './request-with-event.js';
+import type { RequestWithEvent } from './request-with-event.js';
 
 @Controller()
 class MyController {

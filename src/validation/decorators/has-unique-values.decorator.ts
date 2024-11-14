@@ -1,5 +1,5 @@
 import {
-  ValidationOptions,
+  type ValidationOptions,
   isArray,
   isObject,
   registerDecorator,

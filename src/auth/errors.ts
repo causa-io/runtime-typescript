@@ -1,4 +1,4 @@
-import { UserClaimRequirements } from './user-claims.js';
+import type { UserClaimRequirements } from './user-claims.js';
 
 /**
  * An error thrown when the expression of user claim requirements are invalid.

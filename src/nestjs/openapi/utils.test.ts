@@ -1,8 +1,8 @@
-import { Controller, Get, INestApplication, Module } from '@nestjs/common';
+import { Controller, Get, type INestApplication, Module } from '@nestjs/common';
 import {
   ApiOkResponse,
   DocumentBuilder,
-  OpenAPIObject,
+  type OpenAPIObject,
   SwaggerModule,
 } from '@nestjs/swagger';
 import { createApp } from '../factory/index.js';
