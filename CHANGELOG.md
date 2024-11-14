@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+Features:
+
+- Officially support Node.js 22.
+
+Chores:
+
+- Upgrade dependencies.
+
 ## v0.22.0 (2024-09-04)
 
 Breaking changes:
