@@ -1,7 +1,7 @@
 import {
   Controller,
   Get,
-  INestApplication,
+  type INestApplication,
   Module,
   Query,
 } from '@nestjs/common';

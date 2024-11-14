@@ -1,6 +1,6 @@
 import {
   Controller,
-  INestApplication,
+  type INestApplication,
   Injectable,
   Module,
 } from '@nestjs/common';

@@ -1,6 +1,11 @@
-import { DynamicModule, Global, Module, ModuleMetadata } from '@nestjs/common';
+import {
+  type DynamicModule,
+  Global,
+  Module,
+  type ModuleMetadata,
+} from '@nestjs/common';
 import { LoggerModule as PinoLoggerModule } from 'nestjs-pino';
-import { Logger } from 'pino';
+import type { Logger } from 'pino';
 import { getDefaultLogger } from '../../logging/index.js';
 import { HEALTHCHECK_ENDPOINT } from '../healthcheck/index.js';
 

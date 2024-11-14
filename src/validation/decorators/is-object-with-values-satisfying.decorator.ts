@@ -1,7 +1,7 @@
 import {
   isObject,
   registerDecorator,
-  ValidationOptions,
+  type ValidationOptions,
 } from 'class-validator';
 
 /**

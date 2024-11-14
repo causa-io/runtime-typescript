@@ -1,4 +1,4 @@
-import { ValidateIf, ValidationOptions } from 'class-validator';
+import { ValidateIf, type ValidationOptions } from 'class-validator';
 
 /**
  * Skips validation if the decorated property is `undefined`.

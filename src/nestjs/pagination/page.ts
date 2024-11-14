@@ -1,7 +1,7 @@
-import { Type } from '@nestjs/common';
+import type { Type } from '@nestjs/common';
 import { ApiProperty } from '@nestjs/swagger';
 import { Transform, instanceToPlain } from 'class-transformer';
-import { PageQuery, WithLimit } from './query.js';
+import { PageQuery, type WithLimit } from './query.js';
 
 /**
  * Converts a {@link PageQuery} object to a search params string, e.g. `?limit=10&readAfter=abc`.

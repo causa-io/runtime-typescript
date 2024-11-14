@@ -1,4 +1,4 @@
-import { Event, PublishOptions } from '../events/index.js';
+import type { Event, PublishOptions } from '../events/index.js';
 
 /**
  * A transaction object used to represent events that should be published atomically.

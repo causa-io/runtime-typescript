@@ -1,10 +1,10 @@
 import { jest } from '@jest/globals';
 import { ConfigService } from '@nestjs/config';
-import { NestExpressApplication } from '@nestjs/platform-express';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import { Test, TestingModuleBuilder } from '@nestjs/testing';
-import { Logger, pino } from 'pino';
+import { type Logger, pino } from 'pino';
 import { LoggerModule } from '../logging/index.js';
-import { AppFactory } from './app-factory.js';
+import type { AppFactory } from './app-factory.js';
 
 /**
  * A mocked {@link ConfigService}.

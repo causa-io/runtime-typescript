@@ -1,6 +1,6 @@
-import { Type } from '@nestjs/common';
+import type { Type } from '@nestjs/common';
 import { instanceToPlain, plainToInstance } from 'class-transformer';
-import { ObjectSerializer } from './object-serializer.js';
+import type { ObjectSerializer } from './object-serializer.js';
 
 /**
  * Describes the resulting type when serializing `T` to JSON.

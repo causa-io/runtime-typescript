@@ -1,5 +1,5 @@
 import { readFile } from 'fs/promises';
-import { LoggerOptions } from 'pino';
+import type { LoggerOptions } from 'pino';
 
 const packageDefinition = JSON.parse(await readFile('package.json', 'utf8'));
 const serviceContext = {

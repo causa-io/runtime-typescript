@@ -2,12 +2,12 @@ import {
   Body,
   Controller,
   Get,
-  INestApplication,
+  type INestApplication,
   Module,
   Post,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { NestExpressApplication } from '@nestjs/platform-express';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import { Transform } from 'class-transformer';
 import { IsPhoneNumber } from 'class-validator';
 import { PinoLogger } from 'nestjs-pino';

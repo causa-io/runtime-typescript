@@ -1,4 +1,4 @@
-import { ApiProperty, ApiPropertyOptions } from '@nestjs/swagger';
+import { ApiProperty, type ApiPropertyOptions } from '@nestjs/swagger';
 
 /**
  * Decorates a property to mark it as constant in the OpenAPI documentation.

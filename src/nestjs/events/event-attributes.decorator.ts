@@ -1,5 +1,5 @@
-import { ExecutionContext, createParamDecorator } from '@nestjs/common';
-import { RequestWithEvent } from './request-with-event.js';
+import { type ExecutionContext, createParamDecorator } from '@nestjs/common';
+import type { RequestWithEvent } from './request-with-event.js';
 
 /**
  * Decorates a route handler's parameter to populate it with the attributes of the event.

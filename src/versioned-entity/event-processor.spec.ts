@@ -1,15 +1,15 @@
 import { jest } from '@jest/globals';
 import 'jest-extended';
-import { Event } from '../events/index.js';
-import { KeyOfType } from '../typing/index.js';
+import type { Event } from '../events/index.js';
+import type { KeyOfType } from '../typing/index.js';
 import { VersionedEventProcessor } from './event-processor.js';
 import {
   MockRunner,
-  MockTransaction,
+  type MockTransaction,
   mockStateTransaction,
   mockTransaction,
 } from './utils.test.js';
-import { VersionedEntity } from './versioned-entity.js';
+import type { VersionedEntity } from './versioned-entity.js';
 
 class MyEntity implements VersionedEntity {
   constructor(data: Partial<MyEntity> = {}) {

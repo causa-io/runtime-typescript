@@ -1,6 +1,10 @@
-import { Type } from '@nestjs/common';
+import type { Type } from '@nestjs/common';
 import { Type as TypeDecorator } from 'class-transformer';
-import { IsDefined, ValidateNested, ValidatorOptions } from 'class-validator';
+import {
+  IsDefined,
+  ValidateNested,
+  type ValidatorOptions,
+} from 'class-validator';
 import { AllowMissing } from './allow-missing.decorator.js';
 
 /**

@@ -1,8 +1,8 @@
 import {
   isArray,
   registerDecorator,
-  ValidationArguments,
-  ValidationOptions,
+  type ValidationArguments,
+  type ValidationOptions,
 } from 'class-validator';
 
 /**

@@ -1,8 +1,8 @@
-import { Type } from '@nestjs/common';
+import type { Type } from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
 import {
   ValidationError as ClassValidationError,
-  ValidatorOptions,
+  type ValidatorOptions,
   validate,
 } from 'class-validator';
 import 'reflect-metadata';

@@ -1,4 +1,4 @@
-import { ValidatorOptions } from 'class-validator';
+import type { ValidatorOptions } from 'class-validator';
 
 /**
  * The validator options to use when parsing unknown inputs.

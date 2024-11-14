@@ -1,4 +1,4 @@
-import { HealthIndicator, HealthIndicatorResult } from '@nestjs/terminus';
+import { HealthIndicator, type HealthIndicatorResult } from '@nestjs/terminus';
 
 /**
  * A base class that can be used to define a simple health check.

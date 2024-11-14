@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { IsDate, ValidationOptions } from 'class-validator';
+import { IsDate, type ValidationOptions } from 'class-validator';
 
 /**
  * Transforms and validates the decorated property as a `Date` object.

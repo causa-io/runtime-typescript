@@ -1,13 +1,13 @@
 import {
   ClassSerializerInterceptor,
-  INestApplication,
+  type INestApplication,
   Module,
-  ModuleMetadata,
-  NestApplicationOptions,
+  type ModuleMetadata,
+  type NestApplicationOptions,
 } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_INTERCEPTOR, NestFactory } from '@nestjs/core';
-import { NestExpressApplication } from '@nestjs/platform-express';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import { Logger } from 'nestjs-pino';
 import { ExceptionFilterModule } from '../errors/index.js';
 import { LoggerModule } from '../logging/index.js';

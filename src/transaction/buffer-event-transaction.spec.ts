@@ -1,5 +1,5 @@
 import { jest } from '@jest/globals';
-import { Event, EventPublisher } from '../events/index.js';
+import type { Event, EventPublisher } from '../events/index.js';
 import { BufferEventTransaction } from './buffer-event-transaction.js';
 
 class MyPublisher implements EventPublisher {

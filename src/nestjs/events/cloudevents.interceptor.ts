@@ -1,18 +1,18 @@
 import {
-  ExecutionContext,
+  type ExecutionContext,
   Injectable,
-  RawBodyRequest,
-  Type,
+  type RawBodyRequest,
+  type Type,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { Request } from 'express';
+import type { Request } from 'express';
 import { PinoLogger } from 'nestjs-pino';
 import rawBody from 'raw-body';
-import { EventAttributes } from '../../events/index.js';
-import { ObjectSerializer } from '../../serialization/index.js';
+import type { EventAttributes } from '../../events/index.js';
+import type { ObjectSerializer } from '../../serialization/index.js';
 import {
   BaseEventHandlerInterceptor,
-  ParsedEventRequest,
+  type ParsedEventRequest,
 } from './base.interceptor.js';
 
 /**

@@ -1,8 +1,8 @@
 import { jest } from '@jest/globals';
 import 'jest-extended';
-import { Event } from '../events/index.js';
+import type { Event } from '../events/index.js';
 import { TransactionOldTimestampError } from './errors.js';
-import { EventTransaction } from './event-transaction.js';
+import type { EventTransaction } from './event-transaction.js';
 import { Transaction } from './transaction.js';
 
 describe('Transaction', () => {

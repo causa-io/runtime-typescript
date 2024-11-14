@@ -1,5 +1,5 @@
 import { InvalidClaimRequirementsError } from './errors.js';
-import { User } from './user.js';
+import type { User } from './user.js';
 
 /**
  * A valid type for a user claim value.

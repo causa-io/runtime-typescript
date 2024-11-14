@@ -1,5 +1,5 @@
 import { jest } from '@jest/globals';
-import { Controller, Get, INestApplication } from '@nestjs/common';
+import { Controller, Get, type INestApplication } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { PassportModule, PassportStrategy } from '@nestjs/passport';
 import { Test } from '@nestjs/testing';

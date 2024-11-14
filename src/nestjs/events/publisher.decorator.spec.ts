@@ -1,4 +1,4 @@
-import { DynamicModule, Module } from '@nestjs/common';
+import { type DynamicModule, Module } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import {
   EVENT_PUBLISHER_INJECTION_NAME,

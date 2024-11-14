@@ -1,5 +1,5 @@
 import { jest } from '@jest/globals';
-import { DestinationStream, Logger } from 'pino';
+import { type DestinationStream, type Logger } from 'pino';
 import { getDefaultLogger } from './logger.js';
 
 /**

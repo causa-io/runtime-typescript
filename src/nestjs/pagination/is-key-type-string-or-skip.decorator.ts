@@ -1,8 +1,8 @@
 import {
   isString,
   registerDecorator,
-  ValidationArguments,
-  ValidationOptions,
+  type ValidationArguments,
+  type ValidationOptions,
 } from 'class-validator';
 import { CUSTOM_READ_AFTER_METADATA_KEY } from './custom-read-after-type.decorator.js';
 

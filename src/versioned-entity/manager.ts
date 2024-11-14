@@ -1,4 +1,4 @@
-import { Type } from '@nestjs/common';
+import type { Type } from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
 import * as uuid from 'uuid';
 import {
@@ -7,22 +7,22 @@ import {
   IncorrectEntityVersionError,
   UnsupportedEntityOperationError,
 } from '../errors/index.js';
-import {
+import type {
   Event,
   EventData,
   EventName,
   PublishOptions,
 } from '../events/index.js';
 import {
-  FindReplaceTransaction,
+  type FindReplaceTransaction,
   TransactionRunner,
 } from '../transaction/index.js';
-import { KeyOfType } from '../typing/index.js';
+import type { KeyOfType } from '../typing/index.js';
 import {
   VersionedEventProcessor,
-  VersionedProjectionOptions,
+  type VersionedProjectionOptions,
 } from './event-processor.js';
-import {
+import type {
   VersionedEntity,
   VersionedEntityCreation,
   VersionedEntityUpdate,

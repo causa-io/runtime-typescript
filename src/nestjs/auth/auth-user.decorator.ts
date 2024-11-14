@@ -1,5 +1,5 @@
-import { createParamDecorator, ExecutionContext } from '@nestjs/common';
-import { User } from '../../auth/index.js';
+import { createParamDecorator, type ExecutionContext } from '@nestjs/common';
+import type { User } from '../../auth/index.js';
 
 /**
  * Decorator for controller methods that fetch the {@link User} object from the request.

@@ -1,5 +1,5 @@
 import { SetMetadata } from '@nestjs/common';
-import { UserClaimRequirements } from '../../auth/index.js';
+import type { UserClaimRequirements } from '../../auth/index.js';
 
 /**
  * The metadata key for the {@link RequireUserClaims} decorator.

@@ -1,7 +1,7 @@
 import { jest } from '@jest/globals';
 import { mkdtemp, rm, writeFile } from 'fs/promises';
 import { resolve } from 'path';
-import { DestinationStream, Logger, pino } from 'pino';
+import { type DestinationStream, type Logger, pino } from 'pino';
 import {
   type getPinoConfiguration as getPinoConfigurationType,
   type updatePinoConfiguration as updatePinoConfigurationType,

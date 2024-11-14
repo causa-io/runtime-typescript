@@ -1,6 +1,6 @@
 import { jest } from '@jest/globals';
-import { Controller, Get, INestApplication, Logger } from '@nestjs/common';
-import { NestExpressApplication } from '@nestjs/platform-express';
+import { Controller, Get, type INestApplication, Logger } from '@nestjs/common';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import { Test } from '@nestjs/testing';
 import { pino } from 'pino';
 import supertest from 'supertest';

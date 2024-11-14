@@ -1,8 +1,8 @@
 import {
-  ArgumentMetadata,
+  type ArgumentMetadata,
   ValidationPipe as BaseValidationPipe,
-  ValidationPipeOptions,
-  ValidationError as ValidatorError,
+  type ValidationPipeOptions,
+  type ValidationError as ValidatorError,
 } from '@nestjs/common';
 import { validatorOptions } from '../../validation/index.js';
 import { ValidationError } from '../errors/index.js';

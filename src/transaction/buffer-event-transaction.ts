@@ -1,5 +1,9 @@
-import { Event, EventPublisher, PublishOptions } from '../events/index.js';
-import { EventTransaction } from './event-transaction.js';
+import {
+  type Event,
+  type EventPublisher,
+  type PublishOptions,
+} from '../events/index.js';
+import type { EventTransaction } from './event-transaction.js';
 
 /**
  * An event staged as part of a transaction.

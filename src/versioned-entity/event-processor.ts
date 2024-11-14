@@ -1,9 +1,9 @@
-import { Type } from '@nestjs/common';
+import type { Type } from '@nestjs/common';
 import {
-  FindReplaceTransaction,
+  type FindReplaceTransaction,
   TransactionRunner,
 } from '../transaction/index.js';
-import { KeyOfType } from '../typing/index.js';
+import type { KeyOfType } from '../typing/index.js';
 
 /**
  * Options for the {@link VersionedEventProcessor.project} method.

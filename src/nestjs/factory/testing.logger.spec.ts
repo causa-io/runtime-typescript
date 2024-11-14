@@ -1,7 +1,7 @@
 import { jest } from '@jest/globals';
 import {
   Controller,
-  INestApplication,
+  type INestApplication,
   Injectable,
   Module,
 } from '@nestjs/common';
