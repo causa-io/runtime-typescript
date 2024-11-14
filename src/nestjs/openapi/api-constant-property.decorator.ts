@@ -10,7 +10,7 @@ export function ApiConstantProperty(
 ): PropertyDecorator {
   const { const: value, ...baseOptions } = options;
 
-  let constType = options.type;
+  let constType: ApiPropertyOptions['type'] | string = options.type;
   if (!constType) {
     constType = typeof value;
 

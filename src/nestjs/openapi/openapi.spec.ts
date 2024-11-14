@@ -103,6 +103,7 @@ describe('OpenAPI', () => {
             operationId: 'MyController_get',
             description: '🔨',
             summary: '',
+            tags: expect.any(Array),
             parameters: [
               {
                 description: "The resource's UUID.",

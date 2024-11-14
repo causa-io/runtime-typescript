@@ -286,6 +286,7 @@ describe('Page', () => {
           '/complex': {
             get: {
               operationId: 'MyController_getItemsComplex',
+              tags: expect.any(Array),
               parameters: [
                 {
                   description: 'The maximum number of returned results.',
@@ -325,6 +326,7 @@ describe('Page', () => {
           '/simple': {
             get: {
               operationId: 'MyController_getItems',
+              tags: expect.any(Array),
               parameters: [
                 {
                   description: 'The maximum number of returned results.',
