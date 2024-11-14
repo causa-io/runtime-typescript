@@ -1,6 +1,6 @@
 {
   "name": "@causa/runtime",
-  "version": "0.22.0",
+  "version": "0.23.0",
   "description": "The package exposing the runtime SDK for Causa, focusing on service containers and event-based processing.",
   "repository": "github:causa-io/runtime-typescript",
   "license": "ISC",
