@@ -136,7 +136,9 @@ Event and state `Transaction`s are a core concept of Causa, which provide a way 
 
 A state transaction can optionally implement the `FindReplaceStateTransaction` interface, which enables the use of the `Transaction` with the `LockManager`, `VersionedEntityEventProcessor`, and the `VersionedEntityManager`.
 
-The `BufferEventTransaction` provides a simple `EventTransaction` which accumulates events and publishes them when the transaction commits using an underlying `EventPublisher`.
+The `BufferEventTransaction` provides a simple `EventTransaction` which accumulates events and publishes them when the transaction commits using an underlying `EventPublisher`. However, in itself this does not commit the state and the events in an atomic manner.
+
+The `OutboxTransactionRunner` solves this problem, and provides a base implementation that commits events to be published using the state transaction (in the "outbox"). The state and the events are therefore committed atomically as part of a single transaction. Then, events are published in the background by the related `OutboxEventSender`, and removed from the outbox (in the state).
 
 ### Validation
 

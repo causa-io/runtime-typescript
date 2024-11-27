@@ -1,15 +1,15 @@
 import { jest } from '@jest/globals';
 import 'jest-extended';
 import * as uuid from 'uuid';
-import type { LockEntity } from './entity.js';
-import { LockAcquisitionError, LockReleaseError } from './errors.js';
-import { LockManager } from './manager.js';
 import {
   MockRunner,
   type MockTransaction,
   mockStateTransaction,
   mockTransaction,
-} from './utils.test.js';
+} from '../transaction/utils.test.js';
+import type { LockEntity } from './entity.js';
+import { LockAcquisitionError, LockReleaseError } from './errors.js';
+import { LockManager } from './manager.js';
 
 class MyLock implements LockEntity {
   public constructor(init?: Partial<MyLock>) {

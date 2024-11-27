@@ -1,4 +1,4 @@
-import type { Event, PublishOptions } from '../events/index.js';
+import type { PublishOptions } from '../events/index.js';
 import { TransactionOldTimestampError } from './errors.js';
 import type { EventTransaction } from './event-transaction.js';
 
@@ -58,7 +58,7 @@ export class Transaction<ST, ET extends EventTransaction> {
    */
   async publish(
     topic: string,
-    event: Event,
+    event: object,
     options: PublishOptions = {},
   ): Promise<void> {
     await this.eventTransaction.publish(topic, event, options);

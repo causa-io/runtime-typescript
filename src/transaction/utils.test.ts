@@ -1,3 +1,4 @@
+import { jest } from '@jest/globals';
 import type { Event, PublishOptions } from '../events/index.js';
 import {
   BufferEventTransaction,
@@ -5,7 +6,7 @@ import {
   type FindReplaceStateTransaction,
   Transaction,
   TransactionRunner,
-} from '../transaction/index.js';
+} from './index.js';
 
 class MockFindReplaceStateTransaction implements FindReplaceStateTransaction {
   private entities: Record<string, any> = {};
@@ -35,7 +36,18 @@ class MockFindReplaceStateTransaction implements FindReplaceStateTransaction {
 
 export type MockTransaction = Transaction<MockFindReplaceStateTransaction, any>;
 
-export const mockStateTransaction = new MockFindReplaceStateTransaction();
+export const mockStateTransaction: MockFindReplaceStateTransaction & {
+  replace: jest.SpiedFunction<FindReplaceStateTransaction['replace']>;
+  deleteWithSameKeyAs: jest.SpiedFunction<
+    FindReplaceStateTransaction['deleteWithSameKeyAs']
+  >;
+  findOneWithSameKeyAs: jest.SpiedFunction<
+    FindReplaceStateTransaction['findOneWithSameKeyAs']
+  >;
+} = new MockFindReplaceStateTransaction() as any;
+jest.spyOn(mockStateTransaction, 'replace');
+jest.spyOn(mockStateTransaction, 'deleteWithSameKeyAs');
+jest.spyOn(mockStateTransaction, 'findOneWithSameKeyAs');
 
 export const mockEventTransaction: EventTransaction & {
   bufferedEvents: { topic: string; event: Event; options: PublishOptions }[];

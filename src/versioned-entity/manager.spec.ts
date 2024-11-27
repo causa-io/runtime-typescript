@@ -8,14 +8,14 @@ import {
 } from '../errors/index.js';
 import type { Event } from '../events/index.js';
 import { TransactionOldTimestampError } from '../transaction/index.js';
-import { VersionedEntityManager } from './manager.js';
 import {
   MockRunner,
   type MockTransaction,
   mockEventTransaction,
   mockStateTransaction,
   mockTransaction,
-} from './utils.test.js';
+} from '../transaction/utils.test.js';
+import { VersionedEntityManager } from './manager.js';
 import type { VersionedEntity } from './versioned-entity.js';
 
 class MyEntity implements VersionedEntity {
@@ -100,6 +100,7 @@ describe('VersionedEntityManager', () => {
 
   afterEach(() => {
     mockEventTransaction.bufferedEvents = [];
+    mockStateTransaction.clear();
   });
 
   describe('create', () => {
