@@ -80,6 +80,7 @@ describe('ApiConstantProperty', () => {
         const: { someComplexStuff: '🤷' },
         description: '📚',
         type: 'object',
+        properties: {},
       })
       myProp!: { someComplexStuff: '🤷' };
     }
@@ -96,6 +97,7 @@ describe('ApiConstantProperty', () => {
           const: { someComplexStuff: '🤷' },
           type: 'object',
           description: '📚',
+          properties: {},
         },
       },
       required: ['myProp'],
