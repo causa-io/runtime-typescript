@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.24.0 (2024-11-27)
+
 Breaking changes:
 
 - Allow any type of object to be published in an `EventTransaction`.
