@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+Breaking changes:
+
+- Allow any type of object to be published in an `EventTransaction`.
+- Add `PreparedEvent`-related features to the `EventPublisher` interface.
+
+Features:
+
+- Implement the `OutboxTransactionRunner` and `OutboxEventSender`.
+
 ## v0.23.0 (2024-11-14)
 
 Features:
