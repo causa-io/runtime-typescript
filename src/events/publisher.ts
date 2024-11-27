@@ -13,14 +13,29 @@ export type PublishOptions = {
    * Attributes to send along with the event.
    * This may not be supported by all publishers.
    */
-  attributes?: EventAttributes;
+  readonly attributes?: EventAttributes;
 
   /**
    * The key used for partitioning or ordering the event.
    * This may not be supported by all publishers.
    */
-  key?: string;
+  readonly key?: string;
 };
+
+/**
+ * An event that has been serialized, along with its final publish options.
+ */
+export type PreparedEvent = {
+  /**
+   * The topic to which the event should be published.
+   */
+  readonly topic: string;
+
+  /**
+   * The serialized payload of the event.
+   */
+  readonly data: Buffer;
+} & PublishOptions;
 
 /**
  * A publisher of business events.
@@ -30,6 +45,20 @@ export interface EventPublisher {
    * Flushes the publisher, such that all buffered messages are sent.
    */
   flush(): Promise<void>;
+
+  /**
+   * Serializes the event payload and computes the final publish options.
+   *
+   * @param topic The topic to publish the event to.
+   * @param event The payload of the event.
+   * @param options Publishing options.
+   * @returns The {@link PreparedEvent}.
+   */
+  prepare(
+    topic: string,
+    event: object,
+    options?: PublishOptions,
+  ): Promise<PreparedEvent>;
 
   /**
    * Publishes a new event.
@@ -44,4 +73,12 @@ export interface EventPublisher {
     event: object,
     options?: PublishOptions,
   ): Promise<void>;
+
+  /**
+   * Publishes a previously prepared event.
+   * An event can be prepared using {@link EventPublisher.prepare}.
+   *
+   * @param prepared The prepared event to publish.
+   */
+  publish(prepared: PreparedEvent): Promise<void>;
 }
