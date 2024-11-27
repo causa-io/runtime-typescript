@@ -1,14 +1,14 @@
 import { jest } from '@jest/globals';
 import 'jest-extended';
 import type { Event } from '../events/index.js';
-import type { KeyOfType } from '../typing/index.js';
-import { VersionedEventProcessor } from './event-processor.js';
 import {
   MockRunner,
   type MockTransaction,
   mockStateTransaction,
   mockTransaction,
-} from './utils.test.js';
+} from '../transaction/utils.test.js';
+import type { KeyOfType } from '../typing/index.js';
+import { VersionedEventProcessor } from './event-processor.js';
 import type { VersionedEntity } from './versioned-entity.js';
 
 class MyEntity implements VersionedEntity {
@@ -86,6 +86,10 @@ describe('VersionedEntityEventProcessor', () => {
 
   beforeEach(() => {
     processor = new MyProcessor();
+  });
+
+  afterEach(() => {
+    mockStateTransaction.clear();
   });
 
   describe('processEvent', () => {
