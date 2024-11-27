@@ -1,4 +1,4 @@
-import type { Event, PublishOptions } from '../events/index.js';
+import type { PublishOptions } from '../events/index.js';
 
 /**
  * A transaction object used to represent events that should be published atomically.
@@ -12,5 +12,9 @@ export interface EventTransaction {
    * @param event The event to publish.
    * @param options Options for publishing the event.
    */
-  publish(topic: string, event: Event, options?: PublishOptions): Promise<void>;
+  publish(
+    topic: string,
+    event: object,
+    options?: PublishOptions,
+  ): Promise<void>;
 }
