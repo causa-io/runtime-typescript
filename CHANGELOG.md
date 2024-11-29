@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+Fixes:
+
+- Ensure polling and publishing operations in the `OutboxEventSender` are over when the application shuts down.
+
 ## v0.24.0 (2024-11-27)
 
 Breaking changes:
