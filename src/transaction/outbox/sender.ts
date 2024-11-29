@@ -71,6 +71,23 @@ export abstract class OutboxEventSender implements OnApplicationShutdown {
   protected readonly pollingIntervalTimeout: NodeJS.Timeout | undefined;
 
   /**
+   * The ongoing polling operation, if any.
+   * This is awaited when the application is shutting down.
+   */
+  protected ongoingPolling: Promise<void> | undefined;
+
+  /**
+   * The ongoing publishing operations.
+   * These are awaited when the application is shutting down.
+   */
+  protected readonly ongoingPublishing = new Set<Promise<void>>();
+
+  /**
+   * Whether the application is shutting down.
+   */
+  protected isShuttingDown = false;
+
+  /**
    * Creates a new {@link OutboxEventSender}.
    *
    * @param publisher The {@link EventPublisher} to use to publish events.
@@ -88,14 +105,18 @@ export abstract class OutboxEventSender implements OnApplicationShutdown {
     this.leaseDuration = options.leaseDuration ?? DEFAULT_LEASE_DURATION;
 
     this.pollingIntervalTimeout = this.pollingInterval
-      ? setInterval(() => this.pollOutbox(), this.pollingInterval)
+      ? setInterval(() => this.pollOutboxAtInterval(), this.pollingInterval)
       : undefined;
   }
 
-  onApplicationShutdown() {
+  async onApplicationShutdown(): Promise<void> {
+    this.isShuttingDown = true;
+
     if (this.pollingIntervalTimeout) {
       clearInterval(this.pollingIntervalTimeout);
     }
+
+    await Promise.allSettled([this.ongoingPolling, ...this.ongoingPublishing]);
   }
 
   /**
@@ -119,8 +140,21 @@ export abstract class OutboxEventSender implements OnApplicationShutdown {
   ): Promise<void>;
 
   /**
-   * Fetches events from the outbox and publishes them.
    * This runs at regular intervals to poll the outbox for events to publish.
+   * No polling is triggered if there is already an ongoing polling operation or if the application is shutting down.
+   */
+  protected async pollOutboxAtInterval(): Promise<void> {
+    if (this.ongoingPolling || this.isShuttingDown) {
+      return;
+    }
+
+    this.ongoingPolling = this.pollOutbox();
+    await this.ongoingPolling;
+    this.ongoingPolling = undefined;
+  }
+
+  /**
+   * Fetches events from the outbox and publishes them.
    */
   async pollOutbox(): Promise<void> {
     let events: OutboxEvent[];
@@ -149,13 +183,19 @@ export abstract class OutboxEventSender implements OnApplicationShutdown {
   /**
    * Publishes the given outbox events using the underlying {@link OutboxEventSender.publisher}.
    * This also updates the outbox after publishing.
+   * This does not try to publish the events if the application is shutting down. This is considered okay as events
+   * should be in the outbox and can be picked up by another instance of the sender.
    *
    * @param events The events to publish.
    */
   async publish(events: OutboxEvent[]): Promise<void> {
-    if (events.length === 0) {
+    if (events.length === 0 || this.isShuttingDown) {
       return;
     }
+
+    let resolve!: () => void;
+    const ongoingPromise = new Promise<void>((r) => (resolve = r));
+    this.ongoingPublishing.add(ongoingPromise);
 
     const resultEntries = await Promise.all(
       events.map(async (e): Promise<[string, boolean]> => {
@@ -193,5 +233,8 @@ export abstract class OutboxEventSender implements OnApplicationShutdown {
     } catch (error: any) {
       this.logger.error({ error: error.stack }, 'Failed to update the outbox.');
     }
+
+    this.ongoingPublishing.delete(ongoingPromise);
+    resolve();
   }
 }

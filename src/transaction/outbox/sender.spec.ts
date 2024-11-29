@@ -20,21 +20,23 @@ describe('OutboxEventSender', () => {
   beforeAll(() => {
     logger = new PinoLogger({ pinoHttp: { logger: getDefaultLogger() } });
     publisher = new MockPublisher();
-    sender = new MockSender(publisher, logger, { pollingInterval: 0 });
-
     publishSpy = jest.spyOn(publisher, 'publish').mockResolvedValue();
+    spyOnLogger();
+  });
+
+  beforeEach(() => {
+    sender = new MockSender(publisher, logger, { pollingInterval: 0 });
     updateOutboxSpy = jest
       .spyOn(sender as any, 'updateOutbox')
       .mockResolvedValue(undefined);
     fetchEventsSpy = jest.spyOn(sender as any, 'fetchEvents');
-    spyOnLogger();
   });
 
   describe('lifecycle', () => {
     let sender: MockSender | undefined;
 
     afterEach(async () => {
-      sender?.onApplicationShutdown();
+      await sender?.onApplicationShutdown();
       sender = undefined;
     });
 
@@ -51,6 +53,77 @@ describe('OutboxEventSender', () => {
       expect((sender as any).pollingIntervalTimeout).toBeDefined();
       await setTimeout(70);
       expect(sender.pollOutbox).toHaveBeenCalled();
+    });
+
+    it('should wait for the ongoing polling to finish before shutting down', async () => {
+      sender = new MockSender(publisher, logger, { pollingInterval: 0 });
+      jest.spyOn(sender, 'pollOutbox').mockImplementation(async () => {
+        await setTimeout(100);
+      });
+
+      (sender as any).pollOutboxAtInterval();
+      const actualPromise = sender.onApplicationShutdown();
+      const actualFirstResult = await Promise.race([
+        actualPromise,
+        setTimeout(50, 'finishesFirst'),
+      ]);
+
+      expect(actualFirstResult).toBe('finishesFirst');
+      await actualPromise;
+      expect(sender.pollOutbox).toHaveBeenCalledExactlyOnceWith();
+    });
+
+    it('should wait for ongoing publishing to finish before shutting down', async () => {
+      sender = new MockSender(publisher, logger, { pollingInterval: 0 });
+      publishSpy.mockImplementation(async () => {
+        await setTimeout(100);
+      });
+
+      sender.publish([
+        { id: '1', topic: 'topic1', data: Buffer.from('🎉'), attributes: {} },
+      ]);
+      sender.publish([
+        { id: '2', topic: 'topic2', data: Buffer.from('🎁'), attributes: {} },
+      ]);
+      const actualPromise = sender.onApplicationShutdown();
+      const actualFirstResult = await Promise.race([
+        actualPromise,
+        setTimeout(50, 'finishesFirst'),
+      ]);
+
+      expect(actualFirstResult).toBe('finishesFirst');
+      await actualPromise;
+      expect(publisher.publish).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe('pollOutboxAtInterval', () => {
+    it('should not start another polling when the last one is still running', async () => {
+      fetchEventsSpy.mockImplementationOnce(async () => {
+        await setTimeout(100);
+        return [];
+      });
+
+      (sender as any).pollOutboxAtInterval();
+
+      expect(fetchEventsSpy).toHaveBeenCalledExactlyOnceWith();
+      expect((sender as any).ongoingPolling).toBeDefined();
+
+      const actualPromise = (sender as any).pollOutboxAtInterval();
+
+      expect((sender as any).ongoingPolling).toBeDefined();
+      await (sender as any).ongoingPolling;
+      expect(fetchEventsSpy).toHaveBeenCalledExactlyOnceWith();
+      expect((sender as any).ongoingPolling).toBeUndefined();
+      await actualPromise;
+    });
+
+    it('should not start polling when the application is shutting down', async () => {
+      await sender.onApplicationShutdown();
+      await (sender as any).pollOutboxAtInterval();
+
+      expect(fetchEventsSpy).not.toHaveBeenCalled();
+      expect((sender as any).ongoingPolling).toBeUndefined();
     });
   });
 
@@ -186,6 +259,18 @@ describe('OutboxEventSender', () => {
           error: expect.stringContaining('💥'),
         }),
       ]);
+    });
+
+    it('should not start publishing when the application is shutting down', async () => {
+      await sender.onApplicationShutdown();
+
+      await sender.publish([
+        { id: '1', topic: 'topic1', data: Buffer.from('🎉'), attributes: {} },
+      ]);
+
+      expect(publisher.publish).not.toHaveBeenCalled();
+      expect(updateOutboxSpy).not.toHaveBeenCalled();
+      expect(getLoggedErrors()).toBeEmpty();
     });
   });
 });
