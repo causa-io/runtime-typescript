@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+Chores:
+
+- Set the context for event handler interceptor loggers.
+
 ## v0.24.1 (2024-11-29)
 
 Fixes:

@@ -6,13 +6,13 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import type { Request } from 'express';
-import { PinoLogger } from 'nestjs-pino';
 import { Observable, of, throwError, timer } from 'rxjs';
 import { catchError, mergeMap } from 'rxjs/operators';
 import { RetryableError } from '../../errors/index.js';
 import { type EventAttributes, InvalidEventError } from '../../events/index.js';
 import { ValidationError } from '../../validation/index.js';
 import { ServiceUnavailableError } from '../errors/index.js';
+import { Logger } from '../logging/index.js';
 import { EVENT_BODY_TYPE_KEY } from './event-body.decorator.js';
 import type { RequestWithEvent } from './request-with-event.js';
 import { EVENT_HANDLER_KEY } from './use-event-handler.decorator.js';
@@ -53,8 +53,10 @@ export abstract class BaseEventHandlerInterceptor implements NestInterceptor {
   constructor(
     readonly id: string,
     protected readonly reflector: Reflector,
-    protected readonly logger: PinoLogger,
-  ) {}
+    protected readonly logger: Logger,
+  ) {
+    this.logger.setContext(BaseEventHandlerInterceptor.name);
+  }
 
   /**
    * Assigns the ID of the event to the logger.
