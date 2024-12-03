@@ -6,10 +6,10 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import type { Request } from 'express';
-import { PinoLogger } from 'nestjs-pino';
 import rawBody from 'raw-body';
 import type { EventAttributes } from '../../events/index.js';
 import type { ObjectSerializer } from '../../serialization/index.js';
+import { Logger } from '../logging/index.js';
 import {
   BaseEventHandlerInterceptor,
   type ParsedEventRequest,
@@ -40,14 +40,15 @@ export class CloudEventsEventHandlerInterceptor extends BaseEventHandlerIntercep
    *
    * @param serializer The serializer to use to deserialize the event from the request body.
    * @param reflector The {@link Reflector} to use.
-   * @param logger The {@link PinoLogger} to use.
+   * @param logger The {@link Logger} to use.
    */
   constructor(
     protected readonly serializer: ObjectSerializer,
     reflector: Reflector,
-    logger: PinoLogger,
+    logger: Logger,
   ) {
     super(CLOUDEVENTS_EVENT_HANDLER_ID, reflector, logger);
+    this.logger.setContext(CloudEventsEventHandlerInterceptor.name);
   }
 
   /**
@@ -116,7 +117,7 @@ export class CloudEventsEventHandlerInterceptor extends BaseEventHandlerIntercep
   ): Type<CloudEventsEventHandlerInterceptor> {
     @Injectable()
     class CloudEventEventHandlerInterceptorWithSerializer extends CloudEventsEventHandlerInterceptor {
-      constructor(reflector: Reflector, logger: PinoLogger) {
+      constructor(reflector: Reflector, logger: Logger) {
         super(serializer, reflector, logger);
       }
     }
