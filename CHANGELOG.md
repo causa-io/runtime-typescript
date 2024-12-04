@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.25.0 (2024-12-04)
+
 Breaking changes:
 
 - Pass a factory to `OutboxTransactionRunner.runStateTransaction`.
