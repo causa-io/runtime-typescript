@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+Breaking changes:
+
+- Pass a factory to `OutboxTransactionRunner.runStateTransaction`.
+
+Fixes:
+
+- Do not reuse `OutboxEventTransaction`s upon transaction retries.
+
 ## v0.24.2 (2024-12-03)
 
 Chores:

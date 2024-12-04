@@ -1,5 +1,6 @@
 import { jest } from '@jest/globals';
 import { PinoLogger } from 'nestjs-pino';
+import { RetryableError } from '../../errors/index.js';
 import type { FindReplaceStateTransaction } from '../find-replace-transaction.js';
 import { Transaction } from '../transaction.js';
 import { mockStateTransaction } from '../utils.test.js';
@@ -19,15 +20,25 @@ type MyTransaction = Transaction<
 
 class MyRunner extends OutboxTransactionRunner<MyTransaction> {
   protected async runStateTransaction<RT>(
-    eventTransaction: OutboxEventTransaction,
+    eventTransactionFactory: () => OutboxEventTransaction,
     runFn: (transaction: MyTransaction) => Promise<RT>,
   ): Promise<RT> {
-    const transaction = new Transaction(
-      mockStateTransaction as unknown as FindReplaceStateTransaction,
-      eventTransaction,
-    );
+    while (true) {
+      try {
+        const transaction = new Transaction(
+          mockStateTransaction as unknown as FindReplaceStateTransaction,
+          eventTransactionFactory(),
+        );
 
-    return await runFn(transaction);
+        return await runFn(transaction);
+      } catch (error) {
+        if (error instanceof RetryableError) {
+          continue;
+        }
+
+        throw error;
+      }
+    }
   }
 }
 
@@ -108,15 +119,17 @@ describe('OutboxTransactionRunner', () => {
     it('should not publish events if the transaction fails', async () => {
       jest
         .spyOn(runner as any, 'runStateTransaction')
-        .mockImplementationOnce(async (eventTransaction: any, runFn: any) => {
-          await runFn(
-            new Transaction(
-              mockStateTransaction as unknown as FindReplaceStateTransaction,
-              eventTransaction,
-            ),
-          );
-          throw new Error('💥');
-        });
+        .mockImplementationOnce(
+          async (eventTransactionFactory: any, runFn: any) => {
+            await runFn(
+              new Transaction(
+                mockStateTransaction as unknown as FindReplaceStateTransaction,
+                eventTransactionFactory(),
+              ),
+            );
+            throw new Error('💥');
+          },
+        );
 
       const actualPromise = runner.run(async (transaction) => {
         await transaction.publish('topic1', { id: '1' } as any, { key: '1' });
@@ -133,6 +146,45 @@ describe('OutboxTransactionRunner', () => {
         }),
       ]);
       expect(sender.publish).not.toHaveBeenCalled();
+    });
+
+    it('should create a new event transaction when the transaction is retried', async () => {
+      const observedEventTransactions: OutboxEventTransaction[] = [];
+
+      const actualResult = await runner.run(async (transaction) => {
+        observedEventTransactions.push(transaction.eventTransaction);
+        const transactionCount = observedEventTransactions.length;
+
+        await transaction.publish('topic1', {
+          id: transactionCount.toFixed(),
+        } as any);
+
+        if (transactionCount < 2) {
+          throw new RetryableError('');
+        }
+        return '🎉';
+      });
+
+      expect(actualResult).toEqual(['🎉']);
+      expect(sender.publish).toHaveBeenCalledExactlyOnceWith([
+        new MyEventType({
+          id: expect.any(String),
+          topic: 'topic1',
+          data: Buffer.from('{"id":"2"}'),
+          attributes: { prepared: '✅' },
+          leaseExpiration: expect.any(Date),
+        }),
+      ]);
+      expect(observedEventTransactions).toHaveLength(2);
+      expect(observedEventTransactions[0]).toBeInstanceOf(
+        OutboxEventTransaction,
+      );
+      expect(observedEventTransactions[1]).toBeInstanceOf(
+        OutboxEventTransaction,
+      );
+      expect(observedEventTransactions[0]).not.toBe(
+        observedEventTransactions[1],
+      );
     });
   });
 });

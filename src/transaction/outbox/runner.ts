@@ -37,11 +37,11 @@ export abstract class OutboxTransactionRunner<
    * Creates and runs the state transaction for the runner.
    * This should be implemented by subclasses, depending on the system used to store the state.
    *
-   * @param eventTransaction The {@link OutboxEventTransaction} to use when creating the {@link Transaction}.
+   * @param eventTransactionFactory The function to call to create a new {@link OutboxEventTransaction} on each attempt.
    * @param runFn The function to run in the transaction.
    */
   protected abstract runStateTransaction<RT>(
-    eventTransaction: OutboxEventTransaction,
+    eventTransactionFactory: () => OutboxEventTransaction,
     runFn: (transaction: T) => Promise<RT>,
   ): Promise<RT>;
 
@@ -77,10 +77,8 @@ export abstract class OutboxTransactionRunner<
   async run<RT>(runFn: (transaction: T) => Promise<RT>): Promise<[RT]> {
     this.logger.info('Starting a transaction.');
 
-    const eventTransaction = new OutboxEventTransaction(this.sender.publisher);
-
     const { result, events } = await this.runStateTransaction(
-      eventTransaction,
+      () => new OutboxEventTransaction(this.sender.publisher),
       async (transaction) => {
         this.logger.info('Starting transaction attempt.');
 
