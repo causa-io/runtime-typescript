@@ -1,7 +1,14 @@
 import { jest } from '@jest/globals';
-import { Controller, Get, type INestApplication, Logger } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  type INestApplication,
+  Inject,
+  Logger,
+} from '@nestjs/common';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { Test } from '@nestjs/testing';
+import type { PinoLogger as PinoLoggerType } from 'nestjs-pino';
 import { pino } from 'pino';
 import supertest from 'supertest';
 import TestAgent from 'supertest/lib/agent.js';
@@ -11,13 +18,21 @@ import type { LoggerModule as LoggerModuleType } from './logger.module.js';
 describe('LoggerModule', () => {
   let loggingTesting: typeof loggingTestingType;
   let LoggerModule: typeof LoggerModuleType;
-  let PinoLogger: any;
+  let PinoNestJsLogger: any;
+  let PinoLogger: typeof PinoLoggerType;
 
   let healthFun: () => string;
 
   @Controller()
   class TestController {
     private readonly logger = new Logger(TestController.name);
+
+    constructor(
+      // This allows to inject `PinoLogger` without importing the class at the root of this file.
+      // This would otherwise interfere with mocking.
+      @Inject('PinoLoggerCustomToken')
+      private readonly pinoLogger: PinoLoggerType,
+    ) {}
 
     @Get('health')
     health() {
@@ -27,6 +42,7 @@ describe('LoggerModule', () => {
     @Get('someRoute')
     route() {
       this.logger.warn({ extraParam: '✨' }, 'some warning');
+      this.pinoLogger.assign({ assigned: '🍦' });
       return 'Yo';
     }
   }
@@ -41,7 +57,7 @@ describe('LoggerModule', () => {
 
     loggingTesting = await import('../../logging/testing.js');
     ({ LoggerModule } = await import('./logger.module.js'));
-    ({ Logger: PinoLogger } = await import('nestjs-pino'));
+    ({ Logger: PinoNestJsLogger, PinoLogger } = await import('nestjs-pino'));
   });
 
   async function initApp(options: { logger?: pino.Logger } = {}) {
@@ -52,9 +68,12 @@ describe('LoggerModule', () => {
           : LoggerModule,
       ],
       controllers: [TestController],
+      providers: [
+        { provide: 'PinoLoggerCustomToken', useExisting: PinoLogger },
+      ],
     }).compile();
     app = testingModule.createNestApplication<NestExpressApplication>();
-    app.useLogger(app.get(PinoLogger));
+    app.useLogger(app.get(PinoNestJsLogger));
     await app.init();
 
     request = supertest(app.getHttpServer());
@@ -172,6 +191,19 @@ describe('LoggerModule', () => {
         extraParam: '✨',
         different: '❄️',
       }),
+    ]);
+  });
+
+  it('should assign bindings to responses', async () => {
+    await initApp();
+
+    await request.get('/someRoute').expect(200);
+
+    const actualRequestCompletedLogs = loggingTesting.getLoggedInfos({
+      predicate: (o) => o.message === 'request completed',
+    });
+    expect(actualRequestCompletedLogs).toEqual([
+      expect.objectContaining({ assigned: '🍦' }),
     ]);
   });
 });
