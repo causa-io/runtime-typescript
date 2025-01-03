@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+Features:
+
+- Enable assignment of bindings to response logs.
+
 ## v0.25.0 (2024-12-04)
 
 Breaking changes:
