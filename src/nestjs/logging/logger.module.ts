@@ -5,9 +5,16 @@ import { getDefaultLogger } from '../../logging/index.js';
 import { HEALTHCHECK_ENDPOINT } from '../healthcheck/index.js';
 
 /**
+ * The NestJS injection token for the {@link LoggerModuleOptions}.
+ * Used by testing utilities.
+ */
+export const LOGGER_MODULE_OPTIONS_INJECTION_TOKEN =
+  'CAUSA_LOGGER_MODULE_OPTIONS';
+
+/**
  * Options for the {@link LoggerModule}.
  */
-type ModuleOptions = {
+type LoggerModuleOptions = {
   /**
    * The pino logger to use.
    * Defaults to `getDefaultLogger()`.
@@ -21,12 +28,18 @@ type ModuleOptions = {
  * @param options Options for the {@link LoggerModule}.
  * @returns The {@link ModuleMetadata}.
  */
-function createModuleMetadata(options: ModuleOptions = {}): ModuleMetadata {
+function createModuleMetadata(
+  options: LoggerModuleOptions = {},
+): ModuleMetadata {
   return {
+    providers: [
+      { provide: LOGGER_MODULE_OPTIONS_INJECTION_TOKEN, useValue: options },
+    ],
+    exports: [LOGGER_MODULE_OPTIONS_INJECTION_TOKEN],
     imports: [
       // Using an async factory function ensures the logger had the chance to be configured before it is used.
       PinoLoggerModule.forRootAsync({
-        useFactory: () => ({
+        useFactory: (options: LoggerModuleOptions) => ({
           assignResponse: true,
           pinoHttp: {
             // Passing the default logger ensures the default configuration is inherited...
@@ -38,6 +51,7 @@ function createModuleMetadata(options: ModuleOptions = {}): ModuleMetadata {
             },
           },
         }),
+        inject: [LOGGER_MODULE_OPTIONS_INJECTION_TOKEN],
       }),
     ],
   };
@@ -53,7 +67,7 @@ export class LoggerModule {
    * @param options Options for the {@link LoggerModule}.
    * @returns The logger module.
    */
-  static forRoot(options: ModuleOptions = {}): DynamicModule {
+  static forRoot(options: LoggerModuleOptions = {}): DynamicModule {
     return {
       module: LoggerModule,
       global: true,

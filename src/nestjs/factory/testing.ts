@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { Test, TestingModuleBuilder } from '@nestjs/testing';
 import { type Logger, pino } from 'pino';
-import { LoggerModule } from '../logging/index.js';
+import { LOGGER_MODULE_OPTIONS_INJECTION_TOKEN } from '../logging/logger.module.js';
 import type { AppFactory } from './app-factory.js';
 
 /**
@@ -127,8 +127,8 @@ export function makeTestAppFactory(
 
     if (options.prettyLogs) {
       builder = builder
-        .overrideModule(LoggerModule)
-        .useModule(LoggerModule.forRoot({ logger: await prettyLoggerPromise }));
+        .overrideProvider(LOGGER_MODULE_OPTIONS_INJECTION_TOKEN)
+        .useValue({ logger: await prettyLoggerPromise });
     }
 
     overrides.forEach((override) => {
