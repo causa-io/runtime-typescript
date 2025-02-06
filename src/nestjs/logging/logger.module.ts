@@ -1,9 +1,4 @@
-import {
-  type DynamicModule,
-  Global,
-  Module,
-  type ModuleMetadata,
-} from '@nestjs/common';
+import type { DynamicModule, ModuleMetadata } from '@nestjs/common';
 import { LoggerModule as PinoLoggerModule } from 'nestjs-pino';
 import type { Logger } from 'pino';
 import { getDefaultLogger } from '../../logging/index.js';
@@ -51,8 +46,6 @@ function createModuleMetadata(options: ModuleOptions = {}): ModuleMetadata {
 /**
  * This module exposes a ready-to-use logger for NestJS REST services in the form of the `PinoLogger`.
  */
-@Global()
-@Module(createModuleMetadata())
 export class LoggerModule {
   /**
    * Creates a global {@link LoggerModule} that can be used by the entire application.

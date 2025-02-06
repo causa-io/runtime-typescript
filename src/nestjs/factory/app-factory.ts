@@ -22,7 +22,7 @@ import { ValidationModule } from '../validation/index.js';
 function createAppModule(businessModule: any): any {
   const imports: ModuleMetadata['imports'] = [
     ConfigModule.forRoot({ isGlobal: true }),
-    LoggerModule,
+    LoggerModule.forRoot(),
     ValidationModule,
     ExceptionFilterModule,
     businessModule,

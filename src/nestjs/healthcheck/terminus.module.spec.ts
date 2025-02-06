@@ -25,7 +25,7 @@ class MyController {
 
 @Module({
   controllers: [MyController],
-  imports: [terminusModuleWithLogger, LoggerModule],
+  imports: [terminusModuleWithLogger, LoggerModule.forRoot()],
 })
 class MyModule {}
 

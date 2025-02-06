@@ -88,7 +88,7 @@ describe('ExceptionFilterModule', () => {
     spyOnLogger();
 
     const testingModule = await Test.createTestingModule({
-      imports: [ExceptionFilterModule, LoggerModule],
+      imports: [ExceptionFilterModule, LoggerModule.forRoot()],
       controllers: [TestController],
     }).compile();
     app = testingModule.createNestApplication<NestExpressApplication>();
