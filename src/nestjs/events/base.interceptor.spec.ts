@@ -121,7 +121,7 @@ describe('BaseEventHandlerInterceptor', () => {
     spyOnLogger();
 
     const testModule = await Test.createTestingModule({
-      imports: [LoggerModule],
+      imports: [LoggerModule.forRoot()],
       controllers: [MyController],
       providers: [
         { provide: APP_INTERCEPTOR, useClass: MyEventHandlerInterceptor },

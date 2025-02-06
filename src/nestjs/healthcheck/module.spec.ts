@@ -32,7 +32,7 @@ class Indicator2 extends BaseHealthIndicatorService {
 @Module({
   imports: [
     AuthModule, // Ensures the health endpoint is marked as public.
-    LoggerModule,
+    LoggerModule.forRoot(),
     HealthCheckModule.forIndicators([Indicator1, Indicator2]),
   ],
 })

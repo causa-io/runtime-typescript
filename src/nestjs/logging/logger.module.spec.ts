@@ -65,7 +65,7 @@ describe('LoggerModule', () => {
       imports: [
         options.logger
           ? LoggerModule.forRoot({ logger: options.logger })
-          : LoggerModule,
+          : LoggerModule.forRoot(),
       ],
       controllers: [TestController],
       providers: [

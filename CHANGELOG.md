@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+Breaking changes:
+
+- The `LoggerModule` can no longer be used as a static module. `LoggerModule.forRoot()` must be used.
+
+Features:
+
+- `bufferLogs` is passed to the factory used in `createApp`. This was already set for the default factory.
+
+Fixes:
+
+- `flushLogs()` is called after setting the logger on the application.
+
 ## v0.26.0 (2025-01-03)
 
 Features:
