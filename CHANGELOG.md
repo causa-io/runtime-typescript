@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.27.0 (2025-02-06)
+
 Breaking changes:
 
 - The `LoggerModule` can no longer be used as a static module. `LoggerModule.forRoot()` must be used.
