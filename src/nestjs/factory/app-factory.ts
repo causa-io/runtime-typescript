@@ -76,10 +76,10 @@ export const DEFAULT_APP_FACTORY: AppFactory<NestExpressApplication> = async (
   appModule,
   options,
 ) => {
-  const app = await NestFactory.create<NestExpressApplication>(appModule, {
-    bufferLogs: true,
-    ...options,
-  });
+  const app = await NestFactory.create<NestExpressApplication>(
+    appModule,
+    options,
+  );
 
   app.disable('x-powered-by');
 
@@ -102,7 +102,10 @@ export async function createApp<T extends INestApplication = INestApplication>(
 
   const AppModule = createAppModule(businessModule);
 
-  const app = await appFactory(AppModule, options.nestApplicationOptions);
+  const app = await appFactory(AppModule, {
+    bufferLogs: true,
+    ...options.nestApplicationOptions,
+  });
 
   if (options.extraConfiguration) {
     options.extraConfiguration(app as any);
@@ -110,6 +113,7 @@ export async function createApp<T extends INestApplication = INestApplication>(
 
   const logger = app.get(Logger);
   app.useLogger(logger);
+  app.flushLogs();
   app.enableShutdownHooks();
 
   await app.init();
