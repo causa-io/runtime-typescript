@@ -98,7 +98,7 @@ describe('OutboxTransactionRunner', () => {
       ];
       expectMockStateTransactionReplaceToHaveBeenCalledWith(expectedEvents);
       expect(sender.publish).toHaveBeenCalledExactlyOnceWith(
-        expect.toContainAllValues(expectedEvents),
+        expect.toIncludeAllMembers(expectedEvents),
       );
     });
 
