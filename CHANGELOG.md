@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.27.2 (2025-05-28)
+
 Chores:
 
 - Upgrade dependencies and remove unneeded `ts-jest` and `ts-node` dependencies.
