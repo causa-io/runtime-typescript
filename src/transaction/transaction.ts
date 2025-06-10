@@ -1,31 +1,22 @@
+import type { Type } from '@nestjs/common';
 import type { PublishOptions } from '../events/index.js';
 import { TransactionOldTimestampError } from './errors.js';
 import type { EventTransaction } from './event-transaction.js';
+import type { StateTransaction } from './state-transaction.js';
 
 /**
  * A transaction object in which both state changes and events can be staged, and committed all at once.
- * The {@link Transaction.stateTransaction} is used to stage state changes, and the {@link Transaction.eventTransaction}
- * is used to stage events.
  * The {@link Transaction.timestamp} provides the single point in time at which changes will be considered to have
  * happened.
  */
-export class Transaction<ST, ET extends EventTransaction> {
+export abstract class Transaction
+  implements StateTransaction, EventTransaction
+{
   /**
    * The timestamp for the transaction, used as the single point in time at which the state changes and events will be
    * considered to have occurred.
    */
   readonly timestamp = new Date();
-
-  /**
-   * Creates a new {@link Transaction}.
-   *
-   * @param stateTransaction The transaction to use for state changes.
-   * @param eventTransaction The transaction to use to publish events.
-   */
-  constructor(
-    readonly stateTransaction: ST,
-    readonly eventTransaction: ET,
-  ) {}
 
   /**
    * Validates that the given date is in the past compared to the current {@link TransactionContext.timestamp}.
@@ -49,18 +40,21 @@ export class Transaction<ST, ET extends EventTransaction> {
     throw new TransactionOldTimestampError(this.timestamp, delay);
   }
 
-  /**
-   * Forwards the given event to the {@link Transaction.eventTransaction}.
-   *
-   * @param topic The topic to which the event should be published.
-   * @param event The event to publish.
-   * @param options Options for publishing the event.
-   */
-  async publish(
+  abstract set<T extends object>(entity: T): Promise<void>;
+
+  abstract delete<T extends object>(
+    type: Type<T> | T,
+    key?: Partial<T>,
+  ): Promise<void>;
+
+  abstract get<T extends object>(
+    type: Type<T>,
+    entity: Partial<T>,
+  ): Promise<T | undefined>;
+
+  abstract publish(
     topic: string,
     event: object,
-    options: PublishOptions = {},
-  ): Promise<void> {
-    await this.eventTransaction.publish(topic, event, options);
-  }
+    options?: PublishOptions,
+  ): Promise<void>;
 }

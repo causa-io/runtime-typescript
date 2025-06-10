@@ -1,4 +1,3 @@
-import type { EventTransaction } from './event-transaction.js';
 import { Transaction } from './transaction.js';
 
 /**
@@ -6,9 +5,7 @@ import { Transaction } from './transaction.js';
  * Transaction runners are responsible for creating and committing {@link Transaction}s, while the actual processing
  * occurring within the transaction is handled by the passed asynchronous function.
  */
-export abstract class TransactionRunner<
-  T extends Transaction<object, EventTransaction>,
-> {
+export abstract class TransactionRunner<T extends Transaction> {
   /**
    * Runs the given function in a newly-created transaction.
    *

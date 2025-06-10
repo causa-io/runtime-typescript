@@ -1,62 +1,61 @@
 import { jest } from '@jest/globals';
-import type { Event, PublishOptions } from '../events/index.js';
+import type { Type } from '@nestjs/common';
+import type { PublishOptions } from '../events/index.js';
 import {
   BufferEventTransaction,
-  type EventTransaction,
-  type FindReplaceStateTransaction,
+  type StateTransaction,
   Transaction,
   TransactionRunner,
 } from './index.js';
 
-class MockFindReplaceStateTransaction implements FindReplaceStateTransaction {
-  private entities: Record<string, any> = {};
+export class MockTransaction extends Transaction {
+  entities: Record<string, any> = {};
+  buffer: BufferEventTransaction = new BufferEventTransaction({} as any);
 
   clear() {
     this.entities = {};
+    this.buffer = new BufferEventTransaction({} as any);
   }
 
-  async replace<T extends object>(entity: T): Promise<void> {
+  async set<T extends object>(entity: T): Promise<void> {
     this.entities[(entity as any).id] = entity;
   }
 
-  async deleteWithSameKeyAs<T extends object>(
-    _: new () => T,
-    entity: Partial<T>,
+  async delete<T extends object>(
+    typeOrEntity: Type<T> | T,
+    entity?: Partial<T>,
   ): Promise<void> {
-    delete this.entities[(entity as any).id];
+    delete this.entities[(entity ?? (typeOrEntity as any)).id];
   }
 
-  async findOneWithSameKeyAs<T extends object>(
+  async get<T extends object>(
     _: new () => T,
     entity: Partial<T>,
   ): Promise<T | undefined> {
     return this.entities[(entity as any).id];
   }
+
+  async publish(
+    topic: string,
+    event: object,
+    options?: PublishOptions,
+  ): Promise<void> {
+    await this.buffer.publish(topic, event, options);
+  }
+
+  get bufferedEvents() {
+    return (this.buffer as any).bufferedEvents;
+  }
 }
 
-export type MockTransaction = Transaction<MockFindReplaceStateTransaction, any>;
-
-export const mockStateTransaction: MockFindReplaceStateTransaction & {
-  replace: jest.SpiedFunction<FindReplaceStateTransaction['replace']>;
-  deleteWithSameKeyAs: jest.SpiedFunction<
-    FindReplaceStateTransaction['deleteWithSameKeyAs']
-  >;
-  findOneWithSameKeyAs: jest.SpiedFunction<
-    FindReplaceStateTransaction['findOneWithSameKeyAs']
-  >;
-} = new MockFindReplaceStateTransaction() as any;
-jest.spyOn(mockStateTransaction, 'replace');
-jest.spyOn(mockStateTransaction, 'deleteWithSameKeyAs');
-jest.spyOn(mockStateTransaction, 'findOneWithSameKeyAs');
-
-export const mockEventTransaction: EventTransaction & {
-  bufferedEvents: { topic: string; event: Event; options: PublishOptions }[];
-} = new BufferEventTransaction({} as any) as any;
-
-export const mockTransaction = new Transaction<any, any>(
-  mockStateTransaction,
-  mockEventTransaction,
-);
+export const mockTransaction: MockTransaction & {
+  set: jest.SpiedFunction<StateTransaction['set']>;
+  delete: jest.SpiedFunction<StateTransaction['delete']>;
+  get: jest.SpiedFunction<StateTransaction['get']>;
+} = new MockTransaction() as any;
+jest.spyOn(mockTransaction, 'set');
+jest.spyOn(mockTransaction, 'delete');
+jest.spyOn(mockTransaction, 'get');
 
 export class MockRunner extends TransactionRunner<MockTransaction> {
   async run<RT>(

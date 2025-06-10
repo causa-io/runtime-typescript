@@ -1,45 +1,13 @@
-import { jest } from '@jest/globals';
 import 'jest-extended';
-import type { Event } from '../events/index.js';
 import { TransactionOldTimestampError } from './errors.js';
-import type { EventTransaction } from './event-transaction.js';
 import { Transaction } from './transaction.js';
+import { MockTransaction } from './utils.test.js';
 
 describe('Transaction', () => {
-  const stateTransaction = {};
-  const eventTransaction: EventTransaction = {
-    publish: jest.fn(() => Promise.resolve()),
-  };
-  let transaction: Transaction<object, EventTransaction>;
+  let transaction: Transaction;
 
   beforeEach(() => {
-    transaction = new Transaction(stateTransaction, eventTransaction);
-  });
-
-  it('should expose the state and event transactions', () => {
-    expect(transaction.stateTransaction).toBe(stateTransaction);
-    expect(transaction.eventTransaction).toBe(eventTransaction);
-  });
-
-  describe('publish', () => {
-    it('should forward the call to the event transaction', async () => {
-      const expectedTopic = 'topic';
-      const expectedEvent: Event = {
-        id: '1',
-        producedAt: new Date(),
-        name: '✨',
-        data: {},
-      };
-      const expectedOptions = { attributes: { att1: '🎁' } };
-
-      await transaction.publish(expectedTopic, expectedEvent, expectedOptions);
-
-      expect(eventTransaction.publish).toHaveBeenCalledExactlyOnceWith(
-        expectedTopic,
-        expectedEvent,
-        expectedOptions,
-      );
-    });
+    transaction = new MockTransaction();
   });
 
   describe('validatePastDateOrFail', () => {
