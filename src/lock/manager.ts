@@ -1,23 +1,26 @@
 import type { Type } from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
 import * as uuid from 'uuid';
-import { Transaction, TransactionRunner } from '../transaction/index.js';
+import {
+  Transaction,
+  TransactionRunner,
+  type ReadOnlyStateTransaction,
+  type TransactionOption,
+} from '../transaction/index.js';
 import type { LockEntity } from './entity.js';
 import { LockAcquisitionError, LockReleaseError } from './errors.js';
 
 /**
  * Base options for lock operations.
  */
-type LockOptions<T extends Transaction, E extends LockEntity> = {
+type LockOptions<
+  T extends Transaction,
+  E extends LockEntity,
+> = TransactionOption<T> & {
   /**
    * Additional data that should be added to the lock.
    */
   extraData?: Partial<Omit<E, 'id' | 'lock' | 'expiresAt'>>;
-
-  /**
-   * The transaction to use when updating the lock.
-   */
-  transaction?: T;
 };
 
 /**
@@ -67,7 +70,7 @@ export class LockManager<T extends Transaction, E extends LockEntity> {
    */
   constructor(
     readonly lockType: Type<E>,
-    readonly runner: TransactionRunner<T>,
+    readonly runner: TransactionRunner<T, ReadOnlyStateTransaction>,
     readonly expirationDelay: number,
   ) {}
 
@@ -109,8 +112,8 @@ export class LockManager<T extends Transaction, E extends LockEntity> {
   ): Promise<E> {
     const expirationDelay = options.expirationDelay ?? this.expirationDelay;
 
-    return await this.runner.runInNewOrExisting(
-      options.transaction,
+    return await this.runner.run(
+      { transaction: options.transaction },
       async (transaction) => {
         await this.checkNotAcquiredOrFail(id, transaction, {
           extraValidation: options.extraValidation,
@@ -168,8 +171,8 @@ export class LockManager<T extends Transaction, E extends LockEntity> {
     lock: Pick<E, 'id' | 'lock'> & Partial<E>,
     options: ReleaseLockOptions<T, E> = {},
   ): Promise<void> {
-    await this.runner.runInNewOrExisting(
-      options.transaction,
+    await this.runner.run(
+      { transaction: options.transaction },
       async (transaction) => {
         const existingLock = await transaction.get(this.lockType, lock);
         if (!existingLock) {

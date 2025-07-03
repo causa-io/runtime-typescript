@@ -22,10 +22,12 @@ class MyLock implements LockEntity {
 }
 
 describe('LockManager', () => {
+  let runner: MockRunner;
   let manager: LockManager<MockTransaction, MyLock>;
 
   beforeAll(() => {
-    manager = new LockManager(MyLock, new MockRunner(), 1000);
+    runner = new MockRunner();
+    manager = new LockManager(MyLock, runner, 1000);
   });
 
   afterEach(() => {
@@ -167,12 +169,12 @@ describe('LockManager', () => {
     });
 
     it('should run in a transaction', async () => {
-      jest.spyOn(manager.runner, 'run');
+      jest.spyOn(runner, 'runReadWrite');
       const id = uuid.v4();
 
       await manager.acquire(id, { transaction: mockTransaction });
 
-      expect(manager.runner.run).not.toHaveBeenCalled();
+      expect(runner.runReadWrite).not.toHaveBeenCalled();
     });
   });
 
@@ -342,7 +344,7 @@ describe('LockManager', () => {
     });
 
     it('should run in a transaction', async () => {
-      jest.spyOn(manager.runner, 'run');
+      jest.spyOn(runner, 'runReadWrite');
       const id = uuid.v4();
       const lock = uuid.v4();
       const existingLock = new MyLock({
@@ -355,7 +357,7 @@ describe('LockManager', () => {
 
       await manager.release({ id, lock }, { transaction: mockTransaction });
 
-      expect(manager.runner.run).not.toHaveBeenCalled();
+      expect(runner.runReadWrite).not.toHaveBeenCalled();
     });
   });
 });
