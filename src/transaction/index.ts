@@ -1,4 +1,3 @@
-export { BufferEventTransaction } from './buffer-event-transaction.js';
 export * from './errors.js';
 export * from './event-transaction.js';
 export * from './outbox/index.js';

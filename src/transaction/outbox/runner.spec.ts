@@ -1,38 +1,20 @@
 import { jest } from '@jest/globals';
 import { PinoLogger } from 'nestjs-pino';
 import { RetryableError } from '../../errors/index.js';
-import type { PublishOptions } from '../../events/publisher.js';
 import { MockTransaction } from '../utils.test.js';
-import {
-  OutboxEventTransaction,
-  type OutboxTransaction,
-} from './event-transaction.js';
+import { OutboxEventTransaction } from './event-transaction.js';
 import { OutboxTransactionRunner } from './runner.js';
 import { MockPublisher, MockSender, MyEventType } from './utils.test.js';
 
-class MyTransaction extends MockTransaction implements OutboxTransaction {
-  constructor(readonly eventTransaction: OutboxEventTransaction) {
-    super();
-  }
-
-  // Even though the concept is the same, this stores staged events in the `eventTransaction` rather than the `buffer`.
-  async publish(
-    topic: string,
-    event: object,
-    options?: PublishOptions,
-  ): Promise<void> {
-    await this.eventTransaction.publish(topic, event, options);
-  }
-}
-
-class MyRunner extends OutboxTransactionRunner<MyTransaction> {
+class MyRunner extends OutboxTransactionRunner<MockTransaction> {
   protected async runStateTransaction<RT>(
     eventTransactionFactory: () => OutboxEventTransaction,
-    runFn: (transaction: MyTransaction) => Promise<RT>,
+    runFn: (transaction: MockTransaction) => Promise<RT>,
   ): Promise<RT> {
     while (true) {
       try {
-        const transaction = new MyTransaction(eventTransactionFactory());
+        const transaction = new MockTransaction();
+        transaction.eventTransaction = eventTransactionFactory();
 
         return await runFn(transaction);
       } catch (error) {
@@ -52,7 +34,7 @@ describe('OutboxTransactionRunner', () => {
   let sender: MockSender;
   let runner: MyRunner;
 
-  let myTransaction!: MyTransaction;
+  let myTransaction!: MockTransaction;
 
   beforeAll(() => {
     logger = new PinoLogger({});
@@ -130,7 +112,8 @@ describe('OutboxTransactionRunner', () => {
         .spyOn(runner as any, 'runStateTransaction')
         .mockImplementationOnce(
           async (eventTransactionFactory: any, runFn: any) => {
-            const transaction = new MyTransaction(eventTransactionFactory());
+            const transaction = new MockTransaction();
+            transaction.eventTransaction = eventTransactionFactory();
             await runFn(transaction);
             throw new Error('💥');
           },

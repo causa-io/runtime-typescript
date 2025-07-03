@@ -1,20 +1,43 @@
 import { jest } from '@jest/globals';
 import type { Type } from '@nestjs/common';
-import type { PublishOptions } from '../events/index.js';
+import type {
+  EventPublisher,
+  PreparedEvent,
+  PublishOptions,
+} from '../events/index.js';
 import {
-  BufferEventTransaction,
+  OutboxEventTransaction,
+  type OutboxTransaction,
   type StateTransaction,
   Transaction,
   TransactionRunner,
 } from './index.js';
 
-export class MockTransaction extends Transaction {
+export class MockPublisher implements EventPublisher {
+  async flush(): Promise<void> {}
+
+  async prepare(
+    topic: string,
+    event: object,
+    options?: PublishOptions,
+  ): Promise<PreparedEvent> {
+    return {
+      topic,
+      data: event as any,
+      attributes: options?.attributes ?? {},
+    };
+  }
+
+  async publish(): Promise<void> {}
+}
+
+export class MockTransaction extends Transaction implements OutboxTransaction {
   entities: Record<string, any> = {};
-  buffer: BufferEventTransaction = new BufferEventTransaction({} as any);
+  eventTransaction = new OutboxEventTransaction(new MockPublisher());
 
   clear() {
     this.entities = {};
-    this.buffer = new BufferEventTransaction({} as any);
+    this.eventTransaction = new OutboxEventTransaction(new MockPublisher());
   }
 
   async set<T extends object>(entity: T): Promise<void> {
@@ -40,11 +63,11 @@ export class MockTransaction extends Transaction {
     event: object,
     options?: PublishOptions,
   ): Promise<void> {
-    await this.buffer.publish(topic, event, options);
+    await this.eventTransaction.publish(topic, event, options);
   }
 
-  get bufferedEvents() {
-    return (this.buffer as any).bufferedEvents;
+  get events() {
+    return this.eventTransaction.events;
   }
 }
 
@@ -53,9 +76,6 @@ export const mockTransaction: MockTransaction & {
   delete: jest.SpiedFunction<StateTransaction['delete']>;
   get: jest.SpiedFunction<StateTransaction['get']>;
 } = new MockTransaction() as any;
-jest.spyOn(mockTransaction, 'set');
-jest.spyOn(mockTransaction, 'delete');
-jest.spyOn(mockTransaction, 'get');
 
 export class MockRunner extends TransactionRunner<MockTransaction> {
   async run<RT>(
