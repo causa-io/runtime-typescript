@@ -1,4 +1,4 @@
-import type { PublishOptions } from '../events/publisher.js';
+import type { TransactionPublishOptions } from './event-transaction.js';
 import type { ReadOnlyStateTransaction } from './state-transaction.js';
 import { Transaction } from './transaction.js';
 
@@ -29,9 +29,9 @@ export type ReadOnlyTransactionOption<ROT extends ReadOnlyStateTransaction> = {
  */
 export type ReadWriteTransactionOptions = {
   /**
-   * {@link PublishOptions} applying to all events published within the transaction.
+   * Publish options applying to all events published within the transaction.
    */
-  publishOptions?: Pick<PublishOptions, 'attributes'>;
+  publishOptions?: TransactionPublishOptions;
 };
 
 /**

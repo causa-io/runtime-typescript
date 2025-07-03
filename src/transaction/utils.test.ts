@@ -10,6 +10,7 @@ import {
   type OutboxTransaction,
   type StateTransaction,
   Transaction,
+  type TransactionPublishOptions,
   TransactionRunner,
 } from './index.js';
 import type {
@@ -38,6 +39,10 @@ export class MockPublisher implements EventPublisher {
 export class MockTransaction extends Transaction implements OutboxTransaction {
   entities: Record<string, any> = {};
   eventTransaction = new OutboxEventTransaction(new MockPublisher());
+
+  constructor(publishOptions: TransactionPublishOptions = {}) {
+    super(publishOptions);
+  }
 
   clear() {
     this.entities = {};

@@ -1,7 +1,10 @@
 import type { Type } from '@nestjs/common';
 import type { PublishOptions } from '../events/index.js';
 import { TransactionOldTimestampError } from './errors.js';
-import type { EventTransaction } from './event-transaction.js';
+import type {
+  EventTransaction,
+  TransactionPublishOptions,
+} from './event-transaction.js';
 import type { StateTransaction } from './state-transaction.js';
 
 /**
@@ -12,6 +15,14 @@ import type { StateTransaction } from './state-transaction.js';
 export abstract class Transaction
   implements StateTransaction, EventTransaction
 {
+  /**
+   * Creates a new {@link Transaction}.
+   *
+   * @param publishOptions The {@link TransactionPublishOptions} to use when publishing events as part of the
+   *   transaction.
+   */
+  constructor(readonly publishOptions: TransactionPublishOptions) {}
+
   /**
    * The timestamp for the transaction, used as the single point in time at which the state changes and events will be
    * considered to have occurred.
