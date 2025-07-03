@@ -1,7 +1,12 @@
 import type { Type } from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
 import { Logger } from '../../nestjs/index.js';
-import { TransactionRunner } from '../transaction-runner.js';
+import type { ReadOnlyStateTransaction } from '../state-transaction.js';
+import {
+  TransactionRunner,
+  type ReadWriteTransactionOptions,
+  type TransactionFn,
+} from '../transaction-runner.js';
 import {
   OutboxEventTransaction,
   type OutboxTransaction,
@@ -15,8 +20,9 @@ import { OutboxEventSender } from './sender.js';
  * Events are removed from the outbox when publishing succeeds.
  */
 export abstract class OutboxTransactionRunner<
-  T extends OutboxTransaction,
-> extends TransactionRunner<T> {
+  RWT extends OutboxTransaction,
+  ROT extends ReadOnlyStateTransaction,
+> extends TransactionRunner<RWT, ROT> {
   /**
    * Creates a new {@link OutboxTransactionRunner}.
    *
@@ -39,11 +45,13 @@ export abstract class OutboxTransactionRunner<
    * This should be implemented by subclasses, depending on the system used to store the state.
    *
    * @param eventTransactionFactory The function to call to create a new {@link OutboxEventTransaction} on each attempt.
+   * @param options Options for the transaction.
    * @param runFn The function to run in the transaction.
    */
   protected abstract runStateTransaction<RT>(
     eventTransactionFactory: () => OutboxEventTransaction,
-    runFn: (transaction: T) => Promise<RT>,
+    options: ReadWriteTransactionOptions,
+    runFn: TransactionFn<RWT, RT>,
   ): Promise<RT>;
 
   /**
@@ -52,7 +60,7 @@ export abstract class OutboxTransactionRunner<
    * @param transaction The {@link OutboxTransaction} containing staged events in its {@link OutboxEventTransaction}.
    * @returns The {@link OutboxEvent}s that were written to the outbox as part of the transaction.
    */
-  protected async commitEvents(transaction: T): Promise<OutboxEvent[]> {
+  protected async commitEvents(transaction: RWT): Promise<OutboxEvent[]> {
     const stagedEvents = transaction.eventTransaction.events;
     if (stagedEvents.length === 0) {
       return [];
@@ -69,11 +77,19 @@ export abstract class OutboxTransactionRunner<
     return events;
   }
 
-  async run<RT>(runFn: (transaction: T) => Promise<RT>): Promise<[RT]> {
+  protected async runReadWrite<RT>(
+    options: ReadWriteTransactionOptions,
+    runFn: TransactionFn<RWT, RT>,
+  ): Promise<RT> {
     this.logger.info('Starting a transaction.');
 
     const { result, events } = await this.runStateTransaction(
-      () => new OutboxEventTransaction(this.sender.publisher),
+      () =>
+        new OutboxEventTransaction(
+          this.sender.publisher,
+          options.publishOptions,
+        ),
+      options,
       async (transaction) => {
         this.logger.info('Starting transaction attempt.');
 
@@ -104,6 +120,6 @@ export abstract class OutboxTransactionRunner<
       this.sender.publish(events);
     }
 
-    return [result];
+    return result;
   }
 }

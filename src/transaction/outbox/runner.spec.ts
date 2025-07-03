@@ -1,15 +1,29 @@
 import { jest } from '@jest/globals';
 import { PinoLogger } from 'nestjs-pino';
 import { RetryableError } from '../../errors/index.js';
+import type {
+  ReadWriteTransactionOptions,
+  TransactionFn,
+} from '../transaction-runner.js';
 import { MockTransaction } from '../utils.test.js';
 import { OutboxEventTransaction } from './event-transaction.js';
 import { OutboxTransactionRunner } from './runner.js';
 import { MockPublisher, MockSender, MyEventType } from './utils.test.js';
 
-class MyRunner extends OutboxTransactionRunner<MockTransaction> {
-  protected async runStateTransaction<RT>(
+class MyRunner extends OutboxTransactionRunner<
+  MockTransaction,
+  MockTransaction
+> {
+  async runReadOnly<RT>(
+    runFn: TransactionFn<MockTransaction, RT>,
+  ): Promise<RT> {
+    return await runFn(new MockTransaction());
+  }
+
+  async runStateTransaction<RT>(
     eventTransactionFactory: () => OutboxEventTransaction,
-    runFn: (transaction: MockTransaction) => Promise<RT>,
+    options: ReadWriteTransactionOptions,
+    runFn: TransactionFn<MockTransaction, RT>,
   ): Promise<RT> {
     while (true) {
       try {
@@ -53,35 +67,40 @@ describe('OutboxTransactionRunner', () => {
     it('should execute the function in the transaction, commit events, and publish them', async () => {
       const beforeTransaction = new Date();
 
-      const actualResult = await runner.run(async (transaction) => {
-        myTransaction = transaction;
-        expect(transaction.eventTransaction).toBeInstanceOf(
-          OutboxEventTransaction,
-        );
-        expect((transaction.eventTransaction as any).publisher).toBe(publisher);
+      const actualResult = await runner.run(
+        { publishOptions: { attributes: { att1: '💮' } } },
+        async (transaction) => {
+          myTransaction = transaction;
+          expect(transaction.eventTransaction).toBeInstanceOf(
+            OutboxEventTransaction,
+          );
+          expect(transaction.eventTransaction['publisher']).toBe(publisher);
 
-        await transaction.publish('topic1', { id: '1' } as any, { key: '1' });
-        await transaction.publish('topic2', { id: '2' } as any, {
-          attributes: { someKey: '🎁' },
-        });
+          await transaction.publish('topic1', { id: '1' }, { key: '1' });
+          await transaction.publish(
+            'topic2',
+            { id: '2' },
+            { attributes: { someKey: '🎁' } },
+          );
 
-        return '🎉';
-      });
+          return '🎉';
+        },
+      );
 
-      expect(actualResult).toEqual(['🎉']);
+      expect(actualResult).toEqual('🎉');
       const expectedEvents = [
         new MyEventType({
           id: expect.any(String),
           topic: 'topic1',
           data: Buffer.from('{"id":"1"}'),
-          attributes: { prepared: '✅' },
+          attributes: { prepared: '✅', att1: '💮' },
           leaseExpiration: expect.toBeAfter(beforeTransaction),
         }),
         new MyEventType({
           id: expect.any(String),
           topic: 'topic2',
           data: Buffer.from('{"id":"2"}'),
-          attributes: { prepared: '✅', someKey: '🎁' },
+          attributes: { prepared: '✅', att1: '💮', someKey: '🎁' },
           leaseExpiration: expect.toBeAfter(beforeTransaction),
         }),
       ];
@@ -102,16 +121,16 @@ describe('OutboxTransactionRunner', () => {
         return '🎉';
       });
 
-      expect(actualResult).toEqual(['🎉']);
+      expect(actualResult).toEqual('🎉');
       expect(myTransaction.entities).toEqual({});
       expect(sender.publish).not.toHaveBeenCalled();
     });
 
     it('should not publish events if the transaction fails', async () => {
       jest
-        .spyOn(runner as any, 'runStateTransaction')
+        .spyOn(runner, 'runStateTransaction')
         .mockImplementationOnce(
-          async (eventTransactionFactory: any, runFn: any) => {
+          async (eventTransactionFactory, options, runFn) => {
             const transaction = new MockTransaction();
             transaction.eventTransaction = eventTransactionFactory();
             await runFn(transaction);
@@ -121,7 +140,7 @@ describe('OutboxTransactionRunner', () => {
 
       const actualPromise = runner.run(async (transaction) => {
         myTransaction = transaction;
-        await transaction.publish('topic1', { id: '1' } as any, { key: '1' });
+        await transaction.publish('topic1', { id: '1' }, { key: '1' });
       });
 
       await expect(actualPromise).rejects.toThrow('💥');
@@ -146,7 +165,7 @@ describe('OutboxTransactionRunner', () => {
 
         await transaction.publish('topic1', {
           id: transactionCount.toFixed(),
-        } as any);
+        });
 
         if (transactionCount < 2) {
           throw new RetryableError('');
@@ -154,7 +173,7 @@ describe('OutboxTransactionRunner', () => {
         return '🎉';
       });
 
-      expect(actualResult).toEqual(['🎉']);
+      expect(actualResult).toEqual('🎉');
       expect(sender.publish).toHaveBeenCalledExactlyOnceWith([
         new MyEventType({
           id: expect.any(String),
