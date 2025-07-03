@@ -1,5 +1,10 @@
 import type { Type } from '@nestjs/common';
-import { Transaction, TransactionRunner } from '../transaction/index.js';
+import {
+  Transaction,
+  TransactionRunner,
+  type ReadOnlyStateTransaction,
+  type TransactionOption,
+} from '../transaction/index.js';
 import type { KeyOfType } from '../typing/index.js';
 
 /**
@@ -22,10 +27,11 @@ export type VersionedProjectionOptions<P extends object> = {
  *   (e.g. update secondary indexes as well).
  */
 export abstract class VersionedEventProcessor<
-  T extends Transaction,
+  RWT extends Transaction,
+  ROT extends ReadOnlyStateTransaction,
   E extends object,
   P extends object,
-  R extends TransactionRunner<T> = TransactionRunner<T>,
+  R extends TransactionRunner<RWT, ROT> = TransactionRunner<RWT, ROT>,
 > {
   /**
    * Creates a new {@link VersionedEventProcessor}.
@@ -65,7 +71,7 @@ export abstract class VersionedEventProcessor<
    */
   protected abstract project(
     event: E,
-    transaction: T,
+    transaction: RWT,
     options?: VersionedProjectionOptions<P>,
   ): Promise<P>;
 
@@ -99,7 +105,7 @@ export abstract class VersionedEventProcessor<
    * @param projection The new projection to update the state with.
    * @param transaction The transaction to use to update the state.
    */
-  protected async updateState(projection: P, transaction: T): Promise<void> {
+  protected async updateState(projection: P, transaction: RWT): Promise<void> {
     await transaction.set(projection);
   }
 
@@ -113,12 +119,7 @@ export abstract class VersionedEventProcessor<
    */
   async processEvent(
     event: E,
-    options: {
-      /**
-       * The transaction to use.
-       */
-      transaction?: T;
-
+    options: TransactionOption<RWT> & {
       /**
        * Whether to skip the check that the projection is more recent than the state.
        * If `true`, the state will be updated unconditionally.
@@ -126,8 +127,8 @@ export abstract class VersionedEventProcessor<
       skipVersionCheck?: boolean;
     } = {},
   ): Promise<P | null> {
-    return await this.runner.runInNewOrExisting(
-      options.transaction,
+    return await this.runner.run(
+      { transaction: options.transaction },
       async (transaction) => {
         const stateKey = this.stateKeyForEvent(event);
         let state = stateKey

@@ -13,7 +13,12 @@ import type {
   EventName,
   PublishOptions,
 } from '../events/index.js';
-import { Transaction, TransactionRunner } from '../transaction/index.js';
+import {
+  Transaction,
+  TransactionRunner,
+  type ReadOnlyStateTransaction,
+  type TransactionOption,
+} from '../transaction/index.js';
 import type { KeyOfType } from '../typing/index.js';
 import {
   VersionedEventProcessor,
@@ -37,17 +42,13 @@ export type VersionedEntityWithOptionalTimestamps = Pick<
 /**
  * Options when performing a generic write operation on a versioned entity.
  */
-export type VersionedEntityOperationOptions<T extends Transaction> = {
-  /**
-   * The transaction to use.
-   */
-  transaction?: T;
-
-  /**
-   * Options when publishing the event.
-   */
-  publishOptions?: PublishOptions;
-};
+export type VersionedEntityOperationOptions<T extends Transaction> =
+  TransactionOption<T> & {
+    /**
+     * Options when publishing the event.
+     */
+    publishOptions?: PublishOptions;
+  };
 
 /**
  * Options when performing an update operation on a versioned entity.
@@ -89,10 +90,11 @@ export type VersionedEntityManagerOptions = Pick<
  * It provides CRUD-like methods that publish events and update the state accordingly.
  */
 export class VersionedEntityManager<
-  T extends Transaction,
+  RWT extends Transaction,
+  ROT extends ReadOnlyStateTransaction,
   E extends Event<string, VersionedEntityWithOptionalTimestamps>,
-  R extends TransactionRunner<T> = TransactionRunner<T>,
-> extends VersionedEventProcessor<T, E, EventData<E>, R> {
+  R extends TransactionRunner<RWT, ROT> = TransactionRunner<RWT, ROT>,
+> extends VersionedEventProcessor<RWT, ROT, E, EventData<E>, R> {
   /**
    * Whether the `createdAt` property should be populated when creating an entity.
    */
@@ -156,7 +158,7 @@ export class VersionedEntityManager<
   protected async project(
     event: E,
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    transaction: T,
+    transaction: RWT,
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     options?: VersionedProjectionOptions<EventData<E>>,
   ): Promise<EventData<E>> {
@@ -196,15 +198,10 @@ export class VersionedEntityManager<
    */
   protected async checkDoesNotExistOrFail(
     entity: Partial<EventData<E>>,
-    options: {
-      /**
-       * The transaction to use.
-       */
-      transaction?: T;
-    } = {},
+    options: TransactionOption<RWT> = {},
   ): Promise<void> {
-    await this.runner.runInNewOrExisting(
-      options.transaction,
+    await this.runner.run(
+      { transaction: options.transaction },
       async (transaction) => {
         const existingEntity = await transaction.get(
           this.projectionType,
@@ -237,10 +234,10 @@ export class VersionedEntityManager<
    */
   protected async findExistingEntityOrFail(
     entity: Partial<EventData<E>>,
-    options: VersionedEntityUpdateOptions<T, EventData<E>> = {},
+    options: VersionedEntityUpdateOptions<RWT, EventData<E>> = {},
   ): Promise<EventData<E>> {
-    return await this.runner.runInNewOrExisting(
-      options.transaction,
+    return await this.runner.run(
+      { transaction: options.transaction },
       async (transaction) => {
         const existingEntity =
           options.existingEntity ??
@@ -288,10 +285,10 @@ export class VersionedEntityManager<
   protected async makeProcessAndPublishEvent(
     eventName: EventName<E>,
     entity: EventData<E>,
-    options: VersionedEntityOperationOptions<T> = {},
+    options: VersionedEntityOperationOptions<RWT> = {},
   ): Promise<E> {
-    return await this.runner.runInNewOrExisting(
-      options.transaction,
+    return await this.runner.run(
+      { transaction: options.transaction },
       async (transaction) => {
         const event = plainToInstance(this.eventType, {
           id: this.generateEventId(),
@@ -332,10 +329,10 @@ export class VersionedEntityManager<
   async create(
     eventName: EventName<E>,
     creation: VersionedEntityCreation<EventData<E>>,
-    options: VersionedEntityOperationOptions<T> = {},
+    options: VersionedEntityOperationOptions<RWT> = {},
   ): Promise<E> {
-    return await this.runner.runInNewOrExisting(
-      options.transaction,
+    return await this.runner.run(
+      { transaction: options.transaction },
       async (transaction) => {
         await this.checkDoesNotExistOrFail(creation as Partial<EventData<E>>, {
           transaction,
@@ -401,12 +398,12 @@ export class VersionedEntityManager<
       | VersionedEntityUpdate<EventData<E>>
       | ((
           existingEntity: EventData<E>,
-          transaction: T,
+          transaction: RWT,
         ) => Promise<VersionedEntityUpdate<EventData<E>>>),
-    options: VersionedEntityUpdateOptions<T, EventData<E>> = {},
+    options: VersionedEntityUpdateOptions<RWT, EventData<E>> = {},
   ): Promise<E> {
-    return await this.runner.runInNewOrExisting(
-      options.transaction,
+    return await this.runner.run(
+      { transaction: options.transaction },
       async (transaction) => {
         const existingEntity = await this.findExistingEntityOrFail(entityKey, {
           transaction,
@@ -451,7 +448,7 @@ export class VersionedEntityManager<
   async delete(
     eventName: EventName<E>,
     entityKey: Partial<EventData<E>>,
-    options: VersionedEntityUpdateOptions<T, EventData<E>> = {},
+    options: VersionedEntityUpdateOptions<RWT, EventData<E>> = {},
   ): Promise<E> {
     if (!this.hasDeletionTimestampProperty) {
       throw new UnsupportedEntityOperationError(
@@ -461,8 +458,8 @@ export class VersionedEntityManager<
       );
     }
 
-    return await this.runner.runInNewOrExisting(
-      options.transaction,
+    return await this.runner.run(
+      { transaction: options.transaction },
       async (transaction) => {
         const existingEntity = await this.findExistingEntityOrFail(entityKey, {
           transaction,
