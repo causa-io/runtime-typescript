@@ -1,22 +1,29 @@
 import { jest } from '@jest/globals';
 import { PinoLogger } from 'nestjs-pino';
 import { RetryableError } from '../../errors/index.js';
-import type { FindReplaceStateTransaction } from '../find-replace-transaction.js';
-import { Transaction } from '../transaction.js';
-import { mockStateTransaction } from '../utils.test.js';
-import { OutboxEventTransaction } from './event-transaction.js';
-import { OutboxTransactionRunner } from './runner.js';
+import type { PublishOptions } from '../../events/publisher.js';
+import { MockTransaction } from '../utils.test.js';
 import {
-  expectMockStateTransactionReplaceToHaveBeenCalledWith,
-  MockPublisher,
-  MockSender,
-  MyEventType,
-} from './utils.test.js';
+  OutboxEventTransaction,
+  type OutboxTransaction,
+} from './event-transaction.js';
+import { OutboxTransactionRunner } from './runner.js';
+import { MockPublisher, MockSender, MyEventType } from './utils.test.js';
 
-type MyTransaction = Transaction<
-  FindReplaceStateTransaction,
-  OutboxEventTransaction
->;
+class MyTransaction extends MockTransaction implements OutboxTransaction {
+  constructor(readonly eventTransaction: OutboxEventTransaction) {
+    super();
+  }
+
+  // Even though the concept is the same, this stores staged events in the `eventTransaction` rather than the `buffer`.
+  async publish(
+    topic: string,
+    event: object,
+    options?: PublishOptions,
+  ): Promise<void> {
+    await this.eventTransaction.publish(topic, event, options);
+  }
+}
 
 class MyRunner extends OutboxTransactionRunner<MyTransaction> {
   protected async runStateTransaction<RT>(
@@ -25,10 +32,7 @@ class MyRunner extends OutboxTransactionRunner<MyTransaction> {
   ): Promise<RT> {
     while (true) {
       try {
-        const transaction = new Transaction(
-          mockStateTransaction as unknown as FindReplaceStateTransaction,
-          eventTransactionFactory(),
-        );
+        const transaction = new MyTransaction(eventTransactionFactory());
 
         return await runFn(transaction);
       } catch (error) {
@@ -48,6 +52,8 @@ describe('OutboxTransactionRunner', () => {
   let sender: MockSender;
   let runner: MyRunner;
 
+  let myTransaction!: MyTransaction;
+
   beforeAll(() => {
     logger = new PinoLogger({});
     publisher = new MockPublisher();
@@ -58,7 +64,7 @@ describe('OutboxTransactionRunner', () => {
   });
 
   afterEach(() => {
-    mockStateTransaction.clear();
+    myTransaction = undefined as any;
   });
 
   describe('run', () => {
@@ -66,10 +72,11 @@ describe('OutboxTransactionRunner', () => {
       const beforeTransaction = new Date();
 
       const actualResult = await runner.run(async (transaction) => {
-        expect(transaction.stateTransaction).toBe(mockStateTransaction);
+        myTransaction = transaction;
         expect(transaction.eventTransaction).toBeInstanceOf(
           OutboxEventTransaction,
         );
+        expect((transaction.eventTransaction as any).publisher).toBe(publisher);
 
         await transaction.publish('topic1', { id: '1' } as any, { key: '1' });
         await transaction.publish('topic2', { id: '2' } as any, {
@@ -96,7 +103,9 @@ describe('OutboxTransactionRunner', () => {
           leaseExpiration: expect.toBeAfter(beforeTransaction),
         }),
       ];
-      expectMockStateTransactionReplaceToHaveBeenCalledWith(expectedEvents);
+      expect(Object.values(myTransaction.entities)).toIncludeAllMembers(
+        expectedEvents,
+      );
       expect(sender.publish).toHaveBeenCalledExactlyOnceWith(
         expect.toIncludeAllMembers(expectedEvents),
       );
@@ -104,7 +113,7 @@ describe('OutboxTransactionRunner', () => {
 
     it('should not replace outbox events nor publish them if there are no events', async () => {
       const actualResult = await runner.run(async (transaction) => {
-        expect(transaction.stateTransaction).toBe(mockStateTransaction);
+        myTransaction = transaction;
         expect(transaction.eventTransaction).toBeInstanceOf(
           OutboxEventTransaction,
         );
@@ -112,7 +121,7 @@ describe('OutboxTransactionRunner', () => {
       });
 
       expect(actualResult).toEqual(['🎉']);
-      expect(mockStateTransaction.replace).not.toHaveBeenCalled();
+      expect(myTransaction.entities).toEqual({});
       expect(sender.publish).not.toHaveBeenCalled();
     });
 
@@ -121,22 +130,19 @@ describe('OutboxTransactionRunner', () => {
         .spyOn(runner as any, 'runStateTransaction')
         .mockImplementationOnce(
           async (eventTransactionFactory: any, runFn: any) => {
-            await runFn(
-              new Transaction(
-                mockStateTransaction as unknown as FindReplaceStateTransaction,
-                eventTransactionFactory(),
-              ),
-            );
+            const transaction = new MyTransaction(eventTransactionFactory());
+            await runFn(transaction);
             throw new Error('💥');
           },
         );
 
       const actualPromise = runner.run(async (transaction) => {
+        myTransaction = transaction;
         await transaction.publish('topic1', { id: '1' } as any, { key: '1' });
       });
 
       await expect(actualPromise).rejects.toThrow('💥');
-      expectMockStateTransactionReplaceToHaveBeenCalledWith([
+      expect(Object.values(myTransaction.entities)).toEqual([
         new MyEventType({
           id: expect.any(String),
           topic: 'topic1',
