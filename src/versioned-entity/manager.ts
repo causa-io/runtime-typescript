@@ -13,10 +13,7 @@ import type {
   EventName,
   PublishOptions,
 } from '../events/index.js';
-import {
-  type FindReplaceTransaction,
-  TransactionRunner,
-} from '../transaction/index.js';
+import { Transaction, TransactionRunner } from '../transaction/index.js';
 import type { KeyOfType } from '../typing/index.js';
 import {
   VersionedEventProcessor,
@@ -40,24 +37,23 @@ export type VersionedEntityWithOptionalTimestamps = Pick<
 /**
  * Options when performing a generic write operation on a versioned entity.
  */
-export type VersionedEntityOperationOptions<T extends FindReplaceTransaction> =
-  {
-    /**
-     * The transaction to use.
-     */
-    transaction?: T;
+export type VersionedEntityOperationOptions<T extends Transaction> = {
+  /**
+   * The transaction to use.
+   */
+  transaction?: T;
 
-    /**
-     * Options when publishing the event.
-     */
-    publishOptions?: PublishOptions;
-  };
+  /**
+   * Options when publishing the event.
+   */
+  publishOptions?: PublishOptions;
+};
 
 /**
  * Options when performing an update operation on a versioned entity.
  */
 export type VersionedEntityUpdateOptions<
-  T extends FindReplaceTransaction,
+  T extends Transaction,
   P extends VersionedEntityWithOptionalTimestamps,
 > = VersionedEntityOperationOptions<T> & {
   /**
@@ -93,7 +89,7 @@ export type VersionedEntityManagerOptions = Pick<
  * It provides CRUD-like methods that publish events and update the state accordingly.
  */
 export class VersionedEntityManager<
-  T extends FindReplaceTransaction,
+  T extends Transaction,
   E extends Event<string, VersionedEntityWithOptionalTimestamps>,
   R extends TransactionRunner<T> = TransactionRunner<T>,
 > extends VersionedEventProcessor<T, E, EventData<E>, R> {
@@ -210,11 +206,10 @@ export class VersionedEntityManager<
     await this.runner.runInNewOrExisting(
       options.transaction,
       async (transaction) => {
-        const existingEntity =
-          await transaction.stateTransaction.findOneWithSameKeyAs(
-            this.projectionType,
-            entity,
-          );
+        const existingEntity = await transaction.get(
+          this.projectionType,
+          entity,
+        );
 
         if (!existingEntity) {
           return;
@@ -249,10 +244,7 @@ export class VersionedEntityManager<
       async (transaction) => {
         const existingEntity =
           options.existingEntity ??
-          (await transaction.stateTransaction.findOneWithSameKeyAs(
-            this.projectionType,
-            entity,
-          ));
+          (await transaction.get(this.projectionType, entity));
 
         if (!existingEntity || existingEntity.deletedAt != null) {
           throw new EntityNotFoundError(this.projectionType, entity);

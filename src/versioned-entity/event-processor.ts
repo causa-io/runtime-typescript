@@ -1,8 +1,5 @@
 import type { Type } from '@nestjs/common';
-import {
-  type FindReplaceTransaction,
-  TransactionRunner,
-} from '../transaction/index.js';
+import { Transaction, TransactionRunner } from '../transaction/index.js';
 import type { KeyOfType } from '../typing/index.js';
 
 /**
@@ -25,7 +22,7 @@ export type VersionedProjectionOptions<P extends object> = {
  *   (e.g. update secondary indexes as well).
  */
 export abstract class VersionedEventProcessor<
-  T extends FindReplaceTransaction,
+  T extends Transaction,
   E extends object,
   P extends object,
   R extends TransactionRunner<T> = TransactionRunner<T>,
@@ -103,7 +100,7 @@ export abstract class VersionedEventProcessor<
    * @param transaction The transaction to use to update the state.
    */
   protected async updateState(projection: P, transaction: T): Promise<void> {
-    await transaction.stateTransaction.replace(projection);
+    await transaction.set(projection);
   }
 
   /**
@@ -134,19 +131,13 @@ export abstract class VersionedEventProcessor<
       async (transaction) => {
         const stateKey = this.stateKeyForEvent(event);
         let state = stateKey
-          ? await transaction.stateTransaction.findOneWithSameKeyAs(
-              this.projectionType,
-              stateKey,
-            )
+          ? await transaction.get(this.projectionType, stateKey)
           : undefined;
 
         const projection = await this.project(event, transaction, { state });
 
         if (!options.skipVersionCheck) {
-          state ??= await transaction.stateTransaction.findOneWithSameKeyAs(
-            this.projectionType,
-            projection,
-          );
+          state ??= await transaction.get(this.projectionType, projection);
 
           const isProjectionMoreRecent = this.isProjectionMoreRecentThanState(
             projection,

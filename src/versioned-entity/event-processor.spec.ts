@@ -4,7 +4,6 @@ import type { Event } from '../events/index.js';
 import {
   MockRunner,
   type MockTransaction,
-  mockStateTransaction,
   mockTransaction,
 } from '../transaction/utils.test.js';
 import type { KeyOfType } from '../typing/index.js';
@@ -89,7 +88,7 @@ describe('VersionedEntityEventProcessor', () => {
   });
 
   afterEach(() => {
-    mockStateTransaction.clear();
+    mockTransaction.clear();
   });
 
   describe('processEvent', () => {
@@ -106,9 +105,6 @@ describe('VersionedEntityEventProcessor', () => {
           originalProperty: '👋',
         },
       };
-      mockStateTransaction.findOneWithSameKeyAs.mockResolvedValueOnce(
-        undefined,
-      );
       const expectedEntity = await projectionFn(event);
       projectionFn.mockClear();
 
@@ -120,12 +116,8 @@ describe('VersionedEntityEventProcessor', () => {
         mockTransaction,
         {},
       );
-      expect(mockStateTransaction.replace).toHaveBeenCalledExactlyOnceWith(
-        expectedEntity,
-      );
-      expect(mockStateTransaction.replace.mock.calls[0][0]).toBeInstanceOf(
-        MyEntity,
-      );
+      expect(mockTransaction.entities).toEqual({ '123': expectedEntity });
+      expect(mockTransaction.entities['123']).toBeInstanceOf(MyEntity);
     });
 
     it('should not update the state if the event is older', async () => {
@@ -141,9 +133,10 @@ describe('VersionedEntityEventProcessor', () => {
           originalProperty: '👋',
         },
       };
-      mockStateTransaction.findOneWithSameKeyAs.mockResolvedValueOnce(
-        new MyEntity({ updatedAt: new Date('2020-01-02') }),
-      );
+      const expectedEntity = new MyEntity({
+        updatedAt: new Date('2020-01-02'),
+      });
+      mockTransaction.set(expectedEntity);
 
       const actualProjection = await processor.processEvent(event);
 
@@ -153,7 +146,7 @@ describe('VersionedEntityEventProcessor', () => {
         mockTransaction,
         {},
       );
-      expect(mockStateTransaction.replace).not.toHaveBeenCalled();
+      expect(mockTransaction.entities).toEqual({ '123': expectedEntity });
     });
 
     it('should update the state if the event is more recent', async () => {
@@ -169,9 +162,7 @@ describe('VersionedEntityEventProcessor', () => {
           originalProperty: '👋',
         },
       };
-      mockStateTransaction.findOneWithSameKeyAs.mockResolvedValueOnce(
-        new MyEntity({ updatedAt: new Date('2020-01-01') }),
-      );
+      mockTransaction.set(new MyEntity({ updatedAt: new Date('2020-01-01') }));
       const expectedEntity = await projectionFn(event);
       projectionFn.mockClear();
 
@@ -183,12 +174,8 @@ describe('VersionedEntityEventProcessor', () => {
         mockTransaction,
         {},
       );
-      expect(mockStateTransaction.replace).toHaveBeenCalledExactlyOnceWith(
-        expectedEntity,
-      );
-      expect(mockStateTransaction.replace.mock.calls[0][0]).toBeInstanceOf(
-        MyEntity,
-      );
+      expect(mockTransaction.entities).toEqual({ '123': expectedEntity });
+      expect(mockTransaction.entities['123']).toBeInstanceOf(MyEntity);
     });
 
     it('should skip the check and update the state', async () => {
@@ -206,6 +193,7 @@ describe('VersionedEntityEventProcessor', () => {
       };
       const expectedEntity = await projectionFn(event);
       projectionFn.mockClear();
+      mockTransaction.set(new MyEntity({ updatedAt: new Date('2020-01-03') }));
 
       const actualProjection = await processor.processEvent(event, {
         skipVersionCheck: true,
@@ -217,13 +205,8 @@ describe('VersionedEntityEventProcessor', () => {
         mockTransaction,
         {},
       );
-      expect(mockStateTransaction.findOneWithSameKeyAs).not.toHaveBeenCalled();
-      expect(mockStateTransaction.replace).toHaveBeenCalledExactlyOnceWith(
-        expectedEntity,
-      );
-      expect(mockStateTransaction.replace.mock.calls[0][0]).toBeInstanceOf(
-        MyEntity,
-      );
+      expect(mockTransaction.entities).toEqual({ '123': expectedEntity });
+      expect(mockTransaction.entities['123']).toBeInstanceOf(MyEntity);
     });
 
     it('should fetch the state first when stateKeyForEvent returns a key', async () => {
@@ -242,9 +225,7 @@ describe('VersionedEntityEventProcessor', () => {
       const expectedExistingState = new MyEntity({
         updatedAt: new Date('2020-01-01'),
       });
-      mockStateTransaction.findOneWithSameKeyAs.mockResolvedValueOnce(
-        expectedExistingState,
-      );
+      mockTransaction.set(expectedExistingState);
       const expectedEntity = await projectionFn(event);
       projectionFn.mockClear();
       keyFn.mockReturnValueOnce({ id: '123' });
@@ -252,20 +233,13 @@ describe('VersionedEntityEventProcessor', () => {
       const actualProjection = await processor.processEvent(event);
 
       expect(actualProjection).toEqual(expectedEntity);
-      expect(
-        mockStateTransaction.findOneWithSameKeyAs,
-      ).toHaveBeenCalledExactlyOnceWith(MyEntity, { id: '123' });
       expect(projectionFn).toHaveBeenCalledExactlyOnceWith(
         event,
         mockTransaction,
         { state: expectedExistingState },
       );
-      expect(mockStateTransaction.replace).toHaveBeenCalledExactlyOnceWith(
-        expectedEntity,
-      );
-      expect(mockStateTransaction.replace.mock.calls[0][0]).toBeInstanceOf(
-        MyEntity,
-      );
+      expect(mockTransaction.entities).toEqual({ '123': expectedEntity });
+      expect(mockTransaction.entities['123']).toBeInstanceOf(MyEntity);
     });
   });
 
@@ -327,13 +301,12 @@ describe('VersionedEntityEventProcessor', () => {
           originalProperty: '👋',
         },
       };
-      mockStateTransaction.findOneWithSameKeyAs.mockResolvedValueOnce(
-        new MyEntity({
-          // `createdAt` is newer in the state, which should prevent the update.
-          createdAt: new Date('2020-01-02'),
-          updatedAt: new Date('2020-01-01'),
-        }),
-      );
+      const expectedEntity = new MyEntity({
+        // `createdAt` is newer in the state, which should prevent the update.
+        createdAt: new Date('2020-01-02'),
+        updatedAt: new Date('2020-01-01'),
+      });
+      mockTransaction.set(expectedEntity);
 
       const actualProjection = await processor.processEvent(event);
 
@@ -343,7 +316,7 @@ describe('VersionedEntityEventProcessor', () => {
         mockTransaction,
         {},
       );
-      expect(mockStateTransaction.replace).not.toHaveBeenCalled();
+      expect(mockTransaction.entities).toEqual({ '123': expectedEntity });
     });
   });
 });
