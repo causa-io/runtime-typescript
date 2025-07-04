@@ -200,4 +200,29 @@ export abstract class VersionedEventProcessor<
       },
     );
   }
+
+  /**
+   * Processes the given event, building the corresponding state.
+   * This is similar to {@link VersionedEventProcessor.processEvent}, but it returns `null` if the event was skipped
+   * because a more recent state already exists.
+   *
+   * @param event The event to process.
+   * @param options Options for processing the event.
+   * @returns The projection if the event was processed, `null` if it was skipped because a more recent state already
+   *   exists.
+   */
+  async processOrSkipEvent(
+    event: E,
+    options: VersionedEventProcessingOptions<RWT, P> = {},
+  ): Promise<P | null> {
+    try {
+      return await this.processEvent(event, options);
+    } catch (error) {
+      if (error instanceof OldEntityVersionError) {
+        return null;
+      }
+
+      throw error;
+    }
+  }
 }

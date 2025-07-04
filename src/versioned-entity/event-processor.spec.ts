@@ -260,6 +260,65 @@ describe('VersionedEntityEventProcessor', () => {
     });
   });
 
+  describe('processOrSkipEvent', () => {
+    it('should not update the state if the event is older', async () => {
+      const event: MyEvent = {
+        id: '123',
+        name: '📫',
+        producedAt: new Date('2020-01-01'),
+        data: {
+          id: '123',
+          createdAt: new Date('2020-01-01'),
+          updatedAt: new Date('2020-01-01'),
+          deletedAt: null,
+          originalProperty: '👋',
+        },
+      };
+      const expectedEntity = new MyEntity({
+        updatedAt: new Date('2020-01-02'),
+      });
+      mockTransaction.set(expectedEntity);
+
+      const actualProjection = await processor.processOrSkipEvent(event);
+
+      expect(actualProjection).toBeNull();
+      expect(projectionFn).toHaveBeenCalledExactlyOnceWith(
+        event,
+        mockTransaction,
+        {},
+      );
+      expect(mockTransaction.entities).toEqual({ '123': expectedEntity });
+    });
+
+    it('should update the state if the event is more recent', async () => {
+      const event: MyEvent = {
+        id: '123',
+        name: '📫',
+        producedAt: new Date('2020-01-02'),
+        data: {
+          id: '123',
+          createdAt: new Date('2020-01-01'),
+          updatedAt: new Date('2020-01-02'),
+          deletedAt: null,
+          originalProperty: '👋',
+        },
+      };
+      const expectedEntity = await projectionFn(event);
+      projectionFn.mockClear();
+
+      const actualProjection = await processor.processOrSkipEvent(event);
+
+      expect(actualProjection).toEqual(expectedEntity);
+      expect(projectionFn).toHaveBeenCalledExactlyOnceWith(
+        event,
+        mockTransaction,
+        {},
+      );
+      expect(mockTransaction.entities).toEqual({ '123': expectedEntity });
+      expect(mockTransaction.entities['123']).toBeInstanceOf(MyEntity);
+    });
+  });
+
   describe('updateState', () => {
     it('should allow overriding the updateState method', async () => {
       const updateStateSpy = jest.fn();
