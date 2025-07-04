@@ -214,8 +214,11 @@ export class VersionedEntityManager<
 
         transaction.validatePastDateOrFail(existingEntity.updatedAt);
 
-        // This could `null` for a soft-deleted entity, or `undefined` if `deletedAt` is not a property of the entity.
-        if (existingEntity.deletedAt == null) {
+        // This could be `null` for a soft-deleted entity.
+        if (
+          !this.hasDeletionTimestampProperty ||
+          existingEntity.deletedAt === null
+        ) {
           throw new EntityAlreadyExistsError(this.projectionType, entity);
         }
       },
@@ -243,7 +246,11 @@ export class VersionedEntityManager<
           options.existingEntity ??
           (await transaction.get(this.projectionType, entity));
 
-        if (!existingEntity || existingEntity.deletedAt != null) {
+        if (
+          !existingEntity ||
+          (this.hasDeletionTimestampProperty &&
+            existingEntity.deletedAt !== null)
+        ) {
           throw new EntityNotFoundError(this.projectionType, entity);
         }
 
