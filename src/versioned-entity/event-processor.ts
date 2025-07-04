@@ -18,11 +18,10 @@ import type { KeyOfType } from '../typing/index.js';
  */
 export type VersionedProjectionOptions<P extends object> = {
   /**
-   * The existing state before processing the event.
-   * This is only passed if {@link VersionedEventProcessor.stateKeyForEvent} is implemented and returns a key, and when
-   * the state already exists.
+   * The existing state before processing the event, forwarded from {@link VersionedEventProcessor.processEvent}.
+   * See {@link VersionedEventProcessingOptions.existingState}.
    */
-  state?: P;
+  existingState?: P | null;
 };
 
 /**
@@ -37,6 +36,13 @@ export type ProjectionVersionFetcher<P extends object> = (
  * account for processing.
  */
 export type ProjectionContext<P extends object> = {
+  /**
+   * The existing state of the projection in the database.
+   * This should be passed if the state was fetched from the database as part of the projection.
+   * Passing `null` means that the state does not currently exist in the database.
+   */
+  existingState?: P | null;
+
   /**
    * A function that returns the version property of the projection, used to compare the projection's version with the
    * existing state.
@@ -101,19 +107,6 @@ export abstract class VersionedEventProcessor<
       typeof projectionVersionProperty === 'function'
         ? projectionVersionProperty
         : (p) => p[projectionVersionProperty] as Date | undefined | null;
-  }
-
-  /**
-   * A method that returns the key used to fetch the existing state for the given event.
-   * This only needs to be implemented if the existing state should be passed to
-   * {@link VersionedEventProcessor.project}.
-   *
-   * @param event The event for which the key should be built.
-   * @returns The partial projection, containing the properties defining the key for the projection / state.
-   */
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  protected stateKeyForEvent(event: E): Partial<P> | null {
-    return null;
   }
 
   /**
@@ -234,28 +227,19 @@ export abstract class VersionedEventProcessor<
     return await this.runner.run(
       { transaction: options.transaction },
       async (transaction) => {
-        const isExistingStateProvided = options.existingState !== undefined;
-
-        const stateKey = this.stateKeyForEvent(event);
-        let state: P | undefined;
-        if (stateKey) {
-          state = isExistingStateProvided
-            ? (options.existingState ?? undefined)
-            : await transaction.get(this.projectionType, stateKey);
-        }
-
         const projectionWithContext = await this.project(event, transaction, {
-          state,
+          existingState: options.existingState,
         });
         const [projection, context] = Array.isArray(projectionWithContext)
           ? projectionWithContext
           : [projectionWithContext, {}];
 
-        if (!stateKey) {
-          state = isExistingStateProvided
+        const state =
+          options.existingState !== undefined
             ? (options.existingState ?? undefined)
-            : await transaction.get(this.projectionType, projection);
-        }
+            : context.existingState !== undefined
+              ? (context.existingState ?? undefined)
+              : await transaction.get(this.projectionType, projection);
 
         this.validateProjectionIsMoreRecentThanState(projection, state, {
           reprocessEqualVersion: options.reprocessEqualVersion,

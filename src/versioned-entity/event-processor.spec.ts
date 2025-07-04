@@ -49,9 +49,6 @@ type MyEvent = Event<
   }
 >;
 
-const keyFn = jest.fn(
-  (() => null) as (event: MyEvent) => Partial<MyEntity> | null,
-);
 const projectionFn: jest.MockedFunction<MyProcessor['project']> = jest.fn(
   async ({ data }) =>
     new MyEntity({
@@ -72,10 +69,6 @@ export class MyProcessor extends VersionedEventProcessor<
 > {
   constructor(property: KeyOfType<MyEntity, Date> = 'updatedAt') {
     super(MyEntity, new MockRunner(), property);
-  }
-
-  protected stateKeyForEvent(event: MyEvent): Partial<MyEntity> | null {
-    return keyFn(event);
   }
 
   project(
@@ -229,21 +222,33 @@ describe('VersionedEntityEventProcessor', () => {
       });
 
       expect(actualProjection).toEqual(expectedEntity);
-      expectProjectionCall();
+      expectProjectionCall({ existingState: entityInTransaction });
       expectEntityInState();
     });
 
-    it('should fetch the state first when stateKeyForEvent returns a key', async () => {
-      const expectedExistingState = new MyEntity({
+    it('should use the state returned by the projection', async () => {
+      const projectedState = expectedEntity;
+      expectedEntity = new MyEntity({
+        ...expectedEntity,
         updatedAt: new Date('2020-01-01'),
       });
-      mockTransaction.set(expectedExistingState);
-      keyFn.mockReturnValueOnce({ id: '123' });
+      // Although the state actually in the database is older, it should not be read and the face `existingState` should
+      // be used instead.
+      mockTransaction.set(expectedEntity);
+      projectionFn.mockResolvedValueOnce([
+        projectedState,
+        {
+          existingState: new MyEntity({
+            ...expectedEntity,
+            updatedAt: new Date('2020-01-03'),
+          }),
+        },
+      ]);
 
-      const actualProjection = await processor.processEvent(event);
+      const actualPromise = processor.processEvent(event);
 
-      expect(actualProjection).toEqual(expectedEntity);
-      expectProjectionCall({ state: expectedExistingState });
+      await expect(actualPromise).rejects.toThrow(OldEntityVersionError);
+      expectProjectionCall();
       expectEntityInState();
     });
 
