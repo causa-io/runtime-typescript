@@ -34,6 +34,12 @@ export type VersionedEventProcessingOptions<
    * Passing `null` means that the state does not currently exist in the database.
    */
   existingState?: P | null;
+
+  /**
+   * If `true`, the processor will reprocess the event even if the existing state has the same version as the event.
+   * This can be useful for backfilling cases.
+   */
+  reprocessEqualVersion?: boolean;
 };
 
 /**
@@ -98,10 +104,15 @@ export abstract class VersionedEventProcessor<
    *
    * @param projection The projection to compare.
    * @param state The state to compare, or `undefined` if it does not exist.
+   * @param options Options for the validation.
    */
   protected validateProjectionIsMoreRecentThanState(
     projection: P,
     state: P | undefined,
+    options: Pick<
+      VersionedEventProcessingOptions<RWT, P>,
+      'reprocessEqualVersion'
+    > = {},
   ): void {
     if (!state) {
       return;
@@ -112,7 +123,10 @@ export abstract class VersionedEventProcessor<
       this.projectionVersionProperty
     ] as Date;
 
-    if (stateVersion >= projectionVersion) {
+    const isOld = options.reprocessEqualVersion
+      ? stateVersion > projectionVersion
+      : stateVersion >= projectionVersion;
+    if (isOld) {
       throw new OldEntityVersionError(
         this.projectionType,
         state,
@@ -192,7 +206,9 @@ export abstract class VersionedEventProcessor<
             : await transaction.get(this.projectionType, projection);
         }
 
-        this.validateProjectionIsMoreRecentThanState(projection, state);
+        this.validateProjectionIsMoreRecentThanState(projection, state, {
+          reprocessEqualVersion: options.reprocessEqualVersion,
+        });
 
         await this.updateState(projection, transaction);
 
