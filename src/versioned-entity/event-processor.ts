@@ -20,6 +20,21 @@ export type VersionedProjectionOptions<P extends object> = {
 };
 
 /**
+ * Options for processing a versioned event.
+ */
+export type VersionedEventProcessingOptions<
+  RWT extends Transaction,
+  P extends object,
+> = TransactionOption<RWT> & {
+  /**
+   * The existing state of the projection in the database.
+   * If provided, this is used instead of fetching the state from the database.
+   * Passing `null` means that the state does not currently exist in the database.
+   */
+  existingState?: P | null;
+};
+
+/**
  * A class that processes (timestamp) versioned events and builds a corresponding state.
  *
  * {@link VersionedEventProcessor.project} should be implemented to build the state from the event.
@@ -119,35 +134,36 @@ export abstract class VersionedEventProcessor<
    */
   async processEvent(
     event: E,
-    options: TransactionOption<RWT> & {
-      /**
-       * Whether to skip the check that the projection is more recent than the state.
-       * If `true`, the state will be updated unconditionally.
-       */
-      skipVersionCheck?: boolean;
-    } = {},
+    options: VersionedEventProcessingOptions<RWT, P> = {},
   ): Promise<P | null> {
     return await this.runner.run(
       { transaction: options.transaction },
       async (transaction) => {
+        const isExistingStateProvided = options.existingState !== undefined;
+
         const stateKey = this.stateKeyForEvent(event);
-        let state = stateKey
-          ? await transaction.get(this.projectionType, stateKey)
-          : undefined;
+        let state: P | undefined;
+        if (stateKey) {
+          state = isExistingStateProvided
+            ? (options.existingState ?? undefined)
+            : await transaction.get(this.projectionType, stateKey);
+        }
 
         const projection = await this.project(event, transaction, { state });
 
-        if (!options.skipVersionCheck) {
-          state ??= await transaction.get(this.projectionType, projection);
+        if (!stateKey) {
+          state = isExistingStateProvided
+            ? (options.existingState ?? undefined)
+            : await transaction.get(this.projectionType, projection);
+        }
 
-          const isProjectionMoreRecent = this.isProjectionMoreRecentThanState(
-            projection,
-            state,
-          );
+        const isProjectionMoreRecent = this.isProjectionMoreRecentThanState(
+          projection,
+          state,
+        );
 
-          if (!isProjectionMoreRecent) {
-            return null;
-          }
+        if (!isProjectionMoreRecent) {
+          return null;
         }
 
         await this.updateState(projection, transaction);

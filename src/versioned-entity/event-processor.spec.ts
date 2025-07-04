@@ -179,7 +179,7 @@ describe('VersionedEntityEventProcessor', () => {
       expect(mockTransaction.entities['123']).toBeInstanceOf(MyEntity);
     });
 
-    it('should skip the check and update the state', async () => {
+    it('should check the state using the provided entity and update the state', async () => {
       const event: MyEvent = {
         id: '123',
         name: '📫',
@@ -193,11 +193,19 @@ describe('VersionedEntityEventProcessor', () => {
         },
       };
       const expectedEntity = await projectionFn(event);
+      const existingEntity = new MyEntity({
+        updatedAt: new Date('2020-01-03'),
+      });
       projectionFn.mockClear();
-      mockTransaction.set(new MyEntity({ updatedAt: new Date('2020-01-03') }));
+      mockTransaction.set(existingEntity);
+      // Although the existing entity is newer, the processor should use the provided existing state for its check.
+      const entityInTransaction = new MyEntity({
+        ...existingEntity,
+        updatedAt: new Date('2020-01-01'),
+      });
 
       const actualProjection = await processor.processEvent(event, {
-        skipVersionCheck: true,
+        existingState: entityInTransaction,
       });
 
       expect(actualProjection).toEqual(expectedEntity);

@@ -292,7 +292,14 @@ export class VersionedEntityManager<
   protected async makeProcessAndPublishEvent(
     eventName: EventName<E>,
     entity: EventData<E>,
-    options: VersionedEntityOperationOptions<RWT> = {},
+    options: VersionedEntityOperationOptions<RWT> & {
+      /**
+       * The existing state of the entity for which an event is being created.
+       * If provided, this is passed as the `existingState` to the {@link VersionedEventProcessor} to avoid fetching
+       * the entity from the state again.
+       */
+      existingEntity?: EventData<E> | null;
+    } = {},
   ): Promise<E> {
     return await this.runner.run(
       { transaction: options.transaction },
@@ -316,7 +323,7 @@ export class VersionedEntityManager<
 
         await this.processEvent(event, {
           transaction,
-          skipVersionCheck: true,
+          existingState: options.existingEntity,
         });
 
         return event;
@@ -357,6 +364,7 @@ export class VersionedEntityManager<
         const event = await this.makeProcessAndPublishEvent(eventName, entity, {
           transaction,
           publishOptions: options.publishOptions,
+          existingEntity: null,
         });
 
         return event;
@@ -434,6 +442,7 @@ export class VersionedEntityManager<
         const event = await this.makeProcessAndPublishEvent(eventName, entity, {
           transaction,
           publishOptions: options.publishOptions,
+          existingEntity,
         });
 
         return event;
@@ -484,6 +493,7 @@ export class VersionedEntityManager<
         const event = await this.makeProcessAndPublishEvent(eventName, entity, {
           transaction,
           publishOptions: options.publishOptions,
+          existingEntity,
         });
 
         return event;
