@@ -17,6 +17,7 @@ import {
   Transaction,
   TransactionRunner,
   type ReadOnlyStateTransaction,
+  type ReadOnlyTransactionOption,
   type TransactionOption,
 } from '../transaction/index.js';
 import type { KeyOfType } from '../typing/index.js';
@@ -329,6 +330,19 @@ export class VersionedEntityManager<
         return event;
       },
     );
+  }
+
+  async get(
+    key: Partial<EventData<E>>,
+    options: ReadOnlyTransactionOption<ROT> = {},
+  ): Promise<EventData<E>> {
+    const entity = await super.get(key, options);
+
+    if (this.hasDeletionTimestampProperty && entity.deletedAt) {
+      throw new EntityNotFoundError(this.projectionType, key);
+    }
+
+    return entity;
   }
 
   /**
