@@ -4,11 +4,14 @@ import { EntityNotFoundError, OldEntityVersionError } from '../errors/index.js';
 import type { Event } from '../events/index.js';
 import {
   MockRunner,
-  type MockTransaction,
   mockTransaction,
+  type MockTransaction,
 } from '../transaction/utils.test.js';
 import type { KeyOfType } from '../typing/index.js';
-import { VersionedEventProcessor } from './event-processor.js';
+import {
+  VersionedEventProcessor,
+  type VersionedProjectionOptions,
+} from './event-processor.js';
 import type { VersionedEntity } from './versioned-entity.js';
 
 class MyEntity implements VersionedEntity {
@@ -44,19 +47,15 @@ type MyEvent = Event<
 const keyFn = jest.fn(
   (() => null) as (event: MyEvent) => Partial<MyEntity> | null,
 );
-const projectionFn = jest.fn(
-  (async ({ data }) =>
+const projectionFn: jest.MockedFunction<MyProcessor['project']> = jest.fn(
+  async ({ data }) =>
     new MyEntity({
       id: data.id,
       createdAt: data.createdAt,
       updatedAt: data.updatedAt,
       deletedAt: data.deletedAt,
       someProperty: data.originalProperty,
-    })) as (
-    event: MyEvent,
-    transaction?: MockTransaction,
-    options?: any,
-  ) => Promise<MyEntity>,
+    }),
 );
 
 export class MyProcessor extends VersionedEventProcessor<
@@ -77,7 +76,7 @@ export class MyProcessor extends VersionedEventProcessor<
   project(
     event: MyEvent,
     transaction: MockTransaction,
-    options: any,
+    options?: VersionedProjectionOptions<MyEntity>,
   ): Promise<MyEntity> {
     return projectionFn(event, transaction, options);
   }
@@ -86,59 +85,70 @@ export class MyProcessor extends VersionedEventProcessor<
 describe('VersionedEntityEventProcessor', () => {
   let processor: MyProcessor;
 
+  let event: MyEvent;
+  let expectedEntity: MyEntity;
+
   beforeEach(() => {
     processor = new MyProcessor();
+    event = {
+      id: '123',
+      name: '📫',
+      producedAt: new Date('2020-01-02'),
+      data: {
+        id: '123',
+        createdAt: new Date('2020-01-01'),
+        updatedAt: new Date('2020-01-02'),
+        deletedAt: null,
+        originalProperty: '👋',
+      },
+    };
+    expectedEntity = new MyEntity({
+      id: '123',
+      createdAt: new Date('2020-01-01'),
+      updatedAt: new Date('2020-01-02'),
+      deletedAt: null,
+      someProperty: '👋',
+    });
   });
 
   afterEach(() => {
     mockTransaction.clear();
   });
 
+  function expectProjectionCall(
+    options: VersionedProjectionOptions<MyEntity> = {},
+  ) {
+    expect(projectionFn).toHaveBeenCalledExactlyOnceWith(
+      event,
+      mockTransaction,
+      options,
+    );
+  }
+
+  function expectEntityInState() {
+    expect(mockTransaction.entities).toEqual({
+      [expectedEntity.id]: expectedEntity,
+    });
+    expect(mockTransaction.entities[expectedEntity.id]).toBeInstanceOf(
+      MyEntity,
+    );
+  }
+
   describe('processEvent', () => {
     it('should update the state if the state does not exist', async () => {
-      const event: MyEvent = {
-        id: '123',
-        name: '📫',
-        producedAt: new Date('2020-01-02'),
-        data: {
-          id: '123',
-          createdAt: new Date('2020-01-01'),
-          updatedAt: new Date('2020-01-02'),
-          deletedAt: null,
-          originalProperty: '👋',
-        },
-      };
-      const expectedEntity = await projectionFn(event);
-      projectionFn.mockClear();
-
       const actualProjection = await processor.processEvent(event);
 
       expect(actualProjection).toEqual(expectedEntity);
-      expect(projectionFn).toHaveBeenCalledExactlyOnceWith(
-        event,
-        mockTransaction,
-        {},
-      );
-      expect(mockTransaction.entities).toEqual({ '123': expectedEntity });
-      expect(mockTransaction.entities['123']).toBeInstanceOf(MyEntity);
+      expectProjectionCall();
+      expectEntityInState();
     });
 
     it('should not update the state if the event is older', async () => {
-      const event: MyEvent = {
-        id: '123',
-        name: '📫',
+      event = {
+        ...event,
         producedAt: new Date('2020-01-01'),
-        data: {
-          id: '123',
-          createdAt: new Date('2020-01-01'),
-          updatedAt: new Date('2020-01-01'),
-          deletedAt: null,
-          originalProperty: '👋',
-        },
+        data: { ...event.data, updatedAt: new Date('2020-01-01') },
       };
-      const expectedEntity = new MyEntity({
-        updatedAt: new Date('2020-01-02'),
-      });
       mockTransaction.set(expectedEntity);
 
       const actualPromise = processor.processEvent(event);
@@ -150,30 +160,12 @@ describe('VersionedEntityEventProcessor', () => {
         stateVersion: expectedEntity.updatedAt,
         processedVersion: event.data.updatedAt,
       });
-      expect(projectionFn).toHaveBeenCalledExactlyOnceWith(
-        event,
-        mockTransaction,
-        {},
-      );
-      expect(mockTransaction.entities).toEqual({ '123': expectedEntity });
+      expectProjectionCall();
+      expectEntityInState();
     });
 
     it('should not update the state if the event version is equal to the state version', async () => {
-      const event: MyEvent = {
-        id: '123',
-        name: '📫',
-        producedAt: new Date('2020-01-02'),
-        data: {
-          id: '123',
-          createdAt: new Date('2020-01-01'),
-          updatedAt: new Date('2020-01-02'),
-          deletedAt: null,
-          originalProperty: '🎉',
-        },
-      };
-      const expectedEntity = new MyEntity({
-        updatedAt: new Date('2020-01-02'),
-      });
+      event = { ...event, data: { ...event.data, originalProperty: '🎉' } };
       mockTransaction.set(expectedEntity);
 
       const actualPromise = processor.processEvent(event);
@@ -185,92 +177,41 @@ describe('VersionedEntityEventProcessor', () => {
         stateVersion: expectedEntity.updatedAt,
         processedVersion: event.data.updatedAt,
       });
-      expect(projectionFn).toHaveBeenCalledExactlyOnceWith(
-        event,
-        mockTransaction,
-        {},
-      );
-      expect(mockTransaction.entities).toEqual({ '123': expectedEntity });
+      expectProjectionCall();
+      expectEntityInState();
     });
 
     it('should update the state if the event is more recent', async () => {
-      const event: MyEvent = {
-        id: '123',
-        name: '📫',
-        producedAt: new Date('2020-01-02'),
-        data: {
-          id: '123',
-          createdAt: new Date('2020-01-01'),
-          updatedAt: new Date('2020-01-02'),
-          deletedAt: null,
-          originalProperty: '👋',
-        },
-      };
-      mockTransaction.set(new MyEntity({ updatedAt: new Date('2020-01-01') }));
-      const expectedEntity = await projectionFn(event);
-      projectionFn.mockClear();
+      mockTransaction.set(
+        new MyEntity({ ...expectedEntity, updatedAt: new Date('2020-01-01') }),
+      );
 
       const actualProjection = await processor.processEvent(event);
 
       expect(actualProjection).toEqual(expectedEntity);
-      expect(projectionFn).toHaveBeenCalledExactlyOnceWith(
-        event,
-        mockTransaction,
-        {},
-      );
-      expect(mockTransaction.entities).toEqual({ '123': expectedEntity });
-      expect(mockTransaction.entities['123']).toBeInstanceOf(MyEntity);
+      expectProjectionCall();
+      expectEntityInState();
     });
 
     it('should update the state if the event has the same version as the state but reprocessing is enabled', async () => {
-      const event: MyEvent = {
-        id: '123',
-        name: '📫',
-        producedAt: new Date('2020-01-02'),
-        data: {
-          id: '123',
-          createdAt: new Date('2020-01-01'),
-          updatedAt: new Date('2020-01-02'),
-          deletedAt: null,
-          originalProperty: '🎉',
-        },
-      };
-      mockTransaction.set(new MyEntity({ updatedAt: new Date('2020-01-02') }));
-      const expectedEntity = await projectionFn(event);
-      projectionFn.mockClear();
+      mockTransaction.set(
+        new MyEntity({ ...expectedEntity, someProperty: '🎉' }),
+      );
 
       const actualProjection = await processor.processEvent(event, {
         reprocessEqualVersion: true,
       });
 
       expect(actualProjection).toEqual(expectedEntity);
-      expect(projectionFn).toHaveBeenCalledExactlyOnceWith(
-        event,
-        mockTransaction,
-        {},
-      );
-      expect(mockTransaction.entities).toEqual({ '123': expectedEntity });
-      expect(mockTransaction.entities['123']).toBeInstanceOf(MyEntity);
+      expectProjectionCall();
+      expectEntityInState();
     });
 
     it('should check the state using the provided entity and update the state', async () => {
-      const event: MyEvent = {
-        id: '123',
-        name: '📫',
-        producedAt: new Date('2020-01-02'),
-        data: {
-          id: '123',
-          createdAt: new Date('2020-01-01'),
-          updatedAt: new Date('2020-01-02'),
-          deletedAt: null,
-          originalProperty: '👋',
-        },
-      };
-      const expectedEntity = await projectionFn(event);
       const existingEntity = new MyEntity({
+        ...expectedEntity,
         updatedAt: new Date('2020-01-03'),
       });
-      projectionFn.mockClear();
       mockTransaction.set(existingEntity);
       // Although the existing entity is newer, the processor should use the provided existing state for its check.
       const entityInTransaction = new MyEntity({
@@ -283,105 +224,47 @@ describe('VersionedEntityEventProcessor', () => {
       });
 
       expect(actualProjection).toEqual(expectedEntity);
-      expect(projectionFn).toHaveBeenCalledExactlyOnceWith(
-        event,
-        mockTransaction,
-        {},
-      );
-      expect(mockTransaction.entities).toEqual({ '123': expectedEntity });
-      expect(mockTransaction.entities['123']).toBeInstanceOf(MyEntity);
+      expectProjectionCall();
+      expectEntityInState();
     });
 
     it('should fetch the state first when stateKeyForEvent returns a key', async () => {
-      const event: MyEvent = {
-        id: '123',
-        name: '📫',
-        producedAt: new Date('2020-01-02'),
-        data: {
-          id: '123',
-          createdAt: new Date('2020-01-01'),
-          updatedAt: new Date('2020-01-02'),
-          deletedAt: null,
-          originalProperty: '👋',
-        },
-      };
       const expectedExistingState = new MyEntity({
         updatedAt: new Date('2020-01-01'),
       });
       mockTransaction.set(expectedExistingState);
-      const expectedEntity = await projectionFn(event);
-      projectionFn.mockClear();
       keyFn.mockReturnValueOnce({ id: '123' });
 
       const actualProjection = await processor.processEvent(event);
 
       expect(actualProjection).toEqual(expectedEntity);
-      expect(projectionFn).toHaveBeenCalledExactlyOnceWith(
-        event,
-        mockTransaction,
-        { state: expectedExistingState },
-      );
-      expect(mockTransaction.entities).toEqual({ '123': expectedEntity });
-      expect(mockTransaction.entities['123']).toBeInstanceOf(MyEntity);
+      expectProjectionCall({ state: expectedExistingState });
+      expectEntityInState();
     });
   });
 
   describe('processOrSkipEvent', () => {
     it('should not update the state if the event is older', async () => {
-      const event: MyEvent = {
-        id: '123',
-        name: '📫',
+      event = {
+        ...event,
         producedAt: new Date('2020-01-01'),
-        data: {
-          id: '123',
-          createdAt: new Date('2020-01-01'),
-          updatedAt: new Date('2020-01-01'),
-          deletedAt: null,
-          originalProperty: '👋',
-        },
+        data: { ...event.data, updatedAt: new Date('2020-01-01') },
       };
-      const expectedEntity = new MyEntity({
-        updatedAt: new Date('2020-01-02'),
-      });
       mockTransaction.set(expectedEntity);
 
       const actualProjection = await processor.processOrSkipEvent(event);
 
       expect(actualProjection).toBeNull();
-      expect(projectionFn).toHaveBeenCalledExactlyOnceWith(
-        event,
-        mockTransaction,
-        {},
-      );
-      expect(mockTransaction.entities).toEqual({ '123': expectedEntity });
+      expectProjectionCall();
+      expectEntityInState();
     });
 
     it('should update the state if the event is more recent', async () => {
-      const event: MyEvent = {
-        id: '123',
-        name: '📫',
-        producedAt: new Date('2020-01-02'),
-        data: {
-          id: '123',
-          createdAt: new Date('2020-01-01'),
-          updatedAt: new Date('2020-01-02'),
-          deletedAt: null,
-          originalProperty: '👋',
-        },
-      };
-      const expectedEntity = await projectionFn(event);
-      projectionFn.mockClear();
-
       const actualProjection = await processor.processOrSkipEvent(event);
 
       expect(actualProjection).toEqual(expectedEntity);
-      expect(projectionFn).toHaveBeenCalledExactlyOnceWith(
-        event,
-        mockTransaction,
-        {},
-      );
-      expect(mockTransaction.entities).toEqual({ '123': expectedEntity });
-      expect(mockTransaction.entities['123']).toBeInstanceOf(MyEntity);
+      expectProjectionCall();
+      expectEntityInState();
     });
   });
 
@@ -396,19 +279,6 @@ describe('VersionedEntityEventProcessor', () => {
           updateStateSpy(projection, transaction);
         }
       }
-      const event: MyEvent = {
-        id: '123',
-        name: '📫',
-        producedAt: new Date('2020-01-02'),
-        data: {
-          id: '123',
-          createdAt: new Date('2020-01-01'),
-          updatedAt: new Date('2020-01-02'),
-          deletedAt: null,
-          originalProperty: '👋',
-        },
-      };
-      const expectedEntity = await projectionFn(event);
       const processor = new MyOtherProcessor();
 
       const actualProjection = await processor.processEvent(event);
@@ -431,19 +301,8 @@ describe('VersionedEntityEventProcessor', () => {
         }
       }
       const processor = new MyOtherProcessor();
-      const event: MyEvent = {
-        id: '123',
-        name: '📫',
-        producedAt: new Date('2020-01-01'),
-        data: {
-          id: '123',
-          createdAt: new Date('2020-01-01'),
-          updatedAt: new Date('2020-01-02'),
-          deletedAt: null,
-          originalProperty: '👋',
-        },
-      };
-      const expectedEntity = new MyEntity({
+      expectedEntity = new MyEntity({
+        ...expectedEntity,
         // `createdAt` is newer in the state, which should prevent the update.
         createdAt: new Date('2020-01-02'),
         updatedAt: new Date('2020-01-01'),
@@ -459,12 +318,8 @@ describe('VersionedEntityEventProcessor', () => {
         stateVersion: expectedEntity.createdAt,
         processedVersion: event.data.createdAt,
       });
-      expect(projectionFn).toHaveBeenCalledExactlyOnceWith(
-        event,
-        mockTransaction,
-        {},
-      );
-      expect(mockTransaction.entities).toEqual({ '123': expectedEntity });
+      expectProjectionCall();
+      expectEntityInState();
     });
   });
 
