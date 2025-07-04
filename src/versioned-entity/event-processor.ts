@@ -1,5 +1,9 @@
 import type { Type } from '@nestjs/common';
-import { EntityNotFoundError, OldEntityVersionError } from '../errors/index.js';
+import {
+  EntityNotFoundError,
+  OldEntityVersionError,
+  UnsupportedEntityOperationError,
+} from '../errors/index.js';
 import {
   Transaction,
   TransactionRunner,
@@ -19,6 +23,25 @@ export type VersionedProjectionOptions<P extends object> = {
    * the state already exists.
    */
   state?: P;
+};
+
+/**
+ * A function that fetches the version of a projection.
+ */
+export type ProjectionVersionFetcher<P extends object> = (
+  projection: P,
+) => Date | undefined | null;
+
+/**
+ * A context returned by {@link VersionedEventProcessor.project} that can contain additional information to take into
+ * account for processing.
+ */
+export type ProjectionContext<P extends object> = {
+  /**
+   * A function that returns the version property of the projection, used to compare the projection's version with the
+   * existing state.
+   */
+  projectionVersionProperty?: ProjectionVersionFetcher<P>;
 };
 
 /**
@@ -57,19 +80,28 @@ export abstract class VersionedEventProcessor<
   R extends TransactionRunner<RWT, ROT> = TransactionRunner<RWT, ROT>,
 > {
   /**
+   * The function to use to fetch the version of a projection.
+   */
+  readonly projectionVersionProperty: ProjectionVersionFetcher<P>;
+
+  /**
    * Creates a new {@link VersionedEventProcessor}.
    *
    * @param projectionType The class of the state to build, which should be a type accepted by the state transaction.
    *   This is usually equal to the data in the event, but it can be different.
    * @param runner The {@link TransactionRunner} used to create transactions.
-   * @param projectionVersionProperty The name of the property that should be used to compare the state and the
-   *   projection's versions.
+   * @param projectionVersionProperty The property or function to use to fetch the version of the projection or state.
    */
   constructor(
     readonly projectionType: Type<P>,
     readonly runner: R,
-    readonly projectionVersionProperty: KeyOfType<P, Date>,
-  ) {}
+    projectionVersionProperty: KeyOfType<P, Date> | ProjectionVersionFetcher<P>,
+  ) {
+    this.projectionVersionProperty =
+      typeof projectionVersionProperty === 'function'
+        ? projectionVersionProperty
+        : (p) => p[projectionVersionProperty] as Date | undefined | null;
+  }
 
   /**
    * A method that returns the key used to fetch the existing state for the given event.
@@ -91,12 +123,13 @@ export abstract class VersionedEventProcessor<
    * @param event The event from which to build the projection.
    * @param transaction The transaction to use if additional data must be fetched.
    * @param options Options when building the projection.
+   * @returns The projection, and possibly a context with additional information for processing.
    */
   protected abstract project(
     event: E,
     transaction: RWT,
     options?: VersionedProjectionOptions<P>,
-  ): Promise<P>;
+  ): Promise<P | [P, ProjectionContext<P>]>;
 
   /**
    * Validates that the given projection is strictly more recent than the state, based on their
@@ -112,16 +145,29 @@ export abstract class VersionedEventProcessor<
     options: Pick<
       VersionedEventProcessingOptions<RWT, P>,
       'reprocessEqualVersion'
-    > = {},
+    > &
+      Pick<ProjectionContext<P>, 'projectionVersionProperty'> = {},
   ): void {
     if (!state) {
       return;
     }
 
-    const stateVersion = state[this.projectionVersionProperty] as Date;
-    const projectionVersion = projection[
-      this.projectionVersionProperty
-    ] as Date;
+    const projectionVersionProperty =
+      options.projectionVersionProperty ?? this.projectionVersionProperty;
+
+    const projectionVersion = projectionVersionProperty(projection);
+    if (!projectionVersion) {
+      throw new UnsupportedEntityOperationError(
+        this.projectionType,
+        projection,
+        'Could not find version in projection.',
+      );
+    }
+
+    const stateVersion = projectionVersionProperty(state);
+    if (!stateVersion) {
+      return;
+    }
 
     const isOld = options.reprocessEqualVersion
       ? stateVersion > projectionVersion
@@ -198,7 +244,12 @@ export abstract class VersionedEventProcessor<
             : await transaction.get(this.projectionType, stateKey);
         }
 
-        const projection = await this.project(event, transaction, { state });
+        const projectionWithContext = await this.project(event, transaction, {
+          state,
+        });
+        const [projection, context] = Array.isArray(projectionWithContext)
+          ? projectionWithContext
+          : [projectionWithContext, {}];
 
         if (!stateKey) {
           state = isExistingStateProvided
@@ -208,6 +259,7 @@ export abstract class VersionedEventProcessor<
 
         this.validateProjectionIsMoreRecentThanState(projection, state, {
           reprocessEqualVersion: options.reprocessEqualVersion,
+          projectionVersionProperty: context.projectionVersionProperty,
         });
 
         await this.updateState(projection, transaction);

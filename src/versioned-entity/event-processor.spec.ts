@@ -1,6 +1,10 @@
 import { jest } from '@jest/globals';
 import 'jest-extended';
-import { EntityNotFoundError, OldEntityVersionError } from '../errors/index.js';
+import {
+  EntityNotFoundError,
+  OldEntityVersionError,
+  UnsupportedEntityOperationError,
+} from '../errors/index.js';
 import type { Event } from '../events/index.js';
 import {
   MockRunner,
@@ -10,6 +14,7 @@ import {
 import type { KeyOfType } from '../typing/index.js';
 import {
   VersionedEventProcessor,
+  type ProjectionContext,
   type VersionedProjectionOptions,
 } from './event-processor.js';
 import type { VersionedEntity } from './versioned-entity.js';
@@ -77,7 +82,7 @@ export class MyProcessor extends VersionedEventProcessor<
     event: MyEvent,
     transaction: MockTransaction,
     options?: VersionedProjectionOptions<MyEntity>,
-  ): Promise<MyEntity> {
+  ): Promise<MyEntity | [MyEntity, ProjectionContext<MyEntity>]> {
     return projectionFn(event, transaction, options);
   }
 }
@@ -240,6 +245,64 @@ describe('VersionedEntityEventProcessor', () => {
       expect(actualProjection).toEqual(expectedEntity);
       expectProjectionCall({ state: expectedExistingState });
       expectEntityInState();
+    });
+
+    it('should use the version property returned by the projection function', async () => {
+      projectionFn.mockResolvedValueOnce([
+        expectedEntity,
+        { projectionVersionProperty: (p) => p.createdAt },
+      ]);
+      mockTransaction.set(
+        new MyEntity({
+          ...expectedEntity,
+          createdAt: new Date('2019-01-01'),
+          updatedAt: new Date('2020-01-03'),
+        }),
+      );
+
+      const actualProjection = await processor.processEvent(event);
+
+      expect(actualProjection).toEqual(expectedEntity);
+      expectProjectionCall();
+      expectEntityInState();
+    });
+
+    it('should consider the new projection more recent if the returned state version is nullish', async () => {
+      projectionFn.mockResolvedValueOnce([
+        expectedEntity,
+        {
+          projectionVersionProperty: (p) =>
+            p.someProperty === '🙈' ? null : p.updatedAt,
+        },
+      ]);
+      mockTransaction.set(
+        new MyEntity({
+          ...expectedEntity,
+          updatedAt: new Date('2020-01-03'),
+          someProperty: '🙈',
+        }),
+      );
+
+      const actualProjection = await processor.processEvent(event);
+
+      expect(actualProjection).toEqual(expectedEntity);
+      expectProjectionCall();
+      expectEntityInState();
+    });
+
+    it('should throw if the projection version is nullish', async () => {
+      projectionFn.mockResolvedValueOnce([
+        expectedEntity,
+        { projectionVersionProperty: () => null },
+      ]);
+      mockTransaction.set(expectedEntity);
+
+      const actualPromise = processor.processEvent(event);
+
+      await expect(actualPromise).rejects.toThrow(
+        UnsupportedEntityOperationError,
+      );
+      expectProjectionCall();
     });
   });
 
