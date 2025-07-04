@@ -1,8 +1,10 @@
 import type { Type } from '@nestjs/common';
+import { EntityNotFoundError } from '../errors/index.js';
 import {
   Transaction,
   TransactionRunner,
   type ReadOnlyStateTransaction,
+  type ReadOnlyTransactionOption,
   type TransactionOption,
 } from '../transaction/index.js';
 import type { KeyOfType } from '../typing/index.js';
@@ -122,6 +124,31 @@ export abstract class VersionedEventProcessor<
    */
   protected async updateState(projection: P, transaction: RWT): Promise<void> {
     await transaction.set(projection);
+  }
+
+  /**
+   * Retrieves the projection for the given key.
+   * If the projection does not exist, an {@link EntityNotFoundError} is thrown.
+   *
+   * @param key The partial projection, containing the properties defining the key for the projection / state.
+   * @param options Options for the operation.
+   * @returns The projection, if it exists.
+   */
+  async get(
+    key: Partial<P>,
+    options: ReadOnlyTransactionOption<ROT> = {},
+  ): Promise<P> {
+    return await this.runner.run(
+      { readOnly: true, transaction: options.transaction },
+      async (transaction) => {
+        const state = await transaction.get(this.projectionType, key);
+        if (!state) {
+          throw new EntityNotFoundError(this.projectionType, key);
+        }
+
+        return state;
+      },
+    );
   }
 
   /**

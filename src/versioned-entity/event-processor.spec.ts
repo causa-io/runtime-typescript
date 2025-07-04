@@ -1,5 +1,6 @@
 import { jest } from '@jest/globals';
 import 'jest-extended';
+import { EntityNotFoundError } from '../errors/entity.js';
 import type { Event } from '../events/index.js';
 import {
   MockRunner,
@@ -62,7 +63,8 @@ export class MyProcessor extends VersionedEventProcessor<
   MockTransaction,
   MockTransaction,
   MyEvent,
-  MyEntity
+  MyEntity,
+  MockRunner
 > {
   constructor(property: KeyOfType<MyEntity, Date> = 'updatedAt') {
     super(MyEntity, new MockRunner(), property);
@@ -326,6 +328,43 @@ describe('VersionedEntityEventProcessor', () => {
         {},
       );
       expect(mockTransaction.entities).toEqual({ '123': expectedEntity });
+    });
+  });
+
+  describe('get', () => {
+    it('should throw EntityNotFound for a projection that does not exist', async () => {
+      const actualPromise = processor.get({ id: '123' });
+
+      await expect(actualPromise).rejects.toThrow(EntityNotFoundError);
+      await expect(actualPromise).rejects.toMatchObject({
+        entityType: MyEntity,
+        key: { id: '123' },
+      });
+    });
+
+    it('should return the projection if it exists', async () => {
+      const expectedEntity = new MyEntity({ id: '123' });
+      mockTransaction.set(expectedEntity);
+      jest.spyOn(processor.runner, 'runReadOnly');
+
+      const actualProjection = await processor.get({ id: '123' });
+
+      expect(actualProjection).toEqual(expectedEntity);
+      expect(processor.runner.runReadOnly).toHaveBeenCalledOnce();
+    });
+
+    it('should use the provided transaction', async () => {
+      const expectedEntity = new MyEntity({ id: '123' });
+      mockTransaction.set(expectedEntity);
+      jest.spyOn(processor.runner, 'runReadWrite');
+
+      const actualProjection = await processor.get(
+        { id: '123' },
+        { transaction: mockTransaction },
+      );
+
+      expect(actualProjection).toEqual(expectedEntity);
+      expect(processor.runner.runReadWrite).not.toHaveBeenCalled();
     });
   });
 });
