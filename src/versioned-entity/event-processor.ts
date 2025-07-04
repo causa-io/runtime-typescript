@@ -1,5 +1,5 @@
 import type { Type } from '@nestjs/common';
-import { EntityNotFoundError } from '../errors/index.js';
+import { EntityNotFoundError, OldEntityVersionError } from '../errors/index.js';
 import {
   Transaction,
   TransactionRunner,
@@ -93,25 +93,33 @@ export abstract class VersionedEventProcessor<
   ): Promise<P>;
 
   /**
-   * Checks whether the given projection is strictly more recent than the state, based on their
+   * Validates that the given projection is strictly more recent than the state, based on their
    * {@link VersionedEventProcessor.projectionVersionProperty} values.
    *
    * @param projection The projection to compare.
    * @param state The state to compare, or `undefined` if it does not exist.
-   * @returns `true` if the projection is more recent than the state, `false` otherwise.
    */
-  protected isProjectionMoreRecentThanState(
+  protected validateProjectionIsMoreRecentThanState(
     projection: P,
     state: P | undefined,
-  ): boolean {
+  ): void {
     if (!state) {
-      return true;
+      return;
     }
 
-    return (
-      state[this.projectionVersionProperty] <
-      projection[this.projectionVersionProperty]
-    );
+    const stateVersion = state[this.projectionVersionProperty] as Date;
+    const projectionVersion = projection[
+      this.projectionVersionProperty
+    ] as Date;
+
+    if (stateVersion >= projectionVersion) {
+      throw new OldEntityVersionError(
+        this.projectionType,
+        state,
+        projectionVersion,
+        stateVersion,
+      );
+    }
   }
 
   /**
@@ -153,16 +161,16 @@ export abstract class VersionedEventProcessor<
 
   /**
    * Processes the given event, building the corresponding state.
+   * This throws an {@link OldEntityVersionError} if the event's version is older than the existing state.
    *
    * @param event The event to process.
    * @param options Options for processing the event.
-   * @returns The projection if the event was processed, `null` if it was skipped because a more recent state already
-   *   exists.
+   * @returns The projection if the event was processed.
    */
   async processEvent(
     event: E,
     options: VersionedEventProcessingOptions<RWT, P> = {},
-  ): Promise<P | null> {
+  ): Promise<P> {
     return await this.runner.run(
       { transaction: options.transaction },
       async (transaction) => {
@@ -184,14 +192,7 @@ export abstract class VersionedEventProcessor<
             : await transaction.get(this.projectionType, projection);
         }
 
-        const isProjectionMoreRecent = this.isProjectionMoreRecentThanState(
-          projection,
-          state,
-        );
-
-        if (!isProjectionMoreRecent) {
-          return null;
-        }
+        this.validateProjectionIsMoreRecentThanState(projection, state);
 
         await this.updateState(projection, transaction);
 

@@ -1,6 +1,6 @@
 import { jest } from '@jest/globals';
 import 'jest-extended';
-import { EntityNotFoundError } from '../errors/entity.js';
+import { EntityNotFoundError, OldEntityVersionError } from '../errors/index.js';
 import type { Event } from '../events/index.js';
 import {
   MockRunner,
@@ -141,9 +141,15 @@ describe('VersionedEntityEventProcessor', () => {
       });
       mockTransaction.set(expectedEntity);
 
-      const actualProjection = await processor.processEvent(event);
+      const actualPromise = processor.processEvent(event);
 
-      expect(actualProjection).toBeNull();
+      await expect(actualPromise).rejects.toThrow(OldEntityVersionError);
+      await expect(actualPromise).rejects.toMatchObject({
+        entityType: MyEntity,
+        key: { id: '123' },
+        stateVersion: expectedEntity.updatedAt,
+        processedVersion: event.data.updatedAt,
+      });
       expect(projectionFn).toHaveBeenCalledExactlyOnceWith(
         event,
         mockTransaction,
@@ -319,9 +325,15 @@ describe('VersionedEntityEventProcessor', () => {
       });
       mockTransaction.set(expectedEntity);
 
-      const actualProjection = await processor.processEvent(event);
+      const actualPromise = processor.processEvent(event);
 
-      expect(actualProjection).toBeNull();
+      await expect(actualPromise).rejects.toThrow(OldEntityVersionError);
+      await expect(actualPromise).rejects.toMatchObject({
+        entityType: MyEntity,
+        key: { id: '123' },
+        stateVersion: expectedEntity.createdAt,
+        processedVersion: event.data.createdAt,
+      });
       expect(projectionFn).toHaveBeenCalledExactlyOnceWith(
         event,
         mockTransaction,
