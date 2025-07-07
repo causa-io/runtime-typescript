@@ -14,7 +14,7 @@ import {
 import type { KeyOfType } from '../typing/index.js';
 import {
   VersionedEventProcessor,
-  type ProjectionContext,
+  type ProjectionWithContext,
   type VersionedProjectionOptions,
 } from './event-processor.js';
 import type { VersionedEntity } from './versioned-entity.js';
@@ -75,7 +75,7 @@ export class MyProcessor extends VersionedEventProcessor<
     event: MyEvent,
     transaction: MockTransaction,
     options?: VersionedProjectionOptions<MyEntity>,
-  ): Promise<MyEntity | [MyEntity, ProjectionContext<MyEntity>]> {
+  ): Promise<MyEntity | ProjectionWithContext<MyEntity>> {
     return projectionFn(event, transaction, options);
   }
 }
@@ -232,8 +232,8 @@ describe('VersionedEntityEventProcessor', () => {
         ...expectedEntity,
         updatedAt: new Date('2020-01-01'),
       });
-      // Although the state actually in the database is older, it should not be read and the face `existingState` should
-      // be used instead.
+      // Although the state actually in the database is older, it should not be read and the passed `existingState`
+      // should be used instead.
       mockTransaction.set(expectedEntity);
       projectionFn.mockResolvedValueOnce([
         projectedState,
@@ -308,6 +308,39 @@ describe('VersionedEntityEventProcessor', () => {
         UnsupportedEntityOperationError,
       );
       expectProjectionCall();
+    });
+
+    it('should merge the projection with the null projection', async () => {
+      const { someProperty, ...fromProjection } = expectedEntity;
+      projectionFn.mockResolvedValueOnce([
+        fromProjection as any,
+        { defaultProjection: { someProperty } },
+      ]);
+
+      const actualProjection = await processor.processEvent(event);
+
+      expect(actualProjection).toEqual(expectedEntity);
+      expectProjectionCall();
+      expectEntityInState();
+    });
+
+    it('should merge the projection with the existing state', async () => {
+      mockTransaction.set({
+        ...expectedEntity,
+        updatedAt: new Date('2020-01-01'),
+      });
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { someProperty: _, ...fromProjection } = expectedEntity;
+      projectionFn.mockResolvedValueOnce([
+        fromProjection as any,
+        { defaultProjection: { someProperty: '🙅' } },
+      ]);
+
+      const actualProjection = await processor.processEvent(event);
+
+      expect(actualProjection).toEqual(expectedEntity);
+      expectProjectionCall();
+      expectEntityInState();
     });
   });
 

@@ -1,4 +1,5 @@
 import type { Type } from '@nestjs/common';
+import { plainToInstance } from 'class-transformer';
 import {
   EntityNotFoundError,
   OldEntityVersionError,
@@ -35,7 +36,7 @@ export type ProjectionVersionFetcher<P extends object> = (
  * A context returned by {@link VersionedEventProcessor.project} that can contain additional information to take into
  * account for processing.
  */
-export type ProjectionContext<P extends object> = {
+export type ProjectionContext<P extends object, K extends keyof P = keyof P> = {
   /**
    * The existing state of the projection in the database.
    * This should be passed if the state was fetched from the database as part of the projection.
@@ -44,11 +45,25 @@ export type ProjectionContext<P extends object> = {
   existingState?: P | null;
 
   /**
+   * A initial state used when the projection function returns a partial object.
+   * If provided, either the null projection or the existing state will be used to fill in the missing properties.
+   */
+  defaultProjection?: Omit<P, K>;
+
+  /**
    * A function that returns the version property of the projection, used to compare the projection's version with the
    * existing state.
    */
   projectionVersionProperty?: ProjectionVersionFetcher<P>;
 };
+
+/**
+ * The return type of a {@link VersionedEventProcessor.project} method that provides a {@link ProjectionContext}.
+ */
+export type ProjectionWithContext<
+  P extends object,
+  K extends keyof P = keyof P,
+> = [Pick<P, K> & Partial<P>, ProjectionContext<P, K>];
 
 /**
  * Options for processing a versioned event.
@@ -122,7 +137,7 @@ export abstract class VersionedEventProcessor<
     event: E,
     transaction: RWT,
     options?: VersionedProjectionOptions<P>,
-  ): Promise<P | [P, ProjectionContext<P>]>;
+  ): Promise<P | ProjectionWithContext<P, any>>;
 
   /**
    * Validates that the given projection is strictly more recent than the state, based on their
@@ -230,7 +245,9 @@ export abstract class VersionedEventProcessor<
         const projectionWithContext = await this.project(event, transaction, {
           existingState: options.existingState,
         });
-        const [projection, context] = Array.isArray(projectionWithContext)
+        const [projectionOrPartial, context] = Array.isArray(
+          projectionWithContext,
+        )
           ? projectionWithContext
           : [projectionWithContext, {}];
 
@@ -239,7 +256,14 @@ export abstract class VersionedEventProcessor<
             ? (options.existingState ?? undefined)
             : context.existingState !== undefined
               ? (context.existingState ?? undefined)
-              : await transaction.get(this.projectionType, projection);
+              : await transaction.get(this.projectionType, projectionOrPartial);
+
+        const projection = context.defaultProjection
+          ? plainToInstance(this.projectionType, {
+              ...(state ?? context.defaultProjection),
+              ...projectionOrPartial,
+            })
+          : projectionOrPartial;
 
         this.validateProjectionIsMoreRecentThanState(projection, state, {
           reprocessEqualVersion: options.reprocessEqualVersion,
