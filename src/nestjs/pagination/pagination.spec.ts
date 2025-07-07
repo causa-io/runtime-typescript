@@ -12,7 +12,7 @@ import 'reflect-metadata';
 import supertest from 'supertest';
 import TestAgent from 'supertest/lib/agent.js';
 import { AllowMissing, IsDateType } from '../../validation/index.js';
-import { createApp } from '../factory/index.js';
+import { createApp } from '../app/index.js';
 import { generateOpenApiDocument } from '../openapi/utils.test.js';
 import { CustomReadAfterType } from './custom-read-after-type.decorator.js';
 import { Page } from './page.js';
