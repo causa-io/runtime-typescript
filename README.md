@@ -132,7 +132,7 @@ The main purpose of `ObjectSerializer`s is to be used with an `EventPublisher` o
 
 ### (Event & state) transaction
 
-Event and state `Transaction`s are a core concept of Causa, which provide a way to modify the state of a system and publish related events as part of a single transaction. `Transaction`s are created by a `TransactionRunner`, which instantiates the underlying transaction(s) to a database and a message broker.
+Event and state `Transaction`s are a core concept of Causa, which provide a way to modify the state of a system and publish related events as part of a single transaction. `Transaction`s are created by a `TransactionRunner`, which instantiates the underlying transaction(s) to a database and a message broker. A `TransactionRunner` can also create a `ReadOnlyStateTransaction` if requested, which may avoid unnecessarily acquiring locks.
 
 `Transaction`s and `TransactionRunner`s are used by the `LockManager`, `VersionedEntityEventProcessor`, and the `VersionedEntityManager`.
 
