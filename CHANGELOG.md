@@ -5,6 +5,7 @@
 Breaking changes:
 
 - Upgrade the minimum Node.js version to `20`.
+- Refactor the `Transaction` and `TransactionRunner`, making all transactions "find replace transactions", using the `get`, `set`, and `delete` terminology.
 
 ## v0.27.2 (2025-05-28)
 
