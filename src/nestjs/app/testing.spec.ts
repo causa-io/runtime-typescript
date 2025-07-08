@@ -1,6 +1,7 @@
 import { jest } from '@jest/globals';
 import { Controller, Injectable, Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { LoggingFixture } from '../testing.js';
 import { ConfigFixture } from './config-fixture.js';
 import {
   AppFixture,
@@ -88,6 +89,28 @@ describe('AppFixture', () => {
       }).toThrow(
         'Configuration was passed both as a fixture and as an object.',
       );
+    });
+
+    it('should add the logging fixture if not provided', () => {
+      appFixture = new AppFixture(AppModule, {});
+
+      const loggingFixture = appFixture.get(LoggingFixture);
+
+      expect(loggingFixture).toBeInstanceOf(LoggingFixture);
+      expect(loggingFixture.prettyLogs).toBe(true);
+      expect(loggingFixture.expectNoError).toBe(true);
+    });
+
+    it('should not add the logging fixture if already provided', () => {
+      const loggingFixture = new LoggingFixture({
+        prettyLogs: false,
+        expectNoError: false,
+      });
+
+      appFixture = new AppFixture(AppModule, { fixtures: [loggingFixture] });
+
+      const actualLoggingFixture = appFixture.get(LoggingFixture);
+      expect(actualLoggingFixture).toBe(loggingFixture);
     });
 
     it('should pass the provided nest application options', async () => {

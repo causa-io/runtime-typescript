@@ -6,6 +6,7 @@ import type {
 import { Test, TestingModuleBuilder } from '@nestjs/testing';
 import supertest from 'supertest';
 import type TestAgent from 'supertest/lib/agent.js';
+import { LoggingFixture } from '../logging/testing.js';
 import { ConfigFixture } from './config-fixture.js';
 import { createAppModule } from './create.js';
 
@@ -130,6 +131,10 @@ export class AppFixture {
       }
 
       this.fixtures.push(new ConfigFixture(options.config));
+    }
+
+    if (!this.fixtures.some((f) => f instanceof LoggingFixture)) {
+      this.fixtures.push(new LoggingFixture());
     }
   }
 
