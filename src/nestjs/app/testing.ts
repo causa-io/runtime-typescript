@@ -6,6 +6,7 @@ import type {
 import { Test, TestingModuleBuilder } from '@nestjs/testing';
 import supertest from 'supertest';
 import type TestAgent from 'supertest/lib/agent.js';
+import { ConfigFixture } from './config-fixture.js';
 import { createAppModule } from './create.js';
 
 /**
@@ -110,10 +111,26 @@ export class AppFixture {
        * Options to pass to the NestJS application when it is created.
        */
       nestApplicationOptions?: NestApplicationOptions;
+
+      /**
+       * A dictionary of configuration values (e.g. environment variables) that will be used to initialize the
+       * {@link ConfigFixture}. Do not pass this if a {@link ConfigFixture} is already included in the `fixtures`.
+       */
+      config?: Record<string, any>;
     } = {},
   ) {
     this.fixtures = options.fixtures ?? [];
     this.nestApplicationOptions = options.nestApplicationOptions ?? {};
+
+    if (options.config) {
+      if (this.fixtures.some((f) => f instanceof ConfigFixture)) {
+        throw new Error(
+          'Configuration was passed both as a fixture and as an object.',
+        );
+      }
+
+      this.fixtures.push(new ConfigFixture(options.config));
+    }
   }
 
   /**

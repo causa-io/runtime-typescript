@@ -1,6 +1,7 @@
 import { jest } from '@jest/globals';
 import { Controller, Injectable, Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { ConfigFixture } from './config-fixture.js';
 import {
   AppFixture,
   type Fixture,
@@ -70,8 +71,28 @@ describe('AppFixture', () => {
       expect(appFixture.get(Fixture2)).toEqual(fixture2);
     });
 
+    it('should use the provided config dictionary', async () => {
+      appFixture = new AppFixture(AppModule, { config: { MY_VAR: '🎉' } });
+
+      const actualConfigFixture = appFixture.get(ConfigFixture);
+
+      expect(actualConfigFixture?.config).toEqual({ MY_VAR: '🎉' });
+    });
+
+    it('should throw when passing both a config and a config fixture', () => {
+      expect(() => {
+        new AppFixture(AppModule, {
+          fixtures: [new ConfigFixture({ MY_VAR: '🎉' })],
+          config: { MY_VAR: '🎉' },
+        });
+      }).toThrow(
+        'Configuration was passed both as a fixture and as an object.',
+      );
+    });
+
     it('should pass the provided nest application options', async () => {
       appFixture = new AppFixture(AppModule, {
+        config: { MY_VAR: '🍦' },
         nestApplicationOptions: { cors: true },
       });
 
@@ -143,6 +164,7 @@ describe('AppFixture', () => {
 
     it('should pass the provided nest application options and initialize request', async () => {
       appFixture = new AppFixture(AppModule, {
+        config: { MY_VAR: '🍦' },
         nestApplicationOptions: { cors: true },
       });
 
