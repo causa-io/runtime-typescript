@@ -84,10 +84,15 @@ class MySimpleEvent implements Event<string, MySimpleEntity> {
 }
 
 describe('VersionedEntityManager', () => {
-  let manager: VersionedEntityManager<Transaction, MyEvent>;
+  let manager: VersionedEntityManager<
+    Transaction,
+    Transaction,
+    MyEvent,
+    MockRunner
+  >;
 
   beforeEach(() => {
-    manager = new VersionedEntityManager<Transaction, MyEvent>(
+    manager = new VersionedEntityManager(
       'my-topic',
       MyEvent,
       MyEntity,
@@ -203,7 +208,7 @@ describe('VersionedEntityManager', () => {
     });
 
     it('should accept options', async () => {
-      jest.spyOn(manager.runner, 'run');
+      jest.spyOn(manager.runner, 'runReadWrite');
 
       const actualEvent = await manager.create(
         'myEntityCreated',
@@ -217,7 +222,7 @@ describe('VersionedEntityManager', () => {
         },
       );
 
-      expect(manager.runner.run).not.toHaveBeenCalled();
+      expect(manager.runner.runReadWrite).not.toHaveBeenCalled();
       expectPublishedEvent(actualEvent, { att1: '🎁' });
     });
   });
@@ -395,7 +400,7 @@ describe('VersionedEntityManager', () => {
     });
 
     it('should accept options', async () => {
-      jest.spyOn(manager.runner, 'run');
+      jest.spyOn(manager.runner, 'runReadWrite');
       const existingEntity = new MyEntity({ id: 'abc' });
       // The existing entity is not set in the transaction entities, and `update` should only use the provided option.
 
@@ -410,12 +415,17 @@ describe('VersionedEntityManager', () => {
         },
       );
 
-      expect(manager.runner.run).not.toHaveBeenCalled();
+      expect(manager.runner.runReadWrite).not.toHaveBeenCalled();
       expectPublishedEvent(actualEvent, { att1: '🎁' });
     });
 
     it('should use the provided custom update logic', async () => {
-      class MyManager extends VersionedEntityManager<Transaction, MyEvent> {
+      class MyManager extends VersionedEntityManager<
+        Transaction,
+        Transaction,
+        MyEvent,
+        MockRunner
+      > {
         protected makeUpdatedObject(
           existingEntity: MyEntity,
           update: Partial<MyEntity>,
@@ -560,7 +570,7 @@ describe('VersionedEntityManager', () => {
     });
 
     it('should accept options', async () => {
-      jest.spyOn(manager.runner, 'run');
+      jest.spyOn(manager.runner, 'runReadWrite');
       const existingEntity = new MyEntity({ id: 'abc' });
       // The existing entity is not set in the transaction entities, and `delete` should only use the provided option.
 
@@ -574,16 +584,20 @@ describe('VersionedEntityManager', () => {
         },
       );
 
-      expect(manager.runner.run).not.toHaveBeenCalled();
+      expect(manager.runner.runReadWrite).not.toHaveBeenCalled();
       expectPublishedEvent(actualEvent, { att1: '🎁' });
     });
   });
 
   describe('without creation and deletion timestamps', () => {
-    let manager: VersionedEntityManager<Transaction, MySimpleEvent>;
+    let manager: VersionedEntityManager<
+      Transaction,
+      Transaction,
+      MySimpleEvent
+    >;
 
     beforeEach(() => {
-      manager = new VersionedEntityManager<Transaction, MySimpleEvent>(
+      manager = new VersionedEntityManager(
         'my-topic',
         MySimpleEvent,
         MySimpleEntity,

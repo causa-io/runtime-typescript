@@ -10,8 +10,13 @@ import {
   type OutboxTransaction,
   type StateTransaction,
   Transaction,
+  type TransactionPublishOptions,
   TransactionRunner,
 } from './index.js';
+import type {
+  ReadWriteTransactionOptions,
+  TransactionFn,
+} from './transaction-runner.js';
 
 export class MockPublisher implements EventPublisher {
   async flush(): Promise<void> {}
@@ -34,6 +39,10 @@ export class MockPublisher implements EventPublisher {
 export class MockTransaction extends Transaction implements OutboxTransaction {
   entities: Record<string, any> = {};
   eventTransaction = new OutboxEventTransaction(new MockPublisher());
+
+  constructor(publishOptions: TransactionPublishOptions = {}) {
+    super(publishOptions);
+  }
 
   clear() {
     this.entities = {};
@@ -77,10 +86,20 @@ export const mockTransaction: MockTransaction & {
   get: jest.SpiedFunction<StateTransaction['get']>;
 } = new MockTransaction() as any;
 
-export class MockRunner extends TransactionRunner<MockTransaction> {
-  async run<RT>(
-    runFn: (transaction: MockTransaction) => Promise<RT>,
-  ): Promise<[RT]> {
-    return [await runFn(mockTransaction)];
+export class MockRunner extends TransactionRunner<
+  MockTransaction,
+  MockTransaction
+> {
+  public async runReadWrite<RT>(
+    options: ReadWriteTransactionOptions,
+    runFn: TransactionFn<MockTransaction, RT>,
+  ): Promise<RT> {
+    return await runFn(mockTransaction);
+  }
+
+  public async runReadOnly<RT>(
+    runFn: TransactionFn<MockTransaction, RT>,
+  ): Promise<RT> {
+    return await runFn(mockTransaction);
   }
 }

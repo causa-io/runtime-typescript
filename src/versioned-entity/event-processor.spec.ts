@@ -60,6 +60,7 @@ const projectionFn = jest.fn(
 
 export class MyProcessor extends VersionedEventProcessor<
   MockTransaction,
+  MockTransaction,
   MyEvent,
   MyEntity
 > {
