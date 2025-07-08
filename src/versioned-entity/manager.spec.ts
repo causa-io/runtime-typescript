@@ -118,6 +118,43 @@ describe('VersionedEntityManager', () => {
     ]);
   }
 
+  describe('get', () => {
+    it('should fail if the entity does not exist', async () => {
+      const actualPromise = manager.get({ id: 'abc' });
+
+      await expect(actualPromise).rejects.toThrow(EntityNotFoundError);
+      await expect(actualPromise).rejects.toMatchObject({
+        entityType: MyEntity,
+        key: { id: 'abc' },
+      });
+    });
+
+    it('should fail if the entity is soft-deleted', async () => {
+      const existingEntity = new MyEntity({
+        id: 'abc',
+        deletedAt: new Date('2020-01-01'),
+      });
+      mockTransaction.set(existingEntity);
+
+      const actualPromise = manager.get({ id: 'abc' });
+
+      await expect(actualPromise).rejects.toThrow(EntityNotFoundError);
+      await expect(actualPromise).rejects.toMatchObject({
+        entityType: MyEntity,
+        key: { id: 'abc' },
+      });
+    });
+
+    it('should return the entity if it exists', async () => {
+      const expectedEntity = new MyEntity({ id: 'abc' });
+      mockTransaction.set(expectedEntity);
+
+      const actualEntity = await manager.get({ id: 'abc' });
+
+      expect(actualEntity).toEqual(expectedEntity);
+    });
+  });
+
   describe('create', () => {
     it('should fail if the entity already exists', async () => {
       const existingEntity = new MyEntity({ id: 'abc' });
@@ -609,6 +646,18 @@ describe('VersionedEntityManager', () => {
       );
     });
 
+    it('should get a soft-deleted entity', async () => {
+      const existingEntity = new MySimpleEntity({
+        id: 'abc',
+        deletedAt: new Date('2020-01-01'),
+      } as any);
+      mockTransaction.set(existingEntity);
+
+      const actualEntity = await manager.get({ id: 'abc' });
+
+      expect(actualEntity).toEqual(existingEntity);
+    });
+
     it('should create the entity without creation and deletion timestamp', async () => {
       const actualEvent = await manager.create('myEntityCreated', {
         id: 'abc',
@@ -632,7 +681,11 @@ describe('VersionedEntityManager', () => {
     });
 
     it('should fail creation if the entity already exists', async () => {
-      const existingEntity = new MySimpleEntity({ id: 'abc' });
+      const existingEntity = new MySimpleEntity({
+        id: 'abc',
+        // Although there is a `deletedAt` property, it should not be taken into account when checking for existence.
+        deletedAt: new Date(),
+      } as any);
       mockTransaction.set(existingEntity);
 
       const actualPromise = manager.create('myEntityCreated', {
@@ -646,7 +699,11 @@ describe('VersionedEntityManager', () => {
     });
 
     it('should update the entity', async () => {
-      const existingEntity = new MySimpleEntity({ id: 'abc' });
+      const existingEntity = new MySimpleEntity({
+        id: 'abc',
+        // Same as creation, the `deletedAt` property should not be taken into account.
+        deletedAt: new Date(),
+      } as any);
       mockTransaction.set(existingEntity);
       const validationFn = jest.fn(() => Promise.resolve());
 
