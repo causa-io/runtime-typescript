@@ -1,0 +1,43 @@
+name: 🔀 Pull request
+
+on: pull_request
+
+jobs:
+  package:
+    name: 📦 Build and test package
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: ⬇️ Checkout
+        uses: actions/checkout@v4
+
+      - name: 🔨 Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: 🔨 Install Causa
+        run: npm install -g @causa/cli
+
+      - name: 🔨 Restore Causa modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            .causa/package*
+            .causa/node_modules
+          key: ${{ runner.os }}-${{ hashFiles('causa.yaml') }}
+
+      - name: 🎉 Initialize
+        run: cs init
+
+      - name: 🍱 Build
+        run: cs build
+
+      - name: 🧪 Test
+        run: cs test
+
+      - name: 🎨 Lint
+        run: cs lint
+
+      - name: 🔍 Dependency check
+        run: cs dep check
