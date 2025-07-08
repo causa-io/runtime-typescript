@@ -86,8 +86,6 @@ The `createApp` function can be used to initialize a NestJS application from a r
 
 Note that the `AuthModule` is not automatically added because it is only relevant for front-facing APIs, and requires an additional Passport strategy to work.
 
-`createApp` can also be used in combination with `makeTestAppFactory` from `@causa/runtime/nestjs/testing` through the `appFactory` option. This allows to override some of the modules (e.g. to mock services, use temporary resources, etc).
-
 #### Health check
 
 NestJS provides the [`@nestjs/terminus`](https://github.com/nestjs/terminus) package to implement health checks, and not much can be added generically on top. The implementation of the actual health check may depend on the tech stack for example. However the `terminusModuleWithLogger` module provides Terminus properly configured with the pino logger.
@@ -151,3 +149,12 @@ The `VersionedEntity` is a core Causa concept that builds on top of event and st
 The `VersionedEntityManager` relies on the `VersionedEntityEventProcessor`, which consumes events to build views, but does not provide the create / update / delete functionalities.
 
 The `VersionedEntityManager` is usually extended in the service managing the entity, while a separate service that requires building its own view on the same entity will extend a `VersionedEntityEventProcessor`.
+
+### Testing
+
+Various testing utilities are exposed as `@causa/runtime/testing` and `@causa/runtime/nestjs/testing`. The most interesting ones are the `AppFixture` and the corresponding set of `Fixture`s. This eases creating a test NestJS application from a "business module", mocking various common functionalities, and testing the application behavior:
+
+- `AppFixture` is the parent fixture that creates the application, initializes all the other fixtures, and provides the `request` test agent to make HTTP requests.
+- The `ConfigFixture` allows changing the configuration exposed by NestJS' `ConfigService`.
+- The `LoggingFixture` prettifies logs and makes it easier to check logs (e.g. that errors are logged when needed).
+- The `VersionedEntityFixture` makes it easier to check for versioned entity mutations (or the lack thereof) and the corresponding published events.
