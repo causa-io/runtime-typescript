@@ -2,14 +2,13 @@ import { jest } from '@jest/globals';
 import 'jest-extended';
 import { TransactionRunner } from './transaction-runner.js';
 import { Transaction } from './transaction.js';
+import { MockTransaction } from './utils.test.js';
 
-type MyTransaction = Transaction<any, any>;
+const createdTransaction = new MockTransaction();
 
-const createdTransaction = new Transaction<any, any>({}, {});
-
-class MyRunner extends TransactionRunner<MyTransaction> {
+class MyRunner extends TransactionRunner<Transaction> {
   async run<RT>(
-    runFn: (transaction: MyTransaction) => Promise<RT>,
+    runFn: (transaction: Transaction) => Promise<RT>,
   ): Promise<[RT, ...any[]]> {
     return [await runFn(createdTransaction), { someResult: '📈' }];
   }
@@ -25,7 +24,7 @@ describe('TransactionRunner', () => {
 
   describe('runInNewOrExisting', () => {
     it('should run the given function in the existing transaction', async () => {
-      const transaction = new Transaction({}, {} as any);
+      const transaction = new MockTransaction();
       const fn = jest.fn(() => Promise.resolve('🎉'));
 
       const actualResult = await runner.runInNewOrExisting(transaction, fn);

@@ -7,14 +7,11 @@ import {
   UnsupportedEntityOperationError,
 } from '../errors/index.js';
 import type { Event } from '../events/index.js';
-import { TransactionOldTimestampError } from '../transaction/index.js';
 import {
-  MockRunner,
-  type MockTransaction,
-  mockEventTransaction,
-  mockStateTransaction,
-  mockTransaction,
-} from '../transaction/utils.test.js';
+  Transaction,
+  TransactionOldTimestampError,
+} from '../transaction/index.js';
+import { MockRunner, mockTransaction } from '../transaction/utils.test.js';
 import { VersionedEntityManager } from './manager.js';
 import type { VersionedEntity } from './versioned-entity.js';
 
@@ -87,10 +84,10 @@ class MySimpleEvent implements Event<string, MySimpleEntity> {
 }
 
 describe('VersionedEntityManager', () => {
-  let manager: VersionedEntityManager<MockTransaction, MyEvent>;
+  let manager: VersionedEntityManager<Transaction, MyEvent>;
 
   beforeEach(() => {
-    manager = new VersionedEntityManager<MockTransaction, MyEvent>(
+    manager = new VersionedEntityManager<Transaction, MyEvent>(
       'my-topic',
       MyEvent,
       MyEntity,
@@ -99,15 +96,27 @@ describe('VersionedEntityManager', () => {
   });
 
   afterEach(() => {
-    mockEventTransaction.bufferedEvents = [];
-    mockStateTransaction.clear();
+    mockTransaction.clear();
   });
+
+  function expectPublishedEvent(
+    event: object,
+    attributes: Record<string, any> = {},
+  ) {
+    expect(mockTransaction.events).toEqual([
+      {
+        id: expect.any(String),
+        topic: 'my-topic',
+        data: event,
+        attributes,
+      },
+    ]);
+  }
 
   describe('create', () => {
     it('should fail if the entity already exists', async () => {
-      mockStateTransaction.findOneWithSameKeyAs.mockResolvedValueOnce(
-        new MyEntity({ id: 'abc' }),
-      );
+      const existingEntity = new MyEntity({ id: 'abc' });
+      mockTransaction.set(existingEntity);
 
       const actualPromise = manager.create('myEntityCreated', {
         id: 'abc',
@@ -115,18 +124,17 @@ describe('VersionedEntityManager', () => {
       });
 
       await expect(actualPromise).rejects.toThrow(EntityAlreadyExistsError);
-      expect(mockStateTransaction.replace).not.toHaveBeenCalled();
-      expect(mockEventTransaction.bufferedEvents).toEqual([]);
+      expect(mockTransaction.entities).toEqual({ abc: existingEntity });
+      expect(mockTransaction.events).toBeEmpty();
     });
 
     it('should fail if the entity is soft-deleted but the transaction timestamp is older', async () => {
-      mockStateTransaction.findOneWithSameKeyAs.mockResolvedValueOnce(
-        new MyEntity({
-          id: 'abc',
-          updatedAt: new Date('2999-01-01'),
-          deletedAt: new Date('2999-01-01'),
-        }),
-      );
+      const existingEntity = new MyEntity({
+        id: 'abc',
+        updatedAt: new Date('2999-01-01'),
+        deletedAt: new Date('2999-01-01'),
+      });
+      mockTransaction.set(existingEntity);
 
       const actualPromise = manager.create('myEntityCreated', {
         id: 'abc',
@@ -134,8 +142,8 @@ describe('VersionedEntityManager', () => {
       });
 
       await expect(actualPromise).rejects.toThrow(TransactionOldTimestampError);
-      expect(mockStateTransaction.replace).not.toHaveBeenCalled();
-      expect(mockEventTransaction.bufferedEvents).toEqual([]);
+      expect(mockTransaction.entities).toEqual({ abc: existingEntity });
+      expect(mockTransaction.events).toBeEmpty();
     });
 
     it('should create the entity', async () => {
@@ -160,16 +168,12 @@ describe('VersionedEntityManager', () => {
         }),
       );
       expect(actualEvent.data).toBeInstanceOf(MyEntity);
-      expect(mockStateTransaction.replace).toHaveBeenCalledExactlyOnceWith(
-        actualEvent.data,
-      );
-      expect(mockEventTransaction.bufferedEvents).toEqual([
-        { topic: 'my-topic', event: actualEvent, options: { attributes: {} } },
-      ]);
+      expect(mockTransaction.entities).toEqual({ abc: actualEvent.data });
+      expectPublishedEvent(actualEvent);
     });
 
     it('should create the entity if it is soft-deleted', async () => {
-      mockStateTransaction.findOneWithSameKeyAs.mockResolvedValueOnce(
+      mockTransaction.set(
         new MyEntity({ id: 'abc', deletedAt: new Date('2023-01-01') }),
       );
 
@@ -194,12 +198,8 @@ describe('VersionedEntityManager', () => {
         }),
       );
       expect(actualEvent.data).toBeInstanceOf(MyEntity);
-      expect(mockStateTransaction.replace).toHaveBeenCalledExactlyOnceWith(
-        actualEvent.data,
-      );
-      expect(mockEventTransaction.bufferedEvents).toEqual([
-        { topic: 'my-topic', event: actualEvent, options: { attributes: {} } },
-      ]);
+      expect(mockTransaction.entities).toEqual({ abc: actualEvent.data });
+      expectPublishedEvent(actualEvent);
     });
 
     it('should accept options', async () => {
@@ -218,13 +218,7 @@ describe('VersionedEntityManager', () => {
       );
 
       expect(manager.runner.run).not.toHaveBeenCalled();
-      expect(mockEventTransaction.bufferedEvents).toEqual([
-        {
-          topic: 'my-topic',
-          event: actualEvent,
-          options: { attributes: { att1: '🎁' } },
-        },
-      ]);
+      expectPublishedEvent(actualEvent, { att1: '🎁' });
     });
   });
 
@@ -237,14 +231,16 @@ describe('VersionedEntityManager', () => {
       );
 
       await expect(actualPromise).rejects.toThrow(EntityNotFoundError);
-      expect(mockStateTransaction.replace).not.toHaveBeenCalled();
-      expect(mockEventTransaction.bufferedEvents).toEqual([]);
+      expect(mockTransaction.entities).toEqual({});
+      expect(mockTransaction.events).toBeEmpty();
     });
 
     it('should fail if the entity is soft-deleted', async () => {
-      mockStateTransaction.findOneWithSameKeyAs.mockResolvedValueOnce(
-        new MyEntity({ id: 'abc', deletedAt: new Date('2020-01-01') }),
-      );
+      const existingEntity = new MyEntity({
+        id: 'abc',
+        deletedAt: new Date('2020-01-01'),
+      });
+      mockTransaction.set(existingEntity);
 
       const actualPromise = manager.update(
         'myEntityUpdated',
@@ -253,14 +249,16 @@ describe('VersionedEntityManager', () => {
       );
 
       await expect(actualPromise).rejects.toThrow(EntityNotFoundError);
-      expect(mockStateTransaction.replace).not.toHaveBeenCalled();
-      expect(mockEventTransaction.bufferedEvents).toEqual([]);
+      expect(mockTransaction.entities).toEqual({ abc: existingEntity });
+      expect(mockTransaction.events).toBeEmpty();
     });
 
     it('should fail if the version timestamps do not match', async () => {
-      mockStateTransaction.findOneWithSameKeyAs.mockResolvedValueOnce(
-        new MyEntity({ id: 'abc', updatedAt: new Date('2020-01-01') }),
-      );
+      const existingEntity = new MyEntity({
+        id: 'abc',
+        updatedAt: new Date('2020-01-01'),
+      });
+      mockTransaction.set(existingEntity);
 
       const actualPromise = manager.update(
         'myEntityUpdated',
@@ -270,14 +268,16 @@ describe('VersionedEntityManager', () => {
       );
 
       await expect(actualPromise).rejects.toThrow(IncorrectEntityVersionError);
-      expect(mockStateTransaction.replace).not.toHaveBeenCalled();
-      expect(mockEventTransaction.bufferedEvents).toEqual([]);
+      expect(mockTransaction.entities).toEqual({ abc: existingEntity });
+      expect(mockTransaction.events).toBeEmpty();
     });
 
     it('should fail if the state is more recent than the transaction timestamp', async () => {
-      mockStateTransaction.findOneWithSameKeyAs.mockResolvedValueOnce(
-        new MyEntity({ id: 'abc', updatedAt: new Date('2999-01-01') }),
-      );
+      const existingEntity = new MyEntity({
+        id: 'abc',
+        updatedAt: new Date('2999-01-01'),
+      });
+      mockTransaction.set(existingEntity);
 
       const actualPromise = manager.update(
         'myEntityUpdated',
@@ -286,15 +286,13 @@ describe('VersionedEntityManager', () => {
       );
 
       await expect(actualPromise).rejects.toThrow(TransactionOldTimestampError);
-      expect(mockStateTransaction.replace).not.toHaveBeenCalled();
-      expect(mockEventTransaction.bufferedEvents).toEqual([]);
+      expect(mockTransaction.entities).toEqual({ abc: existingEntity });
+      expect(mockTransaction.events).toBeEmpty();
     });
 
     it('should update the entity', async () => {
       const existingEntity = new MyEntity({ id: 'abc' });
-      mockStateTransaction.findOneWithSameKeyAs.mockResolvedValueOnce(
-        existingEntity,
-      );
+      mockTransaction.set(existingEntity);
       const validationFn = jest.fn(() => Promise.resolve());
 
       const actualEvent = await manager.update(
@@ -318,12 +316,8 @@ describe('VersionedEntityManager', () => {
         }),
       );
       expect(actualEvent.data).toBeInstanceOf(MyEntity);
-      expect(mockStateTransaction.replace).toHaveBeenCalledExactlyOnceWith(
-        actualEvent.data,
-      );
-      expect(mockEventTransaction.bufferedEvents).toEqual([
-        { topic: 'my-topic', event: actualEvent, options: { attributes: {} } },
-      ]);
+      expect(mockTransaction.entities).toEqual({ abc: actualEvent.data });
+      expectPublishedEvent(actualEvent);
       expect(validationFn).toHaveBeenCalledExactlyOnceWith(
         existingEntity,
         mockTransaction,
@@ -332,9 +326,7 @@ describe('VersionedEntityManager', () => {
 
     it('should use a function as the update', async () => {
       const existingEntity = new MyEntity({ id: 'abc' });
-      mockStateTransaction.findOneWithSameKeyAs.mockResolvedValueOnce(
-        existingEntity,
-      );
+      mockTransaction.set(existingEntity);
 
       const actualEvent = await manager.update(
         'myEntityUpdated',
@@ -360,19 +352,13 @@ describe('VersionedEntityManager', () => {
         }),
       );
       expect(actualEvent.data).toBeInstanceOf(MyEntity);
-      expect(mockStateTransaction.replace).toHaveBeenCalledExactlyOnceWith(
-        actualEvent.data,
-      );
-      expect(mockEventTransaction.bufferedEvents).toEqual([
-        { topic: 'my-topic', event: actualEvent, options: { attributes: {} } },
-      ]);
+      expect(mockTransaction.entities).toEqual({ abc: actualEvent.data });
+      expectPublishedEvent(actualEvent);
     });
 
     it('should rethrow an error from the validation function', async () => {
       const existingEntity = new MyEntity({ id: 'abc' });
-      mockStateTransaction.findOneWithSameKeyAs.mockResolvedValueOnce(
-        existingEntity,
-      );
+      mockTransaction.set(existingEntity);
 
       const actualPromise = manager.update(
         'myEntityUpdated',
@@ -382,14 +368,16 @@ describe('VersionedEntityManager', () => {
       );
 
       await expect(actualPromise).rejects.toThrow('🔥');
-      expect(mockStateTransaction.replace).not.toHaveBeenCalled();
-      expect(mockEventTransaction.bufferedEvents).toEqual([]);
+      expect(mockTransaction.entities).toEqual({ abc: existingEntity });
+      expect(mockTransaction.events).toBeEmpty();
     });
 
     it('should prioritize the validation function over the checkUpdatedAt option', async () => {
-      mockStateTransaction.findOneWithSameKeyAs.mockResolvedValueOnce(
-        new MyEntity({ id: 'abc', updatedAt: new Date('2020-01-01') }),
-      );
+      const existingEntity = new MyEntity({
+        id: 'abc',
+        updatedAt: new Date('2020-01-01'),
+      });
+      mockTransaction.set(existingEntity);
 
       const actualPromise = manager.update(
         'myEntityUpdated',
@@ -402,13 +390,14 @@ describe('VersionedEntityManager', () => {
       );
 
       await expect(actualPromise).rejects.toThrow('🔥');
-      expect(mockStateTransaction.replace).not.toHaveBeenCalled();
-      expect(mockEventTransaction.bufferedEvents).toEqual([]);
+      expect(mockTransaction.entities).toEqual({ abc: existingEntity });
+      expect(mockTransaction.events).toBeEmpty();
     });
 
     it('should accept options', async () => {
       jest.spyOn(manager.runner, 'run');
       const existingEntity = new MyEntity({ id: 'abc' });
+      // The existing entity is not set in the transaction entities, and `update` should only use the provided option.
 
       const actualEvent = await manager.update(
         'myEntityUpdated',
@@ -422,18 +411,11 @@ describe('VersionedEntityManager', () => {
       );
 
       expect(manager.runner.run).not.toHaveBeenCalled();
-      expect(mockEventTransaction.bufferedEvents).toEqual([
-        {
-          topic: 'my-topic',
-          event: actualEvent,
-          options: { attributes: { att1: '🎁' } },
-        },
-      ]);
-      expect(mockStateTransaction.findOneWithSameKeyAs).not.toHaveBeenCalled();
+      expectPublishedEvent(actualEvent, { att1: '🎁' });
     });
 
     it('should use the provided custom update logic', async () => {
-      class MyManager extends VersionedEntityManager<MockTransaction, MyEvent> {
+      class MyManager extends VersionedEntityManager<Transaction, MyEvent> {
         protected makeUpdatedObject(
           existingEntity: MyEntity,
           update: Partial<MyEntity>,
@@ -447,9 +429,7 @@ describe('VersionedEntityManager', () => {
       }
       manager = new MyManager('my-topic', MyEvent, MyEntity, new MockRunner());
       const existingEntity = new MyEntity({ id: 'abc', someProperty: '👋' });
-      mockStateTransaction.findOneWithSameKeyAs.mockResolvedValueOnce(
-        existingEntity,
-      );
+      mockTransaction.set(existingEntity);
 
       const actualEvent = await manager.update(
         'myEntityUpdated',
@@ -471,12 +451,8 @@ describe('VersionedEntityManager', () => {
         }),
       );
       expect(actualEvent.data).toBeInstanceOf(MyEntity);
-      expect(mockStateTransaction.replace).toHaveBeenCalledExactlyOnceWith(
-        actualEvent.data,
-      );
-      expect(mockEventTransaction.bufferedEvents).toEqual([
-        { topic: 'my-topic', event: actualEvent, options: { attributes: {} } },
-      ]);
+      expect(mockTransaction.entities).toEqual({ abc: actualEvent.data });
+      expectPublishedEvent(actualEvent);
     });
   });
 
@@ -485,26 +461,30 @@ describe('VersionedEntityManager', () => {
       const actualPromise = manager.delete('myEntityDeleted', { id: 'abc' });
 
       await expect(actualPromise).rejects.toThrow(EntityNotFoundError);
-      expect(mockStateTransaction.replace).not.toHaveBeenCalled();
-      expect(mockEventTransaction.bufferedEvents).toEqual([]);
+      expect(mockTransaction.entities).toEqual({});
+      expect(mockTransaction.events).toBeEmpty();
     });
 
     it('should fail if the entity is soft-deleted', async () => {
-      mockStateTransaction.findOneWithSameKeyAs.mockResolvedValueOnce(
-        new MyEntity({ id: 'abc', deletedAt: new Date('2020-01-01') }),
-      );
+      const existingEntity = new MyEntity({
+        id: 'abc',
+        deletedAt: new Date('2020-01-01'),
+      });
+      mockTransaction.set(existingEntity);
 
       const actualPromise = manager.delete('myEntityDeleted', { id: 'abc' });
 
       await expect(actualPromise).rejects.toThrow(EntityNotFoundError);
-      expect(mockStateTransaction.replace).not.toHaveBeenCalled();
-      expect(mockEventTransaction.bufferedEvents).toEqual([]);
+      expect(mockTransaction.entities).toEqual({ abc: existingEntity });
+      expect(mockTransaction.events).toBeEmpty();
     });
 
     it('should fail if the version timestamps do not match', async () => {
-      mockStateTransaction.findOneWithSameKeyAs.mockResolvedValueOnce(
-        new MyEntity({ id: 'abc', updatedAt: new Date('2020-01-01') }),
-      );
+      const existingEntity = new MyEntity({
+        id: 'abc',
+        updatedAt: new Date('2020-01-01'),
+      });
+      mockTransaction.set(existingEntity);
 
       const actualPromise = manager.delete(
         'myEntityDeleted',
@@ -513,27 +493,27 @@ describe('VersionedEntityManager', () => {
       );
 
       await expect(actualPromise).rejects.toThrow(IncorrectEntityVersionError);
-      expect(mockStateTransaction.replace).not.toHaveBeenCalled();
-      expect(mockEventTransaction.bufferedEvents).toEqual([]);
+      expect(mockTransaction.entities).toEqual({ abc: existingEntity });
+      expect(mockTransaction.events).toBeEmpty();
     });
 
     it('should fail if the state is more recent than the transaction timestamp', async () => {
-      mockStateTransaction.findOneWithSameKeyAs.mockResolvedValueOnce(
-        new MyEntity({ id: 'abc', updatedAt: new Date('2999-01-01') }),
-      );
+      const existingEntity = new MyEntity({
+        id: 'abc',
+        updatedAt: new Date('2999-01-01'),
+      });
+      mockTransaction.set(existingEntity);
 
       const actualPromise = manager.delete('myEntityDeleted', { id: 'abc' });
 
       await expect(actualPromise).rejects.toThrow(TransactionOldTimestampError);
-      expect(mockStateTransaction.replace).not.toHaveBeenCalled();
-      expect(mockEventTransaction.bufferedEvents).toEqual([]);
+      expect(mockTransaction.entities).toEqual({ abc: existingEntity });
+      expect(mockTransaction.events).toBeEmpty();
     });
 
     it('should delete the entity', async () => {
       const existingEntity = new MyEntity({ id: 'abc' });
-      mockStateTransaction.findOneWithSameKeyAs.mockResolvedValueOnce(
-        existingEntity,
-      );
+      mockTransaction.set(existingEntity);
       const validationFn = jest.fn(() => Promise.resolve());
 
       const actualEvent = await manager.delete(
@@ -556,12 +536,8 @@ describe('VersionedEntityManager', () => {
         }),
       );
       expect(actualEvent.data).toBeInstanceOf(MyEntity);
-      expect(mockStateTransaction.replace).toHaveBeenCalledExactlyOnceWith(
-        actualEvent.data,
-      );
-      expect(mockEventTransaction.bufferedEvents).toEqual([
-        { topic: 'my-topic', event: actualEvent, options: { attributes: {} } },
-      ]);
+      expect(mockTransaction.entities).toEqual({ abc: actualEvent.data });
+      expectPublishedEvent(actualEvent);
       expect(validationFn).toHaveBeenCalledExactlyOnceWith(
         existingEntity,
         mockTransaction,
@@ -570,9 +546,7 @@ describe('VersionedEntityManager', () => {
 
     it('should rethrow an error from the validation function', async () => {
       const existingEntity = new MyEntity({ id: 'abc' });
-      mockStateTransaction.findOneWithSameKeyAs.mockResolvedValueOnce(
-        existingEntity,
-      );
+      mockTransaction.set(existingEntity);
 
       const actualPromise = manager.delete(
         'myEntityDeleted',
@@ -581,13 +555,14 @@ describe('VersionedEntityManager', () => {
       );
 
       await expect(actualPromise).rejects.toThrow('🔥');
-      expect(mockStateTransaction.replace).not.toHaveBeenCalled();
-      expect(mockEventTransaction.bufferedEvents).toEqual([]);
+      expect(mockTransaction.entities).toEqual({ abc: existingEntity });
+      expect(mockTransaction.events).toBeEmpty();
     });
 
     it('should accept options', async () => {
       jest.spyOn(manager.runner, 'run');
       const existingEntity = new MyEntity({ id: 'abc' });
+      // The existing entity is not set in the transaction entities, and `delete` should only use the provided option.
 
       const actualEvent = await manager.delete(
         'myEntityDeleted',
@@ -600,22 +575,15 @@ describe('VersionedEntityManager', () => {
       );
 
       expect(manager.runner.run).not.toHaveBeenCalled();
-      expect(mockEventTransaction.bufferedEvents).toEqual([
-        {
-          topic: 'my-topic',
-          event: actualEvent,
-          options: { attributes: { att1: '🎁' } },
-        },
-      ]);
-      expect(mockStateTransaction.findOneWithSameKeyAs).not.toHaveBeenCalled();
+      expectPublishedEvent(actualEvent, { att1: '🎁' });
     });
   });
 
   describe('without creation and deletion timestamps', () => {
-    let manager: VersionedEntityManager<MockTransaction, MySimpleEvent>;
+    let manager: VersionedEntityManager<Transaction, MySimpleEvent>;
 
     beforeEach(() => {
-      manager = new VersionedEntityManager<MockTransaction, MySimpleEvent>(
+      manager = new VersionedEntityManager<Transaction, MySimpleEvent>(
         'my-topic',
         MySimpleEvent,
         MySimpleEntity,
@@ -645,18 +613,13 @@ describe('VersionedEntityManager', () => {
         },
       });
       expect(actualEvent.data).toBeInstanceOf(MySimpleEntity);
-      expect(mockStateTransaction.replace).toHaveBeenCalledExactlyOnceWith(
-        actualEvent.data,
-      );
-      expect(mockEventTransaction.bufferedEvents).toEqual([
-        { topic: 'my-topic', event: actualEvent, options: { attributes: {} } },
-      ]);
+      expect(mockTransaction.entities).toEqual({ abc: actualEvent.data });
+      expectPublishedEvent(actualEvent);
     });
 
     it('should fail creation if the entity already exists', async () => {
-      mockStateTransaction.findOneWithSameKeyAs.mockResolvedValueOnce(
-        new MySimpleEntity({ id: 'abc' }),
-      );
+      const existingEntity = new MySimpleEntity({ id: 'abc' });
+      mockTransaction.set(existingEntity);
 
       const actualPromise = manager.create('myEntityCreated', {
         id: 'abc',
@@ -664,15 +627,13 @@ describe('VersionedEntityManager', () => {
       });
 
       await expect(actualPromise).rejects.toThrow(EntityAlreadyExistsError);
-      expect(mockStateTransaction.replace).not.toHaveBeenCalled();
-      expect(mockEventTransaction.bufferedEvents).toEqual([]);
+      expect(mockTransaction.entities).toEqual({ abc: existingEntity });
+      expect(mockTransaction.events).toBeEmpty();
     });
 
     it('should update the entity', async () => {
       const existingEntity = new MySimpleEntity({ id: 'abc' });
-      mockStateTransaction.findOneWithSameKeyAs.mockResolvedValueOnce(
-        existingEntity,
-      );
+      mockTransaction.set(existingEntity);
       const validationFn = jest.fn(() => Promise.resolve());
 
       const actualEvent = await manager.update(
@@ -696,12 +657,8 @@ describe('VersionedEntityManager', () => {
         }),
       );
       expect(actualEvent.data).toBeInstanceOf(MySimpleEntity);
-      expect(mockStateTransaction.replace).toHaveBeenCalledExactlyOnceWith(
-        actualEvent.data,
-      );
-      expect(mockEventTransaction.bufferedEvents).toEqual([
-        { topic: 'my-topic', event: actualEvent, options: { attributes: {} } },
-      ]);
+      expect(mockTransaction.entities).toEqual({ abc: actualEvent.data });
+      expectPublishedEvent(actualEvent);
       expect(validationFn).toHaveBeenCalledExactlyOnceWith(
         existingEntity,
         mockTransaction,
@@ -714,8 +671,8 @@ describe('VersionedEntityManager', () => {
       await expect(actualPromise).rejects.toThrow(
         UnsupportedEntityOperationError,
       );
-      expect(mockStateTransaction.replace).not.toHaveBeenCalled();
-      expect(mockEventTransaction.bufferedEvents).toEqual([]);
+      expect(mockTransaction.entities).toBeEmptyObject();
+      expect(mockTransaction.events).toBeEmpty();
     });
   });
 });

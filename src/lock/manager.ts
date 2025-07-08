@@ -1,18 +1,14 @@
 import type { Type } from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
 import * as uuid from 'uuid';
-import {
-  type FindReplaceTransaction,
-  Transaction,
-  TransactionRunner,
-} from '../transaction/index.js';
+import { Transaction, TransactionRunner } from '../transaction/index.js';
 import type { LockEntity } from './entity.js';
 import { LockAcquisitionError, LockReleaseError } from './errors.js';
 
 /**
  * Base options for lock operations.
  */
-type LockOptions<T extends Transaction<any, any>, E extends LockEntity> = {
+type LockOptions<T extends Transaction, E extends LockEntity> = {
   /**
    * Additional data that should be added to the lock.
    */
@@ -28,7 +24,7 @@ type LockOptions<T extends Transaction<any, any>, E extends LockEntity> = {
  * Options for the {@link acquireLock} function.
  */
 type AcquireLockOptions<
-  T extends FindReplaceTransaction,
+  T extends Transaction,
   E extends LockEntity,
 > = LockOptions<T, E> & {
   /**
@@ -47,7 +43,7 @@ type AcquireLockOptions<
  * Options for the {@link releaseLock} function.
  */
 type ReleaseLockOptions<
-  T extends FindReplaceTransaction,
+  T extends Transaction,
   E extends LockEntity,
 > = LockOptions<T, E> & {
   /**
@@ -61,10 +57,7 @@ type ReleaseLockOptions<
 /**
  * Manages the acquisition and release of locks, represented as entities in the state.
  */
-export class LockManager<
-  T extends FindReplaceTransaction,
-  E extends LockEntity,
-> {
+export class LockManager<T extends Transaction, E extends LockEntity> {
   /**
    * Creates a new {@link LockManager}.
    *
@@ -132,7 +125,7 @@ export class LockManager<
           ),
         });
 
-        await transaction.stateTransaction.replace(lock);
+        await transaction.set(lock);
 
         return lock;
       },
@@ -154,10 +147,8 @@ export class LockManager<
     transaction: T,
     options: Pick<AcquireLockOptions<T, E>, 'extraValidation'> = {},
   ): Promise<void> {
-    const existingLock =
-      await transaction.stateTransaction.findOneWithSameKeyAs(this.lockType, {
-        id,
-      } as Partial<E>);
+    const key = { id } as Partial<E>;
+    const existingLock = await transaction.get(this.lockType, key);
     if (!existingLock) {
       return;
     }
@@ -180,11 +171,7 @@ export class LockManager<
     await this.runner.runInNewOrExisting(
       options.transaction,
       async (transaction) => {
-        const existingLock =
-          await transaction.stateTransaction.findOneWithSameKeyAs(
-            this.lockType,
-            lock,
-          );
+        const existingLock = await transaction.get(this.lockType, lock);
         if (!existingLock) {
           throw new LockReleaseError('The lock could not be found.');
         }
@@ -194,10 +181,7 @@ export class LockManager<
         }
 
         if (options.delete ?? true) {
-          await transaction.stateTransaction.deleteWithSameKeyAs(
-            this.lockType,
-            lock,
-          );
+          await transaction.delete(this.lockType, lock);
         } else {
           const releasedLock = plainToInstance(this.lockType, {
             ...options.extraData,
@@ -206,7 +190,7 @@ export class LockManager<
             expiresAt: null,
           });
 
-          await transaction.stateTransaction.replace(releasedLock);
+          await transaction.set(releasedLock);
         }
       },
     );

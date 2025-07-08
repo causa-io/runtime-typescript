@@ -4,7 +4,6 @@ import type {
   PreparedEvent,
   PublishOptions,
 } from '../../events/index.js';
-import { mockStateTransaction } from '../utils.test.js';
 import type { OutboxEvent } from './event.js';
 import { OutboxEventSender } from './sender.js';
 
@@ -46,25 +45,4 @@ export class MockSender extends OutboxEventSender {
   }
 
   protected async updateOutbox(): Promise<void> {}
-}
-
-export function expectMockStateTransactionReplaceToHaveBeenCalledWith(
-  expectedEntities: any[],
-) {
-  expect(mockStateTransaction.replace).toHaveBeenCalledTimes(
-    expectedEntities.length,
-  );
-  expectedEntities.forEach((e) => {
-    expect(mockStateTransaction.replace).toHaveBeenCalledWith(
-      expect.toSatisfy((actual) => {
-        try {
-          expect(actual).toEqual(e);
-          expect(actual).toBeInstanceOf(e.constructor);
-          return true;
-        } catch {
-          return false;
-        }
-      }),
-    );
-  });
 }
