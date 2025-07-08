@@ -56,7 +56,7 @@ type GetLoggedObjectsOptions = {
   /**
    * A predicate used to filter the logged objects. This is applied in addition to filtering by level.
    */
-  predicate?: (o: any) => boolean;
+  predicate?: (o: Record<string, any>) => boolean;
 };
 
 /**
@@ -66,7 +66,9 @@ type GetLoggedObjectsOptions = {
  * @param options Options when getting the logged objects.
  * @returns A list of JavaScript objects corresponding to `pino` logs.
  */
-export function getLoggedObjects(options: GetLoggedObjectsOptions = {}): any[] {
+export function getLoggedObjects(
+  options: GetLoggedObjectsOptions = {},
+): Record<string, any>[] {
   const logger = options.logger ?? getDefaultLogger();
   const stream = getLoggerStream(logger);
 
@@ -98,7 +100,7 @@ export function getLoggedObjects(options: GetLoggedObjectsOptions = {}): any[] {
  */
 export function getLoggedInfos(
   options: Omit<GetLoggedObjectsOptions, 'level'> = {},
-) {
+): Record<string, any>[] {
   return getLoggedObjects({ ...options, level: 30 });
 }
 
@@ -111,7 +113,7 @@ export function getLoggedInfos(
  */
 export function getLoggedWarnings(
   options: Omit<GetLoggedObjectsOptions, 'level'> = {},
-) {
+): Record<string, any>[] {
   return getLoggedObjects({ ...options, level: 40 });
 }
 
@@ -124,6 +126,6 @@ export function getLoggedWarnings(
  */
 export function getLoggedErrors(
   options: Omit<GetLoggedObjectsOptions, 'level'> = {},
-) {
+): Record<string, any>[] {
   return getLoggedObjects({ ...options, level: 50 });
 }

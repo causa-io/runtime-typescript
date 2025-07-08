@@ -10,6 +10,8 @@ Breaking changes:
 - Replace `skipVersionCheck` option with `existingState` in the `VersionedEventProcessor`.
 - Make `VersionedEventProcessor.processEvent` throw instead of returning `null`, and introduce the `processOrSkipEvent` method with the old behavior.
 - Allow `VersionedEventProcessor.project` to return a context, which can be used to specify a version property to use, replaces the `stateKeyForEvent` logic, and to support merges of partial projections.
+- Remove the app factory pattern in `createApp`.
+- Implement the `AppFixture` to replace `makeTestAppFactory`.
 
 Features:
 
@@ -17,6 +19,7 @@ Features:
 - Support transaction-wide `publishOptions`.
 - Implement `VersionedEventProcessor` and `VersionedEntityManager` `get` method.
 - Support `reprocessEqualVersion` in the `VersionedEventProcessor` when processing events for backfilling use cases.
+- Implement the `ConfigFixture`, `LoggingFixture`, and `VersionedEntityFixture`, and define the `EventFixture`.
 
 Fixes:
 
