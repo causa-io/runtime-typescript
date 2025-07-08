@@ -6,6 +6,12 @@ Breaking changes:
 
 - Upgrade the minimum Node.js version to `20`.
 - Refactor the `Transaction` and `TransactionRunner`, making all transactions "find replace transactions", using the `get`, `set`, and `delete` terminology.
+- Define a unique `TransactionRunner.run` method which supports existing transactions (replacing `runInNewOrExisting`).
+
+Features:
+
+- Introduce the `ReadOnlyStateTransaction`, along with the corresponding `readOnly` option when creating a new transaction using a runner.
+- Support transaction-wide `publishOptions`.
 
 ## v0.27.2 (2025-05-28)
 
