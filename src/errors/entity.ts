@@ -78,6 +78,32 @@ export class IncorrectEntityVersionError extends EntityError {
 }
 
 /**
+ * An error thrown when trying to process an entity that has an older version than the one in the state.
+ */
+export class OldEntityVersionError extends EntityError {
+  /**
+   * Creates a new {@link OldEntityVersionError}.
+   *
+   * @param entityType The type of entity, or `null` if it is not available.
+   * @param key A value representing the key used to look up the entity, or `null` if it is not available.
+   * @param processedVersion The version of the entity being processed.
+   * @param stateVersion The version of the entity, as found in the state.
+   */
+  constructor(
+    entityType: EntityTypeForError,
+    key: any,
+    readonly processedVersion: Date,
+    readonly stateVersion: Date,
+  ) {
+    super(
+      entityType,
+      key,
+      'The processed entity version is older than the existing one.',
+    );
+  }
+}
+
+/**
  * An error thrown when trying to perform an operation on an entity that is not supported.
  */
 export class UnsupportedEntityOperationError extends EntityError {}

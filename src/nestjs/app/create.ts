@@ -19,7 +19,7 @@ import { ValidationModule } from '../validation/index.js';
  * @param businessModule The module containing business logic.
  * @returns The module from which the NestJS application can be created.
  */
-function createAppModule(businessModule: any): any {
+export function createAppModule(businessModule: any): any {
   const imports: ModuleMetadata['imports'] = [
     ConfigModule.forRoot({ isGlobal: true }),
     LoggerModule.forRoot(),
@@ -40,24 +40,9 @@ function createAppModule(businessModule: any): any {
 }
 
 /**
- * A function that takes a NestJS module and returns a NestJS application.
- * The passed options should be forwarded to the {@link NestFactory.create} call.
- */
-export type AppFactory<T extends INestApplication = INestApplication> = (
-  module: any,
-  options?: NestApplicationOptions,
-) => Promise<T>;
-
-/**
  * Options for the {@link createApp} function.
  */
 export type CreateAppOptions<T extends INestApplication = INestApplication> = {
-  /**
-   * The function to use to create an application.
-   * By default this uses `express`.
-   */
-  appFactory?: AppFactory<T>;
-
   /**
    * Options to pass to the {@link CreateAppOptions.appFactory}, then forwarded to the {@link NestFactory.create} call.
    */
@@ -67,23 +52,6 @@ export type CreateAppOptions<T extends INestApplication = INestApplication> = {
    * A function that applies extra configuration to the Nest application.
    */
   extraConfiguration?: (app: T) => void;
-};
-
-/**
- * The default {@link AppFactory}, which uses `express`.
- */
-export const DEFAULT_APP_FACTORY: AppFactory<NestExpressApplication> = async (
-  appModule,
-  options,
-) => {
-  const app = await NestFactory.create<NestExpressApplication>(
-    appModule,
-    options,
-  );
-
-  app.disable('x-powered-by');
-
-  return app;
 };
 
 /**
@@ -98,11 +66,9 @@ export async function createApp<T extends INestApplication = INestApplication>(
   businessModule: any,
   options: CreateAppOptions<T> = {},
 ): Promise<INestApplication> {
-  const appFactory = options.appFactory ?? DEFAULT_APP_FACTORY;
+  const appModule = createAppModule(businessModule);
 
-  const AppModule = createAppModule(businessModule);
-
-  const app = await appFactory(AppModule, {
+  const app = await NestFactory.create<NestExpressApplication>(appModule, {
     bufferLogs: true,
     ...options.nestApplicationOptions,
   });
@@ -115,6 +81,7 @@ export async function createApp<T extends INestApplication = INestApplication>(
   app.useLogger(logger);
   app.flushLogs();
   app.enableShutdownHooks();
+  app.disable('x-powered-by');
 
   await app.init();
 

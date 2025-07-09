@@ -86,8 +86,6 @@ The `createApp` function can be used to initialize a NestJS application from a r
 
 Note that the `AuthModule` is not automatically added because it is only relevant for front-facing APIs, and requires an additional Passport strategy to work.
 
-`createApp` can also be used in combination with `makeTestAppFactory` from `@causa/runtime/nestjs/testing` through the `appFactory` option. This allows to override some of the modules (e.g. to mock services, use temporary resources, etc).
-
 #### Health check
 
 NestJS provides the [`@nestjs/terminus`](https://github.com/nestjs/terminus) package to implement health checks, and not much can be added generically on top. The implementation of the actual health check may depend on the tech stack for example. However the `terminusModuleWithLogger` module provides Terminus properly configured with the pino logger.
@@ -132,13 +130,11 @@ The main purpose of `ObjectSerializer`s is to be used with an `EventPublisher` o
 
 ### (Event & state) transaction
 
-Event and state `Transaction`s are a core concept of Causa, which provide a way to modify the state of a system and publish related events as part of a single transaction. `Transaction`s are created by a `TransactionRunner`, which instantiates the underlying transaction(s) to a database and a message broker.
+Event and state `Transaction`s are a core concept of Causa, which provide a way to modify the state of a system and publish related events as part of a single transaction. `Transaction`s are created by a `TransactionRunner`, which instantiates the underlying transaction(s) to a database and a message broker. A `TransactionRunner` can also create a `ReadOnlyStateTransaction` if requested, which may avoid unnecessarily acquiring locks.
 
-A state transaction can optionally implement the `FindReplaceStateTransaction` interface, which enables the use of the `Transaction` with the `LockManager`, `VersionedEntityEventProcessor`, and the `VersionedEntityManager`.
+`Transaction`s and `TransactionRunner`s are used by the `LockManager`, `VersionedEntityEventProcessor`, and the `VersionedEntityManager`.
 
-The `BufferEventTransaction` provides a simple `EventTransaction` which accumulates events and publishes them when the transaction commits using an underlying `EventPublisher`. However, in itself this does not commit the state and the events in an atomic manner.
-
-The `OutboxTransactionRunner` solves this problem, and provides a base implementation that commits events to be published using the state transaction (in the "outbox"). The state and the events are therefore committed atomically as part of a single transaction. Then, events are published in the background by the related `OutboxEventSender`, and removed from the outbox (in the state).
+The `OutboxTransactionRunner` provides a base implementation of a runner that commits events to be published using the state transaction (in the "outbox"). The state and the events are therefore committed atomically as part of a single transaction. Then, events are published in the background by the related `OutboxEventSender`, and removed from the outbox (in the state).
 
 ### Validation
 
@@ -153,3 +149,12 @@ The `VersionedEntity` is a core Causa concept that builds on top of event and st
 The `VersionedEntityManager` relies on the `VersionedEntityEventProcessor`, which consumes events to build views, but does not provide the create / update / delete functionalities.
 
 The `VersionedEntityManager` is usually extended in the service managing the entity, while a separate service that requires building its own view on the same entity will extend a `VersionedEntityEventProcessor`.
+
+### Testing
+
+Various testing utilities are exposed as `@causa/runtime/testing` and `@causa/runtime/nestjs/testing`. The most interesting ones are the `AppFixture` and the corresponding set of `Fixture`s. This eases creating a test NestJS application from a "business module", mocking various common functionalities, and testing the application behavior:
+
+- `AppFixture` is the parent fixture that creates the application, initializes all the other fixtures, and provides the `request` test agent to make HTTP requests.
+- The `ConfigFixture` allows changing the configuration exposed by NestJS' `ConfigService`.
+- The `LoggingFixture` prettifies logs and makes it easier to check logs (e.g. that errors are logged when needed).
+- The `VersionedEntityFixture` makes it easier to check for versioned entity mutations (or the lack thereof) and the corresponding published events.

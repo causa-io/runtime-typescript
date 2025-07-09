@@ -4,8 +4,7 @@ import { Strategy } from 'passport-http-bearer';
 import supertest from 'supertest';
 import TestAgent from 'supertest/lib/agent.js';
 import type { User } from '../../auth/index.js';
-import { createApp } from '../factory/index.js';
-import { makeTestAppFactory } from '../factory/testing.js';
+import { createApp } from '../app/index.js';
 import { AuthModule } from './auth.module.js';
 import { RequireUserClaims } from './require-user-claims.decorator.js';
 
@@ -38,9 +37,7 @@ describe('AuthModule', () => {
   let request: TestAgent<supertest.Test>;
 
   beforeEach(async () => {
-    app = await createApp(AppModule, {
-      appFactory: makeTestAppFactory(),
-    });
+    app = await createApp(AppModule);
     request = supertest(app.getHttpServer());
   });
 

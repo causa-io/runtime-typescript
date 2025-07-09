@@ -1,17 +1,26 @@
 import { jest } from '@jest/globals';
 import 'jest-extended';
-import { TransactionRunner } from './transaction-runner.js';
+import {
+  TransactionRunner,
+  type ReadWriteTransactionOptions,
+  type TransactionFn,
+} from './transaction-runner.js';
 import { Transaction } from './transaction.js';
+import { MockTransaction } from './utils.test.js';
 
-type MyTransaction = Transaction<any, any>;
+const createdRWTransaction = new MockTransaction();
+const createdROTransaction = new MockTransaction();
 
-const createdTransaction = new Transaction<any, any>({}, {});
+class MyRunner extends TransactionRunner<Transaction, Transaction> {
+  async runReadWrite<RT>(
+    options: ReadWriteTransactionOptions,
+    runFn: TransactionFn<Transaction, RT>,
+  ): Promise<RT> {
+    return await runFn(createdRWTransaction);
+  }
 
-class MyRunner extends TransactionRunner<MyTransaction> {
-  async run<RT>(
-    runFn: (transaction: MyTransaction) => Promise<RT>,
-  ): Promise<[RT, ...any[]]> {
-    return [await runFn(createdTransaction), { someResult: '📈' }];
+  async runReadOnly<RT>(runFn: TransactionFn<Transaction, RT>): Promise<RT> {
+    return await runFn(createdROTransaction);
   }
 }
 
@@ -20,29 +29,56 @@ describe('TransactionRunner', () => {
 
   beforeEach(() => {
     runner = new MyRunner();
-    jest.spyOn(runner, 'run');
+    jest.spyOn(runner, 'runReadWrite');
+    jest.spyOn(runner, 'runReadOnly');
   });
 
-  describe('runInNewOrExisting', () => {
-    it('should run the given function in the existing transaction', async () => {
-      const transaction = new Transaction({}, {} as any);
-      const fn = jest.fn(() => Promise.resolve('🎉'));
+  describe('run', () => {
+    const fn = jest.fn(() => Promise.resolve('🎉'));
 
-      const actualResult = await runner.runInNewOrExisting(transaction, fn);
+    it('should run the given function in a new transaction', async () => {
+      const actualResult = await runner.run(fn);
+
+      expect(actualResult).toBe('🎉');
+      expect(fn).toHaveBeenCalledExactlyOnceWith(createdRWTransaction);
+      expect(runner.runReadWrite).toHaveBeenCalledExactlyOnceWith({}, fn);
+      expect(runner.runReadOnly).not.toHaveBeenCalled();
+    });
+
+    it('should run the given function in the existing transaction', async () => {
+      const transaction = new MockTransaction();
+
+      const actualResult = await runner.run({ transaction }, fn);
 
       expect(actualResult).toBe('🎉');
       expect(fn).toHaveBeenCalledExactlyOnceWith(transaction);
-      expect(runner.run).not.toHaveBeenCalled();
+      expect(runner.runReadWrite).not.toHaveBeenCalled();
+      expect(runner.runReadOnly).not.toHaveBeenCalled();
     });
 
-    it('should run the given function in a new transaction', async () => {
-      const fn = jest.fn(() => Promise.resolve('🎉'));
+    it('should run the given function in a new transaction with publish options', async () => {
+      const expectedOptions: ReadWriteTransactionOptions = {
+        publishOptions: { attributes: { tada: '🎉' } },
+      };
 
-      const actualResult = await runner.runInNewOrExisting(undefined, fn);
+      const actualResult = await runner.run(expectedOptions, fn);
 
       expect(actualResult).toBe('🎉');
-      expect(fn).toHaveBeenCalledExactlyOnceWith(createdTransaction);
-      expect(runner.run).toHaveBeenCalledExactlyOnceWith(fn);
+      expect(fn).toHaveBeenCalledExactlyOnceWith(createdRWTransaction);
+      expect(runner.runReadWrite).toHaveBeenCalledExactlyOnceWith(
+        expectedOptions,
+        fn,
+      );
+      expect(runner.runReadOnly).not.toHaveBeenCalled();
+    });
+
+    it('should run the given function in a read-only transaction', async () => {
+      const actualResult = await runner.run({ readOnly: true }, fn);
+
+      expect(actualResult).toBe('🎉');
+      expect(fn).toHaveBeenCalledExactlyOnceWith(createdROTransaction);
+      expect(runner.runReadWrite).not.toHaveBeenCalled();
+      expect(runner.runReadOnly).toHaveBeenCalledExactlyOnceWith(fn);
     });
   });
 });

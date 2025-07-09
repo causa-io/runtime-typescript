@@ -15,7 +15,7 @@ import supertest from 'supertest';
 import TestAgent from 'supertest/lib/agent.js';
 import { EntityAlreadyExistsError } from '../../errors/index.js';
 import { getLoggedObjects, spyOnLogger } from '../../logging/testing.js';
-import { createApp } from './app-factory.js';
+import { createApp } from './create.js';
 
 class PostTestDto {
   @IsPhoneNumber()
@@ -59,7 +59,7 @@ class TestModule {}
 })
 class AppModule {}
 
-describe('app-factory', () => {
+describe('createApp', () => {
   let app: INestApplication;
   let previousEnv: NodeJS.ProcessEnv;
   let request: TestAgent<supertest.Test>;
