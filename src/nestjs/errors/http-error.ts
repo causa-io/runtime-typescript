@@ -20,17 +20,10 @@ export type ErrorResponse = {
   readonly errorCode: string;
 };
 
-/**
- * An error that will be converted to an HTTP response sent to the client.
- * This should be subclassed by all errors that should be returned to the client.
- */
-export class HttpError<T extends ErrorResponse> extends HttpException {
-  /**
-   * Creates a new {@link HttpError}.
-   *
-   * @param response The response to send to the client.
-   */
-  constructor(response: T) {
-    super(response, response.statusCode);
-  }
+export function makeHttpError(response: ErrorResponse): HttpException {
+  return new HttpException(response, response.statusCode);
+}
+
+export function throwHttpErrorResponse(response: ErrorResponse): never {
+  throw makeHttpError(response);
 }

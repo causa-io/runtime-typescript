@@ -1,8 +1,6 @@
 import { Module } from '@nestjs/common';
 import { APP_FILTER } from '@nestjs/core';
 import {
-  EntityAlreadyExistsFilter,
-  EntityNotFoundFilter,
   GlobalFilter,
   IncorrectEntityVersionFilter,
 } from './exceptions.filter.js';
@@ -16,14 +14,6 @@ import {
     {
       provide: APP_FILTER,
       useClass: GlobalFilter,
-    },
-    {
-      provide: APP_FILTER,
-      useClass: EntityAlreadyExistsFilter,
-    },
-    {
-      provide: APP_FILTER,
-      useClass: EntityNotFoundFilter,
     },
     {
       provide: APP_FILTER,

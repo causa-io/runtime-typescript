@@ -118,6 +118,8 @@ export class AppFixture {
        * {@link ConfigFixture}. Do not pass this if a {@link ConfigFixture} is already included in the `fixtures`.
        */
       config?: Record<string, any>;
+
+      // TODO(flo): Allow generic overrides.
     } = {},
   ) {
     this.fixtures = options.fixtures ?? [];

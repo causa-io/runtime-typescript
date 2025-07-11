@@ -6,38 +6,14 @@ import {
 } from '@nestjs/common';
 import { BaseExceptionFilter } from '@nestjs/core';
 import {
-  EntityAlreadyExistsError,
-  EntityNotFoundError,
   IncorrectEntityVersionError,
   RetryableError,
 } from '../../errors/index.js';
 import {
-  ConflictError,
-  IncorrectVersionError,
-  InternalServerError,
-  NotFoundError,
-  ServiceUnavailableError,
+  IncorrectVersionErrorDto,
+  InternalServerErrorDto,
+  ServiceUnavailableErrorDto,
 } from './errors.dto.js';
-
-/**
- * A filter that converts {@link EntityNotFoundError}s to {@link NotFoundError}s.
- */
-@Catch(EntityNotFoundError)
-export class EntityNotFoundFilter extends BaseExceptionFilter {
-  catch(_: EntityNotFoundError, host: ArgumentsHost) {
-    super.catch(new NotFoundError(), host);
-  }
-}
-
-/**
- * A filter that converts {@link EntityAlreadyExistsError}s to {@link ConflictError}s.
- */
-@Catch(EntityAlreadyExistsError)
-export class EntityAlreadyExistsFilter extends BaseExceptionFilter {
-  catch(_: EntityAlreadyExistsError, host: ArgumentsHost) {
-    super.catch(new ConflictError(), host);
-  }
-}
 
 /**
  * A filter that converts {@link IncorrectEntityVersionError}s to {@link IncorrectVersionError}s.
@@ -45,7 +21,9 @@ export class EntityAlreadyExistsFilter extends BaseExceptionFilter {
 @Catch(IncorrectEntityVersionError)
 export class IncorrectEntityVersionFilter extends BaseExceptionFilter {
   catch(_: IncorrectEntityVersionError, host: ArgumentsHost) {
-    super.catch(new IncorrectVersionError(), host);
+    const response = new IncorrectVersionErrorDto();
+    const error = new HttpException(response, response.statusCode);
+    super.catch(error, host);
   }
 }
 
@@ -67,14 +45,16 @@ export class GlobalFilter extends BaseExceptionFilter {
         exception.statusCode,
       );
     } else if (exception instanceof RetryableError) {
-      converted = new ServiceUnavailableError();
+      const response = new ServiceUnavailableErrorDto();
+      converted = new HttpException(response, response.statusCode);
 
       const logObject = { error: exception?.stack };
       const message =
         'A retryable error was caught by the global exception filter.';
       GlobalFilter.globalFilterLogger.warn(logObject, message);
     } else {
-      converted = new InternalServerError();
+      const response = new InternalServerErrorDto();
+      converted = new HttpException(response, response.statusCode);
 
       // All uncaught errors that don't inherit from `HttpException` will be converted to a generic
       // `InternalServerError`. This will disable the behavior in `BaseExceptionFilter.handleUnknownError`.

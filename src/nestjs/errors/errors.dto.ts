@@ -2,7 +2,7 @@ import { HttpStatus } from '@nestjs/common';
 import { ApiProperty } from '@nestjs/swagger';
 import { IsString } from 'class-validator';
 import { ApiConstantProperty } from '../openapi/index.js';
-import { type ErrorResponse, HttpError } from './http-error.js';
+import type { ErrorResponse } from './http-error.js';
 
 /**
  * The base class for all error DTOs, providing OpenAPI metadata.
@@ -39,15 +39,6 @@ export class NotFoundErrorDto extends ErrorDto {
 }
 
 /**
- * An error mapped to a generic 404 HTTP error.
- */
-export class NotFoundError extends HttpError<NotFoundErrorDto> {
-  constructor(message?: string) {
-    super(new NotFoundErrorDto(message));
-  }
-}
-
-/**
  * The response for a {@link ConflictError}.
  */
 export class ConflictErrorDto extends ErrorDto {
@@ -61,15 +52,6 @@ export class ConflictErrorDto extends ErrorDto {
     readonly message: string = 'The request conflicts with existing resource(s) on the server.',
   ) {
     super();
-  }
-}
-
-/**
- * An error mapped to a generic 409 HTTP error.
- */
-export class ConflictError extends HttpError<ConflictErrorDto> {
-  constructor(message?: string) {
-    super(new ConflictErrorDto(message));
   }
 }
 
@@ -91,16 +73,6 @@ export class IncorrectVersionErrorDto extends ErrorDto {
 }
 
 /**
- * An error mapped to a 409 HTTP error, thrown when the client does not provide the correct version of the resource to
- * modify.
- */
-export class IncorrectVersionError extends HttpError<IncorrectVersionErrorDto> {
-  constructor(message?: string) {
-    super(new IncorrectVersionErrorDto(message));
-  }
-}
-
-/**
  * The response for a {@link InternalServerError}.
  */
 export class InternalServerErrorDto extends ErrorDto {
@@ -118,15 +90,6 @@ export class InternalServerErrorDto extends ErrorDto {
 }
 
 /**
- * An error mapped to a generic 500 HTTP error.
- */
-export class InternalServerError extends HttpError<InternalServerErrorDto> {
-  constructor(message?: string) {
-    super(new InternalServerErrorDto(message));
-  }
-}
-
-/**
  * The response for a {@link BadRequestError}.
  */
 export class BadRequestErrorDto extends ErrorDto {
@@ -138,15 +101,6 @@ export class BadRequestErrorDto extends ErrorDto {
 
   constructor(readonly message: string = 'The request is invalid.') {
     super();
-  }
-}
-
-/**
- * An error mapped to a generic 400 HTTP error.
- */
-export class BadRequestError extends HttpError<BadRequestErrorDto> {
-  constructor(message?: string) {
-    super(new BadRequestErrorDto(message));
   }
 }
 
@@ -175,15 +129,6 @@ export class ValidationErrorDto extends ErrorDto {
 }
 
 /**
- * An error thrown when a request fails validation, mapped to a 400 HTTP error.
- */
-export class ValidationError extends HttpError<ValidationErrorDto> {
-  constructor(message: string, fields: string[]) {
-    super(new ValidationErrorDto(message, fields));
-  }
-}
-
-/**
  * The response for a {@link UnauthenticatedError}.
  */
 export class UnauthenticatedErrorDto extends ErrorDto {
@@ -195,17 +140,6 @@ export class UnauthenticatedErrorDto extends ErrorDto {
 
   constructor(readonly message: string = 'The request must be authenticated.') {
     super();
-  }
-}
-
-/**
- * An error mapped to a generic 401 HTTP error.
- * "Unauthenticated" is closer to the true meaning of the error: no authentication mechanism was provided with the
- * request.
- */
-export class UnauthenticatedError extends HttpError<UnauthenticatedErrorDto> {
-  constructor() {
-    super(new UnauthenticatedErrorDto());
   }
 }
 
@@ -225,15 +159,6 @@ export class ForbiddenErrorDto extends ErrorDto {
 }
 
 /**
- * An error mapped to a generic 403 HTTP error.
- */
-export class ForbiddenError extends HttpError<ForbiddenErrorDto> {
-  constructor() {
-    super(new ForbiddenErrorDto());
-  }
-}
-
-/**
  * The response for a {@link ServiceUnavailableError}.
  */
 export class ServiceUnavailableErrorDto extends ErrorDto {
@@ -247,14 +172,5 @@ export class ServiceUnavailableErrorDto extends ErrorDto {
     readonly message: string = 'The server is currently unable to handle the request.',
   ) {
     super();
-  }
-}
-
-/**
- * An error mapped to a generic 503 HTTP error.
- */
-export class ServiceUnavailableError extends HttpError<ServiceUnavailableErrorDto> {
-  constructor() {
-    super(new ServiceUnavailableErrorDto());
   }
 }
