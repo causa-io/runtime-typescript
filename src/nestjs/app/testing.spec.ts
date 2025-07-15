@@ -121,6 +121,17 @@ describe('AppFixture', () => {
 
       expect(appFixture.nestApplicationOptions).toEqual({ cors: true });
     });
+
+    it('should store the passed override', () => {
+      const override: NestJsModuleOverrider = (builder) =>
+        builder
+          .overrideProvider(MyService)
+          .useValue({ computeStuff: () => '✖️' });
+
+      appFixture = new AppFixture(AppModule, { override });
+
+      expect(appFixture.override).toBe(override);
+    });
   });
 
   describe('add', () => {
@@ -183,6 +194,19 @@ describe('AppFixture', () => {
       const controller = appFixture.get(TestController);
       expect(controller.serviceOutput).toEqual('➕');
       expect(fixture1.init).toHaveBeenCalledExactlyOnceWith(appFixture);
+    });
+
+    it('should run the override if provided', async () => {
+      const override: NestJsModuleOverrider = (builder) =>
+        builder
+          .overrideProvider(MyService)
+          .useValue({ computeStuff: () => '✖️' });
+      appFixture = new AppFixture(AppModule, { override });
+
+      await appFixture.init();
+
+      const controller = appFixture.get(TestController);
+      expect(controller.serviceOutput).toEqual('✖️');
     });
 
     it('should pass the provided nest application options and initialize request', async () => {
