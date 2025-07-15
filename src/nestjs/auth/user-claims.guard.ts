@@ -8,7 +8,8 @@ import {
   type UserClaimRequirements,
   doesUserSatisfyClaimRequirements,
 } from '../../auth/index.js';
-import { ForbiddenError } from '../errors/index.js';
+import { ForbiddenErrorDto } from '../errors/errors.dto.js';
+import { throwHttpErrorResponse } from '../errors/http-error.js';
 import { USER_CLAIM_REQUIREMENTS_KEY } from './require-user-claims.decorator.js';
 
 /**
@@ -44,7 +45,7 @@ export class UserClaimsGuard implements CanActivate {
       requirements,
     );
     if (!satisfiesRequirements) {
-      throw new ForbiddenError();
+      throwHttpErrorResponse(new ForbiddenErrorDto());
     }
 
     return true;
