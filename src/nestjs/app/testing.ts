@@ -82,7 +82,12 @@ export class AppFixture {
   /**
    * The fixtures that will be initialized with the application.
    */
-  private readonly fixtures: Fixture[];
+  readonly fixtures: Fixture[];
+
+  /**
+   * An optional function that overrides additional providers, after fixtures have been initialized.
+   */
+  readonly override: NestJsModuleOverrider | undefined;
 
   /**
    * The options passed to the NestJS application when it is created.
@@ -102,17 +107,9 @@ export class AppFixture {
    */
   constructor(
     readonly appModule: any,
-    options: {
-      /**
-       * A list of fixtures that will be initialized with the application.
-       */
-      fixtures?: Fixture[];
-
-      /**
-       * Options to pass to the NestJS application when it is created.
-       */
-      nestApplicationOptions?: NestApplicationOptions;
-
+    options: Partial<
+      Pick<AppFixture, 'fixtures' | 'override' | 'nestApplicationOptions'>
+    > & {
       /**
        * A dictionary of configuration values (e.g. environment variables) that will be used to initialize the
        * {@link ConfigFixture}. Do not pass this if a {@link ConfigFixture} is already included in the `fixtures`.
@@ -121,6 +118,7 @@ export class AppFixture {
     } = {},
   ) {
     this.fixtures = options.fixtures ?? [];
+    this.override = options.override;
     this.nestApplicationOptions = options.nestApplicationOptions ?? {};
 
     if (options.config) {
@@ -214,7 +212,9 @@ export class AppFixture {
     });
 
     const overrides = await Promise.all(this.fixtures.map((f) => f.init(this)));
-    overrides.filter((o) => !!o).forEach((o) => (builder = o(builder)));
+    [...overrides, this.override]
+      .filter((o) => !!o)
+      .forEach((o) => (builder = o(builder)));
 
     const moduleRef = await builder.compile();
 
