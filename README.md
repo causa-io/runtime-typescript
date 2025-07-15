@@ -28,6 +28,8 @@ This package exposes some entity-related errors (e.g. `EntityNotFoundError`) mea
 
 Another very useful error is the `RetryableError`. Any business logic can throw this error to indicate that the process that failed is worth retrying. The `RetryableError` can be handled differently depending on the context. For example for an event-processing function, it indicates that the processing of the event should be retried.
 
+The `tryMap` utility can be used instead of regular try/catch blocks to more easily catch expected errors and map them to other values.
+
 ### Events
 
 Events are a core mechanism of Causa, as they are how state changes are logged, and how services communicate between them.
