@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+Breaking changes:
+
+- Replace the base `HttpError` class with `makeHttpException` and `throwHttpErrorResponse` utilities, and remove `HttpError` classes from DTO definitions.
+- Remove exception filters for specific entity errors.
+
 ## v1.0.0-rc.1 (2025-07-09)
 
 Breaking changes:
