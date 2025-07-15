@@ -10,6 +10,7 @@ Breaking changes:
 Features:
 
 - Accept additional provider overrides in the `AppFixture`.
+- Implement the `tryMap` utility.
 
 ## v1.0.0-rc.1 (2025-07-09)
 
