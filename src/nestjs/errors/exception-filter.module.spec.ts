@@ -11,8 +11,6 @@ import { Logger as PinoLogger } from 'nestjs-pino';
 import supertest from 'supertest';
 import TestAgent from 'supertest/lib/agent.js';
 import {
-  EntityAlreadyExistsError,
-  EntityNotFoundError,
   IncorrectEntityVersionError,
   RetryableError,
 } from '../../errors/index.js';
@@ -23,18 +21,12 @@ import {
 } from '../../logging/testing.js';
 import { LoggerModule } from '../logging/index.js';
 import { ExceptionFilterModule } from './exception-filter.module.js';
-import { type ErrorResponse, HttpError } from './http-error.js';
+import { throwHttpErrorResponse, type ErrorResponse } from './http-error.js';
 
 class MyErrorDto implements ErrorResponse {
   readonly statusCode = HttpStatus.I_AM_A_TEAPOT;
   readonly message = '🫖';
   readonly errorCode = 'teapot';
-}
-
-class MyError extends HttpError<MyErrorDto> {
-  constructor() {
-    super(new MyErrorDto());
-  }
 }
 
 @Controller('/')
@@ -49,16 +41,6 @@ class TestController {
     );
   }
 
-  @Get('/EntityNotFoundError')
-  async notFound() {
-    throw new EntityNotFoundError({} as any, {});
-  }
-
-  @Get('/EntityAlreadyExistsError')
-  async alreadyExists() {
-    throw new EntityAlreadyExistsError({} as any, {});
-  }
-
   @Get('/InternalServerError')
   async internalServerError() {
     throw new Error('💥');
@@ -66,7 +48,7 @@ class TestController {
 
   @Get('/CustomError')
   async customError() {
-    throw new MyError();
+    throwHttpErrorResponse(new MyErrorDto());
   }
 
   @Get('/HttpErrors')
@@ -95,37 +77,6 @@ describe('ExceptionFilterModule', () => {
     app.useLogger(app.get(PinoLogger));
     await app.init();
     request = supertest(app.getHttpServer());
-  });
-
-  it('should return 409 when an EntityAlreadyExistsError is thrown', async () => {
-    await request.get('/VersionNotMatchingError').expect(409, {
-      statusCode: 409,
-      message:
-        'The provided version does not match the version of the resource on the server.',
-      errorCode: 'incorrectVersion',
-    });
-
-    expect(getLoggedErrors()).toBeEmpty();
-  });
-
-  it('should return 409 when an EntityAlreadyExistsError is thrown', async () => {
-    await request.get('/EntityAlreadyExistsError').expect(409, {
-      statusCode: 409,
-      message: 'The request conflicts with existing resource(s) on the server.',
-      errorCode: 'conflict',
-    });
-
-    expect(getLoggedErrors()).toBeEmpty();
-  });
-
-  it('should return 404 when an EntityNotFoundError is thrown', async () => {
-    await request.get('/EntityNotFoundError').expect(404, {
-      statusCode: 404,
-      message: 'The requested resource was not found on the server.',
-      errorCode: 'notFound',
-    });
-
-    expect(getLoggedErrors()).toBeEmpty();
   });
 
   it('should return 500 with the correct format', async () => {
