@@ -24,7 +24,7 @@ A user's claims can be checked using the `doesUserSatisfyClaimRequirements` func
 
 ### Errors
 
-This package exposes some entity-related errors (e.g. `EntityNotFoundError`) meant to be thrown by logic processing entities. In a NestJS service, those entity errors are caught and converted to HTTP errors.
+This package exposes some entity-related errors (e.g. `EntityNotFoundError`) meant to be thrown by logic processing entities.
 
 Another very useful error is the `RetryableError`. Any business logic can throw this error to indicate that the process that failed is worth retrying. The `RetryableError` can be handled differently depending on the context. For example for an event-processing function, it indicates that the processing of the event should be retried.
 
