@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v1.0.0-rc.2 (2025-07-15)
+
 Breaking changes:
 
 - Replace the base `HttpError` class with `makeHttpException` and `throwHttpErrorResponse` utilities, and remove `HttpError` classes from DTO definitions.
