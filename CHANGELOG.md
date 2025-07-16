@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+Breaking changes:
+
+- Return `null` instead of `undefined` in `[State]Transaction.get`.
+
 Fixes:
 
 - Export `tryMap`.

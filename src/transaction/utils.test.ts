@@ -63,8 +63,8 @@ export class MockTransaction extends Transaction implements OutboxTransaction {
   async get<T extends object>(
     _: new () => T,
     entity: Partial<T>,
-  ): Promise<T | undefined> {
-    return this.entities[(entity as any).id];
+  ): Promise<T | null> {
+    return this.entities[(entity as any).id] ?? null;
   }
 
   async publish(

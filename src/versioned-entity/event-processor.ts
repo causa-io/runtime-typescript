@@ -144,12 +144,12 @@ export abstract class VersionedEventProcessor<
    * {@link VersionedEventProcessor.projectionVersionProperty} values.
    *
    * @param projection The projection to compare.
-   * @param state The state to compare, or `undefined` if it does not exist.
+   * @param state The state to compare, or `null` if it does not exist.
    * @param options Options for the validation.
    */
   protected validateProjectionIsMoreRecentThanState(
     projection: P,
-    state: P | undefined,
+    state: P | null,
     options: Pick<
       VersionedEventProcessingOptions<RWT, P>,
       'reprocessEqualVersion'
@@ -253,9 +253,9 @@ export abstract class VersionedEventProcessor<
 
         const state =
           options.existingState !== undefined
-            ? (options.existingState ?? undefined)
+            ? options.existingState
             : context.existingState !== undefined
-              ? (context.existingState ?? undefined)
+              ? context.existingState
               : await transaction.get(this.projectionType, projectionOrPartial);
 
         const projection = context.defaultProjection

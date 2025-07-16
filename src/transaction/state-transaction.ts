@@ -10,12 +10,9 @@ export interface ReadOnlyStateTransaction {
    * @param type The type of the entity to find.
    * @param entity The entity to use as a template for the search. All the primary key should be set, and other
    *   properties will be ignored.
-   * @returns The entity if it exists, or `undefined` if it does not.
+   * @returns The entity if it exists, or `null` if it does not.
    */
-  get<T extends object>(
-    type: Type<T>,
-    entity: Partial<T>,
-  ): Promise<T | undefined>;
+  get<T extends object>(type: Type<T>, entity: Partial<T>): Promise<T | null>;
 }
 
 /**
