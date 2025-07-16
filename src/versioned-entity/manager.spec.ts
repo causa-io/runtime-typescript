@@ -145,6 +145,18 @@ describe('VersionedEntityManager', () => {
       });
     });
 
+    it('should throw a custom error', async () => {
+      jest
+        .spyOn(manager as any, 'throwNotFoundError')
+        .mockImplementationOnce(() => {
+          throw new Error('😢');
+        });
+
+      const actualPromise = manager.get({ id: '123' });
+
+      await expect(actualPromise).rejects.toThrow('😢');
+    });
+
     it('should return the entity if it exists', async () => {
       const expectedEntity = new MyEntity({ id: 'abc' });
       mockTransaction.set(expectedEntity);
@@ -293,6 +305,22 @@ describe('VersionedEntityManager', () => {
       await expect(actualPromise).rejects.toThrow(EntityNotFoundError);
       expect(mockTransaction.entities).toEqual({ abc: existingEntity });
       expect(mockTransaction.events).toBeEmpty();
+    });
+
+    it('should throw a custom error', async () => {
+      jest
+        .spyOn(manager as any, 'throwNotFoundError')
+        .mockImplementationOnce(() => {
+          throw new Error('😢');
+        });
+
+      const actualPromise = manager.update(
+        'myEntityUpdated',
+        { id: '123' },
+        { someProperty: '🔖' },
+      );
+
+      await expect(actualPromise).rejects.toThrow('😢');
     });
 
     it('should fail if the version timestamps do not match', async () => {

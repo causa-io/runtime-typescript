@@ -459,5 +459,17 @@ describe('VersionedEntityEventProcessor', () => {
       expect(actualProjection).toEqual(expectedEntity);
       expect(processor.runner.runReadWrite).not.toHaveBeenCalled();
     });
+
+    it('should throw a custom error', async () => {
+      jest
+        .spyOn(processor as any, 'throwNotFoundError')
+        .mockImplementationOnce(() => {
+          throw new Error('😢');
+        });
+
+      const actualPromise = processor.get({ id: '123' });
+
+      await expect(actualPromise).rejects.toThrow('😢');
+    });
   });
 });
