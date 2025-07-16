@@ -6,6 +6,10 @@ Breaking changes:
 
 - Return `null` instead of `undefined` in `[State]Transaction.get`.
 
+Features:
+
+- Define `VersionedEventProcessor.throwNotFoundError` to allow customizing the thrown error.
+
 Fixes:
 
 - Export `tryMap`.
