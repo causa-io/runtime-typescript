@@ -3,7 +3,6 @@ import { plainToInstance } from 'class-transformer';
 import * as uuid from 'uuid';
 import {
   EntityAlreadyExistsError,
-  EntityNotFoundError,
   IncorrectEntityVersionError,
   UnsupportedEntityOperationError,
 } from '../errors/index.js';
@@ -252,7 +251,7 @@ export class VersionedEntityManager<
           (this.hasDeletionTimestampProperty &&
             existingEntity.deletedAt !== null)
         ) {
-          throw new EntityNotFoundError(this.projectionType, entity);
+          this.throwNotFoundError(entity);
         }
 
         if (options.validationFn) {
@@ -339,7 +338,7 @@ export class VersionedEntityManager<
     const entity = await super.get(key, options);
 
     if (this.hasDeletionTimestampProperty && entity.deletedAt) {
-      throw new EntityNotFoundError(this.projectionType, key);
+      this.throwNotFoundError(key);
     }
 
     return entity;

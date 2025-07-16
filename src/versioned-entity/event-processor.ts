@@ -203,6 +203,16 @@ export abstract class VersionedEventProcessor<
   }
 
   /**
+   * Throws the error corresponding to the entity not being found.
+   * By default, this throws an {@link EntityNotFoundError}, but it can be overridden to throw a different error.
+   *
+   * @param key The key of the entity that was not found.
+   */
+  protected throwNotFoundError(key: Partial<P>): never {
+    throw new EntityNotFoundError(this.projectionType, key);
+  }
+
+  /**
    * Retrieves the projection for the given key.
    * If the projection does not exist, an {@link EntityNotFoundError} is thrown.
    *
@@ -219,7 +229,7 @@ export abstract class VersionedEventProcessor<
       async (transaction) => {
         const state = await transaction.get(this.projectionType, key);
         if (!state) {
-          throw new EntityNotFoundError(this.projectionType, key);
+          this.throwNotFoundError(key);
         }
 
         return state;
