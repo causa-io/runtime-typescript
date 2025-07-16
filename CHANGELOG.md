@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v1.0.0-rc.3 (2025-07-16)
+
 Breaking changes:
 
 - Return `null` instead of `undefined` in `[State]Transaction.get`.
