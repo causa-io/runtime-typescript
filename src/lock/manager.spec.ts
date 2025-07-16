@@ -254,7 +254,7 @@ describe('LockManager', () => {
         'The lock could not be found.',
       );
       const actualLock = await mockTransaction.get(MyLock, { id });
-      expect(actualLock).toBeUndefined();
+      expect(actualLock).toBeNull();
     });
 
     it('should fail to release a lock that does not match', async () => {
@@ -294,7 +294,7 @@ describe('LockManager', () => {
       await manager.release(existingLock);
 
       const actualLock = await mockTransaction.get(MyLock, { id });
-      expect(actualLock).toBeUndefined();
+      expect(actualLock).toBeNull();
     });
 
     it('should set the lock to null instead of deleting it', async () => {

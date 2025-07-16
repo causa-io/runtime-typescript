@@ -61,7 +61,7 @@ export abstract class Transaction
   abstract get<T extends object>(
     type: Type<T>,
     entity: Partial<T>,
-  ): Promise<T | undefined>;
+  ): Promise<T | null>;
 
   abstract publish(
     topic: string,
