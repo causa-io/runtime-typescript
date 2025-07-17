@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v1.0.0-rc.4 (2025-07-17)
+
 Breaking changes:
 
 - Make `tryMap` accept a rest parameter for error cases.
