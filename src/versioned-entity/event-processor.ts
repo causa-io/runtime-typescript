@@ -3,6 +3,8 @@ import { plainToInstance } from 'class-transformer';
 import {
   EntityNotFoundError,
   OldEntityVersionError,
+  toNull,
+  TryMap,
   UnsupportedEntityOperationError,
 } from '../errors/index.js';
 import {
@@ -297,18 +299,11 @@ export abstract class VersionedEventProcessor<
    * @returns The projection if the event was processed, `null` if it was skipped because a more recent state already
    *   exists.
    */
+  @TryMap(toNull(OldEntityVersionError))
   async processOrSkipEvent(
     event: E,
     options: VersionedEventProcessingOptions<RWT, P> = {},
   ): Promise<P | null> {
-    try {
-      return await this.processEvent(event, options);
-    } catch (error) {
-      if (error instanceof OldEntityVersionError) {
-        return null;
-      }
-
-      throw error;
-    }
+    return await this.processEvent(event, options);
   }
 }
