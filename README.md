@@ -68,9 +68,9 @@ Other decorators are available, such as the `@AuthUser` parameter decorator (pop
 
 #### Exception filter
 
-The NestJS `ExceptionFilterModule` provides several exception filters, converting `EntityError`s to HTTP errors and unknown errors to opaque internal server errors.
+The NestJS `ExceptionFilterModule` provides a global filter that maps `RetryableError`s to "service unavailable errors" and handle uncaught errors by logging them and returning an "interval server error".
 
-When throwing errors, the [subclasses of `HttpError`](src/nestjs/errors/errors.dto.ts) should be preferred, as they normalize the payload of the response. `HttpError` can also be subclassed by services to define custom HTTP errors. The corresponding DTOs can be used to document the service's API.
+Error DTOs should usually conform to the `ErrorResponse` type. Catching service errors and mapping them to DTOs in controllers can be done using the `@TryMap` decorator, and the `toDto` and `toDtoType` utilities.
 
 #### Events
 
