@@ -286,3 +286,22 @@ export function orFallbackFn<T>(
 ): DefaultErrorCase<T> {
   return { defaultFn };
 }
+
+/**
+ * Decorates a method to handle errors using the provided error cases.
+ *
+ * @param cases The {@link ErrorCase}s to handle.
+ */
+export function TryMap<T>(...cases: ErrorCase<T, any>[]): MethodDecorator {
+  return (
+    target: any,
+    propertyKey: string | symbol,
+    descriptor: TypedPropertyDescriptor<any>,
+  ): void => {
+    const originalMethod = descriptor.value;
+
+    descriptor.value = function (...args: any[]) {
+      return tryMap(() => originalMethod.apply(this, args), ...cases);
+    };
+  };
+}

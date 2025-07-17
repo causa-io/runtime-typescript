@@ -9,6 +9,7 @@ import {
   toValueFn,
   toValueFnIf,
   toValueIf,
+  TryMap,
   tryMap,
 } from './map.js';
 
@@ -20,6 +21,19 @@ function testFn(error?: unknown): string {
   }
 
   return '🎉';
+}
+
+class MyClass {
+  readonly value = '🎉';
+
+  @TryMap(toValue(CustomError, '🚨'), orFallback('😌'))
+  myMethod(error?: unknown): string {
+    if (error) {
+      throw error;
+    }
+
+    return this.value;
+  }
 }
 
 describe('tryMap', () => {
@@ -211,6 +225,28 @@ describe('tryMap', () => {
       );
 
       await expect(actualPromise).rejects.toThrow('💥');
+    });
+  });
+
+  describe('decorator', () => {
+    const instance = new MyClass();
+
+    it('should return the value from the decorated method', () => {
+      const result = instance.myMethod();
+
+      expect(result).toBe('🎉');
+    });
+
+    it('should return the default value if an error occurs in the decorated method', () => {
+      const result = instance.myMethod(new Error('💥'));
+
+      expect(result).toBe('😌');
+    });
+
+    it('should catch the error and return the corresponding value', () => {
+      const result = instance.myMethod(new CustomError('💥'));
+
+      expect(result).toBe('🚨');
     });
   });
 });
