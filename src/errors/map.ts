@@ -63,7 +63,7 @@ type DefaultErrorCase<T> =
 /**
  * A case that defines to which type of error it applies and how to handle it.
  */
-export type ErrorCase<T, E = any> =
+export type ErrorCase<T, E> =
   | (ErrorMatcher<E> & ErrorResult<T, E>)
   | DefaultErrorCase<T>;
 
@@ -76,7 +76,7 @@ export type ErrorCase<T, E = any> =
  * @param cases The {@link ErrorCase}s to test.
  * @returns The value to return based on the matched case, or the default case if no match is found.
  */
-function handleError<T>(error: unknown, cases: ErrorCase<T>[]): T {
+function handleError<T>(error: unknown, cases: ErrorCase<T, any>[]): T {
   let defaultCase: DefaultErrorCase<T> | undefined;
 
   for (const c of cases) {
@@ -117,7 +117,7 @@ function handleError<T>(error: unknown, cases: ErrorCase<T>[]): T {
  * @param fn The function to execute that may throw an error.
  * @param cases The {@link ErrorCase}s to test against a caught error.
  */
-export function tryMap<T>(fn: () => T, cases: ErrorCase<T>[]): T;
+export function tryMap<T>(fn: () => T, ...cases: ErrorCase<T, any>[]): T;
 /**
  * Wraps the given function in a try/catch block, awaits the result, and evaluates the given error cases if it rejects.
  *
@@ -126,7 +126,7 @@ export function tryMap<T>(fn: () => T, cases: ErrorCase<T>[]): T;
  */
 export function tryMap<T>(
   fn: () => Promise<T>,
-  cases: ErrorCase<T>[],
+  ...cases: ErrorCase<T, any>[]
 ): Promise<T>;
 /**
  * Awaits the given promise and evaluates the given error cases if it rejects.
@@ -136,11 +136,11 @@ export function tryMap<T>(
  */
 export function tryMap<T>(
   promise: Promise<T>,
-  cases: ErrorCase<T>[],
+  ...cases: ErrorCase<T, any>[]
 ): Promise<T>;
 export function tryMap<T>(
   fnOrPromise: (() => T | Promise<T>) | Promise<T>,
-  cases: ErrorCase<T>[],
+  ...cases: ErrorCase<T, any>[]
 ): T | Promise<T> {
   if (isPromise(fnOrPromise)) {
     return fnOrPromise.catch((error) => handleError(error, cases));
