@@ -160,3 +160,4 @@ Various testing utilities are exposed as `@causa/runtime/testing` and `@causa/ru
 - The `ConfigFixture` allows changing the configuration exposed by NestJS' `ConfigService`.
 - The `LoggingFixture` prettifies logs and makes it easier to check logs (e.g. that errors are logged when needed).
 - The `VersionedEntityFixture` makes it easier to check for versioned entity mutations (or the lack thereof) and the corresponding published events.
+- The `CacheFixture` clears all cache services (from `@nestjs/cache-manager`).

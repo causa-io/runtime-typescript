@@ -71,7 +71,7 @@ export class LoggingFixture implements Fixture {
   /**
    * The spied-on logger used in the application.
    */
-  private logger!: Logger;
+  logger!: Logger;
 
   /**
    * Creates a new {@link LoggingFixture}.

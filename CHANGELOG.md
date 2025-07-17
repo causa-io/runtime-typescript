@@ -10,6 +10,7 @@ Features:
 
 - Define utility functions to create error cases (e.g. `toValue`, `toDto`).
 - Implement the `@TryMap` decorator.
+- Implement the `CacheFixture`.
 
 ## v1.0.0-rc.3 (2025-07-16)
 
