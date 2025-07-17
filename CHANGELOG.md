@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+Breaking changes:
+
+- Make `tryMap` accept a rest parameter for error cases.
+
+Features:
+
+- Define utility functions to create error cases (e.g. `toValue`, `toDto`).
+- Implement the `@TryMap` decorator.
+
 ## v1.0.0-rc.3 (2025-07-16)
 
 Breaking changes:
