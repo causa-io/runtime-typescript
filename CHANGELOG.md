@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v1.0.0 (2025-07-18)
+
 Breaking changes:
 
 - Use the same message for success and error HTTP logs.
