@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+Breaking changes:
+
+- Use the same message for success and error HTTP logs.
+- Remove `req`, `res`, `serviceContext`, and `responseTime` from prettified logs when debugging.
+
 ## v1.0.0-rc.4 (2025-07-17)
 
 Breaking changes:
