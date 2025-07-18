@@ -19,8 +19,8 @@ const prettyLoggerPromise: Promise<Logger> = (async () => {
     const { default: pinoPretty } = await import('pino-pretty');
     return pino(
       { ...getPinoConfiguration(), level: 'debug' },
-      (pinoPretty as any)({
-        ignore: 'pid,hostname',
+      pinoPretty({
+        ignore: 'pid,hostname,req,res,serviceContext,responseTime',
         colorize: true,
         levelFirst: true,
         translateTime: 'SYS:HH:MM:ss.l',
