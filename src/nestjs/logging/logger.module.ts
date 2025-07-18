@@ -49,6 +49,8 @@ function createModuleMetadata(
               ignore: (req) =>
                 (req as any).originalUrl === `/${HEALTHCHECK_ENDPOINT}`,
             },
+            customSuccessMessage: () => 'request completed',
+            customErrorMessage: () => 'request completed',
           },
         }),
         inject: [LOGGER_MODULE_OPTIONS_INJECTION_TOKEN],
