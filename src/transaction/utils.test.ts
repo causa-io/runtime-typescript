@@ -1,67 +1,105 @@
 import { jest } from '@jest/globals';
-import type { Event, PublishOptions } from '../events/index.js';
+import type { Type } from '@nestjs/common';
+import type {
+  EventPublisher,
+  PreparedEvent,
+  PublishOptions,
+} from '../events/index.js';
 import {
-  BufferEventTransaction,
-  type EventTransaction,
-  type FindReplaceStateTransaction,
+  OutboxEventTransaction,
+  type OutboxTransaction,
+  type StateTransaction,
   Transaction,
+  type TransactionPublishOptions,
   TransactionRunner,
 } from './index.js';
+import type {
+  ReadWriteTransactionOptions,
+  TransactionFn,
+} from './transaction-runner.js';
 
-class MockFindReplaceStateTransaction implements FindReplaceStateTransaction {
-  private entities: Record<string, any> = {};
+export class MockPublisher implements EventPublisher {
+  async flush(): Promise<void> {}
+
+  async prepare(
+    topic: string,
+    event: object,
+    options?: PublishOptions,
+  ): Promise<PreparedEvent> {
+    return {
+      topic,
+      data: event as any,
+      attributes: options?.attributes ?? {},
+    };
+  }
+
+  async publish(): Promise<void> {}
+}
+
+export class MockTransaction extends Transaction implements OutboxTransaction {
+  entities: Record<string, any> = {};
+  eventTransaction = new OutboxEventTransaction(new MockPublisher());
+
+  constructor(publishOptions: TransactionPublishOptions = {}) {
+    super(publishOptions);
+  }
 
   clear() {
     this.entities = {};
+    this.eventTransaction = new OutboxEventTransaction(new MockPublisher());
   }
 
-  async replace<T extends object>(entity: T): Promise<void> {
+  async set<T extends object>(entity: T): Promise<void> {
     this.entities[(entity as any).id] = entity;
   }
 
-  async deleteWithSameKeyAs<T extends object>(
-    _: new () => T,
-    entity: Partial<T>,
+  async delete<T extends object>(
+    typeOrEntity: Type<T> | T,
+    entity?: Partial<T>,
   ): Promise<void> {
-    delete this.entities[(entity as any).id];
+    delete this.entities[(entity ?? (typeOrEntity as any)).id];
   }
 
-  async findOneWithSameKeyAs<T extends object>(
+  async get<T extends object>(
     _: new () => T,
     entity: Partial<T>,
-  ): Promise<T | undefined> {
-    return this.entities[(entity as any).id];
+  ): Promise<T | null> {
+    return this.entities[(entity as any).id] ?? null;
+  }
+
+  async publish(
+    topic: string,
+    event: object,
+    options?: PublishOptions,
+  ): Promise<void> {
+    await this.eventTransaction.publish(topic, event, options);
+  }
+
+  get events() {
+    return this.eventTransaction.events;
   }
 }
 
-export type MockTransaction = Transaction<MockFindReplaceStateTransaction, any>;
+export const mockTransaction: MockTransaction & {
+  set: jest.SpiedFunction<StateTransaction['set']>;
+  delete: jest.SpiedFunction<StateTransaction['delete']>;
+  get: jest.SpiedFunction<StateTransaction['get']>;
+} = new MockTransaction() as any;
 
-export const mockStateTransaction: MockFindReplaceStateTransaction & {
-  replace: jest.SpiedFunction<FindReplaceStateTransaction['replace']>;
-  deleteWithSameKeyAs: jest.SpiedFunction<
-    FindReplaceStateTransaction['deleteWithSameKeyAs']
-  >;
-  findOneWithSameKeyAs: jest.SpiedFunction<
-    FindReplaceStateTransaction['findOneWithSameKeyAs']
-  >;
-} = new MockFindReplaceStateTransaction() as any;
-jest.spyOn(mockStateTransaction, 'replace');
-jest.spyOn(mockStateTransaction, 'deleteWithSameKeyAs');
-jest.spyOn(mockStateTransaction, 'findOneWithSameKeyAs');
+export class MockRunner extends TransactionRunner<
+  MockTransaction,
+  MockTransaction
+> {
+  public async runReadWrite<RT>(
+    options: ReadWriteTransactionOptions,
+    runFn: TransactionFn<MockTransaction, RT>,
+  ): Promise<RT> {
+    return await runFn(mockTransaction);
+  }
 
-export const mockEventTransaction: EventTransaction & {
-  bufferedEvents: { topic: string; event: Event; options: PublishOptions }[];
-} = new BufferEventTransaction({} as any) as any;
-
-export const mockTransaction = new Transaction<any, any>(
-  mockStateTransaction,
-  mockEventTransaction,
-);
-
-export class MockRunner extends TransactionRunner<MockTransaction> {
-  async run<RT>(
-    runFn: (transaction: MockTransaction) => Promise<RT>,
-  ): Promise<[RT]> {
-    return [await runFn(mockTransaction)];
+  public async runReadOnly<RT>(
+    runFn: TransactionFn<MockTransaction, RT>,
+  ): Promise<RT> {
+    return await runFn(mockTransaction);
   }
 }

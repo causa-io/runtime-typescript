@@ -4,7 +4,75 @@
 
 Breaking changes:
 
+- Use the same message for success and error HTTP logs.
+- Remove `req`, `res`, `serviceContext`, and `responseTime` from prettified logs when debugging.
+
+Features:
+
+- Accept an optional side effect function with `toNull`.
+
+## v1.0.0-rc.4 (2025-07-17)
+
+Breaking changes:
+
+- Make `tryMap` accept a rest parameter for error cases.
+
+Features:
+
+- Define utility functions to create error cases (e.g. `toValue`, `toDto`).
+- Implement the `@TryMap` decorator.
+- Implement the `CacheFixture`.
+
+## v1.0.0-rc.3 (2025-07-16)
+
+Breaking changes:
+
+- Return `null` instead of `undefined` in `[State]Transaction.get`.
+
+Features:
+
+- Define `VersionedEventProcessor.throwNotFoundError` to allow customizing the thrown error.
+
+Fixes:
+
+- Export `tryMap`.
+
+## v1.0.0-rc.2 (2025-07-15)
+
+Breaking changes:
+
+- Replace the base `HttpError` class with `makeHttpException` and `throwHttpErrorResponse` utilities, and remove `HttpError` classes from DTO definitions.
+- Remove exception filters for specific entity errors.
+
+Features:
+
+- Accept additional provider overrides in the `AppFixture`.
+- Implement the `tryMap` utility.
+
+## v1.0.0-rc.1 (2025-07-09)
+
+Breaking changes:
+
 - Upgrade the minimum Node.js version to `20`.
+- Refactor the `Transaction` and `TransactionRunner`, making all transactions "find replace transactions", using the `get`, `set`, and `delete` terminology.
+- Define a unique `TransactionRunner.run` method which supports existing transactions (replacing `runInNewOrExisting`).
+- Replace `skipVersionCheck` option with `existingState` in the `VersionedEventProcessor`.
+- Make `VersionedEventProcessor.processEvent` throw instead of returning `null`, and introduce the `processOrSkipEvent` method with the old behavior.
+- Allow `VersionedEventProcessor.project` to return a context, which can be used to specify a version property to use, replaces the `stateKeyForEvent` logic, and to support merges of partial projections.
+- Remove the app factory pattern in `createApp`.
+- Implement the `AppFixture` to replace `makeTestAppFactory`.
+
+Features:
+
+- Introduce the `ReadOnlyStateTransaction`, along with the corresponding `readOnly` option when creating a new transaction using a runner.
+- Support transaction-wide `publishOptions`.
+- Implement `VersionedEventProcessor` and `VersionedEntityManager` `get` method.
+- Support `reprocessEqualVersion` in the `VersionedEventProcessor` when processing events for backfilling use cases.
+- Implement the `ConfigFixture`, `LoggingFixture`, and `VersionedEntityFixture`, and define the `EventFixture`.
+
+Fixes:
+
+- Do not check `deletedAt` when the entity does not have a deletion property.
 
 ## v0.27.2 (2025-05-28)
 

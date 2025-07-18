@@ -11,7 +11,8 @@ import { catchError, mergeMap } from 'rxjs/operators';
 import { RetryableError } from '../../errors/index.js';
 import { type EventAttributes, InvalidEventError } from '../../events/index.js';
 import { ValidationError } from '../../validation/index.js';
-import { ServiceUnavailableError } from '../errors/index.js';
+import { ServiceUnavailableErrorDto } from '../errors/errors.dto.js';
+import { makeHttpException } from '../errors/index.js';
 import { Logger } from '../logging/index.js';
 import { EVENT_BODY_TYPE_KEY } from './event-body.decorator.js';
 import type { RequestWithEvent } from './request-with-event.js';
@@ -156,7 +157,11 @@ export abstract class BaseEventHandlerInterceptor implements NestInterceptor {
                 : 'A retryable error was thrown.',
             );
             return timer(error.delay ?? 0).pipe(
-              mergeMap(() => throwError(() => new ServiceUnavailableError())),
+              mergeMap(() =>
+                throwError(() =>
+                  makeHttpException(new ServiceUnavailableErrorDto()),
+                ),
+              ),
             );
           }
 

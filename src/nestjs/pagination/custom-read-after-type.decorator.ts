@@ -1,6 +1,7 @@
 import { plainToInstance, Transform } from 'class-transformer';
 import { ValidateNested } from 'class-validator';
-import { ValidationError } from '../errors/index.js';
+import { ValidationErrorDto } from '../errors/errors.dto.js';
+import { throwHttpErrorResponse } from '../errors/http-error.js';
 import { PageQuery } from './query.js';
 
 /**
@@ -35,9 +36,11 @@ function decorateReadAfterPropertyWithClassTransformer(
         const plainValue = JSON.parse(jsonString);
         return plainToInstance(readAfterType, plainValue);
       } catch {
-        throw new ValidationError(`Invalid pagination key '${propertyName}'.`, [
-          propertyName,
-        ]);
+        throwHttpErrorResponse(
+          new ValidationErrorDto(`Invalid pagination key '${propertyName}'.`, [
+            propertyName,
+          ]),
+        );
       }
     },
     { toClassOnly: true },

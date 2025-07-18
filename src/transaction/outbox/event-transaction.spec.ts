@@ -8,7 +8,12 @@ describe('OutboxEventTransaction', () => {
 
   beforeAll(() => {
     publisher = new MockPublisher();
-    transaction = new OutboxEventTransaction(publisher);
+  });
+
+  beforeEach(() => {
+    transaction = new OutboxEventTransaction(publisher, {
+      attributes: { att1: '🌱' },
+    });
   });
 
   describe('publish', () => {
@@ -21,7 +26,25 @@ describe('OutboxEventTransaction', () => {
         {
           topic: 'test-topic',
           data: Buffer.from(JSON.stringify(event)),
-          attributes: { prepared: '✅' },
+          attributes: { att1: '🌱', prepared: '✅' },
+          id: expect.any(String),
+        },
+      ]);
+      expect(uuid.version(transaction.events[0].id)).toBe(4);
+    });
+
+    it('should override transaction-wide attributes', async () => {
+      const event = { type: 'TestEvent' };
+
+      await transaction.publish('test-topic', event, {
+        attributes: { att1: '🍀', att2: '🌼' },
+      });
+
+      expect(transaction.events).toEqual([
+        {
+          topic: 'test-topic',
+          data: Buffer.from(JSON.stringify(event)),
+          attributes: { att1: '🍀', att2: '🌼', prepared: '✅' },
           id: expect.any(String),
         },
       ]);

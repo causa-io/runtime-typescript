@@ -5,7 +5,8 @@ import {
   type ValidationError as ValidatorError,
 } from '@nestjs/common';
 import { validatorOptions } from '../../validation/index.js';
-import { ValidationError } from '../errors/index.js';
+import { ValidationErrorDto } from '../errors/errors.dto.js';
+import { makeHttpException } from '../errors/index.js';
 
 /**
  * Removes all `undefined` properties from the given object recursively.
@@ -59,9 +60,11 @@ export class ValidationPipe extends BaseValidationPipe {
         );
         const fields = flattenedErrors.flatMap((error) => error.property);
 
-        return new ValidationError(
-          messages.map((message) => `- ${message}`).join('\n'),
-          fields,
+        return makeHttpException(
+          new ValidationErrorDto(
+            messages.map((message) => `- ${message}`).join('\n'),
+            fields,
+          ),
         );
       },
     });

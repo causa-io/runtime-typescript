@@ -21,16 +21,21 @@ export type ErrorResponse = {
 };
 
 /**
- * An error that will be converted to an HTTP response sent to the client.
- * This should be subclassed by all errors that should be returned to the client.
+ * Creates an {@link HttpException} from the provided {@link ErrorResponse}.
+ *
+ * @param response The {@link ErrorResponse} that will be used as the body of the response.
+ * @returns The {@link HttpException}.
  */
-export class HttpError<T extends ErrorResponse> extends HttpException {
-  /**
-   * Creates a new {@link HttpError}.
-   *
-   * @param response The response to send to the client.
-   */
-  constructor(response: T) {
-    super(response, response.statusCode);
-  }
+export function makeHttpException(response: ErrorResponse): HttpException {
+  return new HttpException(response, response.statusCode);
+}
+
+/**
+ * Throws an {@link HttpException} with the provided {@link ErrorResponse} as its body.
+ * The global exception filter will catch this and convert it to an HTTP response.
+ *
+ * @param response The {@link ErrorResponse} that will be used as the body of the response.
+ */
+export function throwHttpErrorResponse(response: ErrorResponse): never {
+  throw makeHttpException(response);
 }

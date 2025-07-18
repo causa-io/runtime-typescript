@@ -4,7 +4,6 @@ import * as uuid from 'uuid';
 import {
   MockRunner,
   type MockTransaction,
-  mockStateTransaction,
   mockTransaction,
 } from '../transaction/utils.test.js';
 import type { LockEntity } from './entity.js';
@@ -23,14 +22,16 @@ class MyLock implements LockEntity {
 }
 
 describe('LockManager', () => {
+  let runner: MockRunner;
   let manager: LockManager<MockTransaction, MyLock>;
 
   beforeAll(() => {
-    manager = new LockManager(MyLock, new MockRunner(), 1000);
+    runner = new MockRunner();
+    manager = new LockManager(MyLock, runner, 1000);
   });
 
   afterEach(() => {
-    mockStateTransaction.clear();
+    mockTransaction.clear();
   });
 
   describe('acquire', () => {
@@ -42,15 +43,12 @@ describe('LockManager', () => {
         expiresAt: new Date('3000-01-01'),
         someCustomData: '📦',
       });
-      await mockStateTransaction.replace(existingLock);
+      await mockTransaction.set(existingLock);
 
       const actualPromise = manager.acquire(id);
 
       await expect(actualPromise).rejects.toThrow(LockAcquisitionError);
-      const actualLock = await mockStateTransaction.findOneWithSameKeyAs(
-        MyLock,
-        { id },
-      );
+      const actualLock = await mockTransaction.get(MyLock, { id });
       expect(actualLock).toEqual(existingLock);
     });
 
@@ -62,7 +60,7 @@ describe('LockManager', () => {
         expiresAt: new Date('2000-01-01'),
         someCustomData: null,
       });
-      await mockStateTransaction.replace(existingLock);
+      await mockTransaction.set(existingLock);
 
       const returnedLock = await manager.acquire(id);
 
@@ -72,10 +70,7 @@ describe('LockManager', () => {
         expiresAt: new Date(mockTransaction.timestamp.getTime() + 1000),
         someCustomData: null,
       });
-      const actualLock = await mockStateTransaction.findOneWithSameKeyAs(
-        MyLock,
-        { id },
-      );
+      const actualLock = await mockTransaction.get(MyLock, { id });
       expect(actualLock).toEqual(returnedLock);
     });
 
@@ -90,10 +85,7 @@ describe('LockManager', () => {
         expiresAt: new Date(mockTransaction.timestamp.getTime() + 1000),
         someCustomData: null,
       });
-      const actualLock = await mockStateTransaction.findOneWithSameKeyAs(
-        MyLock,
-        { id },
-      );
+      const actualLock = await mockTransaction.get(MyLock, { id });
       expect(actualLock).toEqual(returnedLock);
     });
 
@@ -110,10 +102,7 @@ describe('LockManager', () => {
         expiresAt: new Date(mockTransaction.timestamp.getTime() + 1000),
         someCustomData: '💡',
       });
-      const actualLock = await mockStateTransaction.findOneWithSameKeyAs(
-        MyLock,
-        { id },
-      );
+      const actualLock = await mockTransaction.get(MyLock, { id });
       expect(actualLock).toEqual(returnedLock);
     });
 
@@ -125,7 +114,7 @@ describe('LockManager', () => {
         expiresAt: new Date('2021-01-01'),
         someCustomData: 'nope',
       });
-      await mockStateTransaction.replace(existingLock);
+      await mockTransaction.set(existingLock);
 
       const actualPromise = manager.acquire(id, {
         extraValidation: (lock) => {
@@ -136,10 +125,7 @@ describe('LockManager', () => {
       });
 
       await expect(actualPromise).rejects.toThrow('💥');
-      const actualLock = await mockStateTransaction.findOneWithSameKeyAs(
-        MyLock,
-        { id },
-      );
+      const actualLock = await mockTransaction.get(MyLock, { id });
       expect(actualLock).toEqual(existingLock);
     });
 
@@ -156,10 +142,7 @@ describe('LockManager', () => {
         expiresAt: new Date(mockTransaction.timestamp.getTime() + 2000),
         someCustomData: null,
       });
-      const actualLock = await mockStateTransaction.findOneWithSameKeyAs(
-        MyLock,
-        { id },
-      );
+      const actualLock = await mockTransaction.get(MyLock, { id });
       expect(actualLock).toEqual(returnedLock);
     });
 
@@ -171,7 +154,7 @@ describe('LockManager', () => {
         expiresAt: null,
         someCustomData: null,
       });
-      await mockStateTransaction.replace(existingLock);
+      await mockTransaction.set(existingLock);
 
       const returnedLock = await manager.acquire(id);
 
@@ -181,20 +164,17 @@ describe('LockManager', () => {
         expiresAt: new Date(mockTransaction.timestamp.getTime() + 1000),
         someCustomData: null,
       });
-      const actualLock = await mockStateTransaction.findOneWithSameKeyAs(
-        MyLock,
-        { id },
-      );
+      const actualLock = await mockTransaction.get(MyLock, { id });
       expect(actualLock).toEqual(returnedLock);
     });
 
     it('should run in a transaction', async () => {
-      jest.spyOn(manager.runner, 'run');
+      jest.spyOn(runner, 'runReadWrite');
       const id = uuid.v4();
 
       await manager.acquire(id, { transaction: mockTransaction });
 
-      expect(manager.runner.run).not.toHaveBeenCalled();
+      expect(runner.runReadWrite).not.toHaveBeenCalled();
     });
   });
 
@@ -207,7 +187,7 @@ describe('LockManager', () => {
         expiresAt: new Date('3000-01-01'),
         someCustomData: '📦',
       });
-      await mockStateTransaction.replace(existingLock);
+      await mockTransaction.set(existingLock);
 
       const actualPromise = manager.checkNotAcquiredOrFail(id, mockTransaction);
 
@@ -222,7 +202,7 @@ describe('LockManager', () => {
         expiresAt: new Date('2000-01-01'),
         someCustomData: null,
       });
-      await mockStateTransaction.replace(existingLock);
+      await mockTransaction.set(existingLock);
 
       const actualPromise = manager.checkNotAcquiredOrFail(id, mockTransaction);
 
@@ -245,7 +225,7 @@ describe('LockManager', () => {
         expiresAt: new Date('2021-01-01'),
         someCustomData: 'nope',
       });
-      await mockStateTransaction.replace(existingLock);
+      await mockTransaction.set(existingLock);
 
       const actualPromise = manager.checkNotAcquiredOrFail(
         id,
@@ -273,11 +253,8 @@ describe('LockManager', () => {
       await expect(releaseLockPromise).rejects.toThrow(
         'The lock could not be found.',
       );
-      const actualLock = await mockStateTransaction.findOneWithSameKeyAs(
-        MyLock,
-        { id },
-      );
-      expect(actualLock).toBeUndefined();
+      const actualLock = await mockTransaction.get(MyLock, { id });
+      expect(actualLock).toBeNull();
     });
 
     it('should fail to release a lock that does not match', async () => {
@@ -289,7 +266,7 @@ describe('LockManager', () => {
         expiresAt: new Date('3000-01-01'),
         someCustomData: '🔒',
       });
-      await mockStateTransaction.replace(existingLock);
+      await mockTransaction.set(existingLock);
 
       const releaseLockPromise = manager.release(
         { id, lock: uuid.v4() },
@@ -300,10 +277,7 @@ describe('LockManager', () => {
       await expect(releaseLockPromise).rejects.toThrow(
         'The lock does not match.',
       );
-      const actualLock = await mockStateTransaction.findOneWithSameKeyAs(
-        MyLock,
-        { id },
-      );
+      const actualLock = await mockTransaction.get(MyLock, { id });
       expect(actualLock).toEqual(existingLock);
     });
 
@@ -315,15 +289,12 @@ describe('LockManager', () => {
         lock,
         expiresAt: new Date('3000-01-01'),
       });
-      await mockStateTransaction.replace(existingLock);
+      await mockTransaction.set(existingLock);
 
       await manager.release(existingLock);
 
-      const actualLock = await mockStateTransaction.findOneWithSameKeyAs(
-        MyLock,
-        { id },
-      );
-      expect(actualLock).toBeUndefined();
+      const actualLock = await mockTransaction.get(MyLock, { id });
+      expect(actualLock).toBeNull();
     });
 
     it('should set the lock to null instead of deleting it', async () => {
@@ -335,14 +306,11 @@ describe('LockManager', () => {
         expiresAt: new Date('3000-01-01'),
         someCustomData: '📗',
       });
-      await mockStateTransaction.replace(existingLock);
+      await mockTransaction.set(existingLock);
 
       await manager.release({ id, lock }, { delete: false });
 
-      const actualLock = await mockStateTransaction.findOneWithSameKeyAs(
-        MyLock,
-        { id },
-      );
+      const actualLock = await mockTransaction.get(MyLock, { id });
       expect(actualLock).toMatchObject({
         id,
         lock: null,
@@ -359,17 +327,14 @@ describe('LockManager', () => {
         expiresAt: new Date('3000-01-01'),
         someCustomData: '📗',
       });
-      await mockStateTransaction.replace(existingLock);
+      await mockTransaction.set(existingLock);
 
       await manager.release(
         { id, lock },
         { delete: false, extraData: { someCustomData: '📙' } },
       );
 
-      const actualLock = await mockStateTransaction.findOneWithSameKeyAs(
-        MyLock,
-        { id },
-      );
+      const actualLock = await mockTransaction.get(MyLock, { id });
       expect(actualLock).toMatchObject({
         ...existingLock,
         lock: null,
@@ -379,7 +344,7 @@ describe('LockManager', () => {
     });
 
     it('should run in a transaction', async () => {
-      jest.spyOn(manager.runner, 'run');
+      jest.spyOn(runner, 'runReadWrite');
       const id = uuid.v4();
       const lock = uuid.v4();
       const existingLock = new MyLock({
@@ -388,11 +353,11 @@ describe('LockManager', () => {
         expiresAt: new Date('3000-01-01'),
         someCustomData: null,
       });
-      await mockStateTransaction.replace(existingLock);
+      await mockTransaction.set(existingLock);
 
       await manager.release({ id, lock }, { transaction: mockTransaction });
 
-      expect(manager.runner.run).not.toHaveBeenCalled();
+      expect(runner.runReadWrite).not.toHaveBeenCalled();
     });
   });
 });

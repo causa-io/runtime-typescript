@@ -5,7 +5,7 @@ import {
   type OpenAPIObject,
   SwaggerModule,
 } from '@nestjs/swagger';
-import { createApp } from '../factory/index.js';
+import { createApp } from '../app/index.js';
 
 export async function generateOpenApiDocument(
   testModule: any,

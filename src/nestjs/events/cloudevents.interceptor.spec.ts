@@ -13,7 +13,7 @@ import TestAgent from 'supertest/lib/agent.js';
 import type { EventAttributes } from '../../events/index.js';
 import { JsonObjectSerializer } from '../../serialization/index.js';
 import { getLoggedErrors, getLoggedInfos, spyOnLogger } from '../../testing.js';
-import { createApp } from '../factory/index.js';
+import { createApp } from '../app/index.js';
 import { Logger } from '../logging/index.js';
 import { CloudEventsEventHandlerInterceptor } from './cloudevents.interceptor.js';
 import { EventAttributes as EventAttributesDecorator } from './event-attributes.decorator.js';

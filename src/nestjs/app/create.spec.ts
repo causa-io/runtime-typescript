@@ -13,9 +13,10 @@ import { IsPhoneNumber } from 'class-validator';
 import { PinoLogger } from 'nestjs-pino';
 import supertest from 'supertest';
 import TestAgent from 'supertest/lib/agent.js';
-import { EntityAlreadyExistsError } from '../../errors/index.js';
 import { getLoggedObjects, spyOnLogger } from '../../logging/testing.js';
-import { createApp } from './app-factory.js';
+import { ConflictErrorDto } from '../errors/errors.dto.js';
+import { throwHttpErrorResponse } from '../errors/http-error.js';
+import { createApp } from './create.js';
 
 class PostTestDto {
   @IsPhoneNumber()
@@ -42,7 +43,7 @@ class TestController {
 
   @Get('/conflict')
   async throwAlreadyExist() {
-    throw new EntityAlreadyExistsError({} as any, {});
+    throwHttpErrorResponse(new ConflictErrorDto());
   }
 
   @Post('/')
@@ -59,7 +60,7 @@ class TestModule {}
 })
 class AppModule {}
 
-describe('app-factory', () => {
+describe('createApp', () => {
   let app: INestApplication;
   let previousEnv: NodeJS.ProcessEnv;
   let request: TestAgent<supertest.Test>;

@@ -2,9 +2,10 @@ import type { Type } from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
 import * as uuid from 'uuid';
 import {
-  type FindReplaceTransaction,
   Transaction,
   TransactionRunner,
+  type ReadOnlyStateTransaction,
+  type TransactionOption,
 } from '../transaction/index.js';
 import type { LockEntity } from './entity.js';
 import { LockAcquisitionError, LockReleaseError } from './errors.js';
@@ -12,23 +13,21 @@ import { LockAcquisitionError, LockReleaseError } from './errors.js';
 /**
  * Base options for lock operations.
  */
-type LockOptions<T extends Transaction<any, any>, E extends LockEntity> = {
+type LockOptions<
+  T extends Transaction,
+  E extends LockEntity,
+> = TransactionOption<T> & {
   /**
    * Additional data that should be added to the lock.
    */
   extraData?: Partial<Omit<E, 'id' | 'lock' | 'expiresAt'>>;
-
-  /**
-   * The transaction to use when updating the lock.
-   */
-  transaction?: T;
 };
 
 /**
  * Options for the {@link acquireLock} function.
  */
 type AcquireLockOptions<
-  T extends FindReplaceTransaction,
+  T extends Transaction,
   E extends LockEntity,
 > = LockOptions<T, E> & {
   /**
@@ -47,7 +46,7 @@ type AcquireLockOptions<
  * Options for the {@link releaseLock} function.
  */
 type ReleaseLockOptions<
-  T extends FindReplaceTransaction,
+  T extends Transaction,
   E extends LockEntity,
 > = LockOptions<T, E> & {
   /**
@@ -61,10 +60,7 @@ type ReleaseLockOptions<
 /**
  * Manages the acquisition and release of locks, represented as entities in the state.
  */
-export class LockManager<
-  T extends FindReplaceTransaction,
-  E extends LockEntity,
-> {
+export class LockManager<T extends Transaction, E extends LockEntity> {
   /**
    * Creates a new {@link LockManager}.
    *
@@ -74,7 +70,7 @@ export class LockManager<
    */
   constructor(
     readonly lockType: Type<E>,
-    readonly runner: TransactionRunner<T>,
+    readonly runner: TransactionRunner<T, ReadOnlyStateTransaction>,
     readonly expirationDelay: number,
   ) {}
 
@@ -116,8 +112,8 @@ export class LockManager<
   ): Promise<E> {
     const expirationDelay = options.expirationDelay ?? this.expirationDelay;
 
-    return await this.runner.runInNewOrExisting(
-      options.transaction,
+    return await this.runner.run(
+      { transaction: options.transaction },
       async (transaction) => {
         await this.checkNotAcquiredOrFail(id, transaction, {
           extraValidation: options.extraValidation,
@@ -132,7 +128,7 @@ export class LockManager<
           ),
         });
 
-        await transaction.stateTransaction.replace(lock);
+        await transaction.set(lock);
 
         return lock;
       },
@@ -154,10 +150,8 @@ export class LockManager<
     transaction: T,
     options: Pick<AcquireLockOptions<T, E>, 'extraValidation'> = {},
   ): Promise<void> {
-    const existingLock =
-      await transaction.stateTransaction.findOneWithSameKeyAs(this.lockType, {
-        id,
-      } as Partial<E>);
+    const key = { id } as Partial<E>;
+    const existingLock = await transaction.get(this.lockType, key);
     if (!existingLock) {
       return;
     }
@@ -177,14 +171,10 @@ export class LockManager<
     lock: Pick<E, 'id' | 'lock'> & Partial<E>,
     options: ReleaseLockOptions<T, E> = {},
   ): Promise<void> {
-    await this.runner.runInNewOrExisting(
-      options.transaction,
+    await this.runner.run(
+      { transaction: options.transaction },
       async (transaction) => {
-        const existingLock =
-          await transaction.stateTransaction.findOneWithSameKeyAs(
-            this.lockType,
-            lock,
-          );
+        const existingLock = await transaction.get(this.lockType, lock);
         if (!existingLock) {
           throw new LockReleaseError('The lock could not be found.');
         }
@@ -194,10 +184,7 @@ export class LockManager<
         }
 
         if (options.delete ?? true) {
-          await transaction.stateTransaction.deleteWithSameKeyAs(
-            this.lockType,
-            lock,
-          );
+          await transaction.delete(this.lockType, lock);
         } else {
           const releasedLock = plainToInstance(this.lockType, {
             ...options.extraData,
@@ -206,7 +193,7 @@ export class LockManager<
             expiresAt: null,
           });
 
-          await transaction.stateTransaction.replace(releasedLock);
+          await transaction.set(releasedLock);
         }
       },
     );

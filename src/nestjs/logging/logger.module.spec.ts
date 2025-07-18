@@ -2,6 +2,8 @@ import { jest } from '@jest/globals';
 import {
   Controller,
   Get,
+  HttpException,
+  HttpStatus,
   type INestApplication,
   Inject,
   Logger,
@@ -44,6 +46,11 @@ describe('LoggerModule', () => {
       this.logger.warn({ extraParam: '✨' }, 'some warning');
       this.pinoLogger.assign({ assigned: '🍦' });
       return 'Yo';
+    }
+
+    @Get('someError')
+    routeError() {
+      throw new HttpException({}, HttpStatus.I_AM_A_TEAPOT);
     }
   }
 
@@ -205,5 +212,16 @@ describe('LoggerModule', () => {
     expect(actualRequestCompletedLogs).toEqual([
       expect.objectContaining({ assigned: '🍦' }),
     ]);
+  });
+
+  it('should use the same message for failed requests', async () => {
+    await initApp();
+
+    await request.get('/someError').expect(418);
+
+    const actualRequestCompletedLogs = loggingTesting.getLoggedInfos({
+      predicate: (o) => o.message === 'request completed',
+    });
+    expect(actualRequestCompletedLogs[0].req.url).toEqual('/someError');
   });
 });
