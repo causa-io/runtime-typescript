@@ -1,3 +1,4 @@
+import { jest } from '@jest/globals';
 import {
   orFallback,
   orFallbackFn,
@@ -89,6 +90,21 @@ describe('tryMap', () => {
       );
 
       expect(result).toBeNull();
+    });
+
+    it('should return null and call the side effect function', () => {
+      const sideEffect = jest.fn();
+      const error = new CustomError('💥');
+
+      const result = tryMap(
+        () => testFn(error),
+        toNull(CustomError, sideEffect),
+        toValue(Error, '🙅'),
+        orFallback('🤷'),
+      );
+
+      expect(result).toBeNull();
+      expect(sideEffect).toHaveBeenCalledWith(error);
     });
 
     it('should match using a test function', () => {
