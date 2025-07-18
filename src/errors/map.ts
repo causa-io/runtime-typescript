@@ -217,10 +217,20 @@ export function toValueFnIf<T, E>(
  * Returns an {@link ErrorCase} that matches an error type and returns null.
  *
  * @param type The type of the error to match.
+ * @param sideEffect An optional function called with the error, e.g. for logging.
  * @returns The {@link ErrorCase}.
  */
-export function toNull<E>(type: Type<E>): ErrorCase<null, E> {
-  return { type, value: null };
+export function toNull<E>(
+  type: Type<E>,
+  sideEffect?: (e: E) => void,
+): ErrorCase<null, E> {
+  return {
+    type,
+    valueFn: (e) => {
+      sideEffect?.(e);
+      return null;
+    },
+  };
 }
 
 /**
