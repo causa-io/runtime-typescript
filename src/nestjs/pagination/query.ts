@@ -26,7 +26,7 @@ export class PageQuery<T = string> {
   @IsInt()
   @AllowMissing()
   @Type()
-  limit?: number;
+  readonly limit?: number;
 
   /**
    * The token to pass when fetching the next page of results. Provided by the previous query response.
@@ -39,7 +39,7 @@ export class PageQuery<T = string> {
   })
   @IsKeyTypeStringOrSkip()
   @AllowMissing()
-  readAfter?: T;
+  readonly readAfter?: T;
 
   /**
    * Creates a copy of the current query, with the {@link PageQuery.limit} bounded to the provided value. If `limit` was
@@ -50,6 +50,28 @@ export class PageQuery<T = string> {
    */
   withMaxLimit(maxLimit: number): WithLimit<this> {
     const limit = Math.min(maxLimit, this.limit ?? maxLimit);
+    return this.copy({ limit } as any) as WithLimit<this>;
+  }
+
+  /**
+   * Creates a copy of the current query, with the {@link PageQuery.limit} bounded to the provided max value. If `limit`
+   * was not set, the returned copy contains the provided default value.
+   *
+   * @param limits The default and maximum allowed `limit`.
+   * @returns A copy of the current query with the limit set, and ensured to be at most `limits.max`.
+   */
+  withLimit(limits: {
+    /**
+     * The default limit to use if none was set.
+     */
+    readonly default: number;
+
+    /**
+     * The maximum allowed limit.
+     */
+    readonly max: number;
+  }): WithLimit<this> {
+    const limit = Math.min(limits.max, this.limit ?? limits.default);
     return this.copy({ limit } as any) as WithLimit<this>;
   }
 

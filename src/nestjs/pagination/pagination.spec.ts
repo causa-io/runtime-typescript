@@ -6,6 +6,7 @@ import {
   Query,
 } from '@nestjs/common';
 import { ApiOkResponse, ApiProperty } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
 import { IsInt, IsNumberString, IsString, IsUUID } from 'class-validator';
 import 'jest-extended';
 import 'reflect-metadata';
@@ -72,6 +73,21 @@ class MyEntity {
   readonly someProp!: number;
 }
 
+class MyDto {
+  constructor(data: MyDto) {
+    Object.assign(this, data);
+  }
+
+  @IsString()
+  @ApiProperty({ description: '🆔' })
+  readonly stringId!: string;
+
+  @IsString()
+  @ApiProperty({ description: '📝' })
+  @Transform(({ value }) => `🎉 ${value}`, { toPlainOnly: true })
+  readonly description!: string;
+}
+
 @Controller()
 class MyController {
   @Get('/simple')
@@ -110,6 +126,22 @@ class MyController {
       ],
       query.withMaxLimit(5),
       (i) => ({ someKeyValue: i.id, date: new Date(i.someProp) }),
+    );
+  }
+
+  @Get('/with-limit')
+  @ApiOkResponse({ description: '📃', type: () => Page.of(MyDto) })
+  async getItemsWithLimit(
+    @Query() query: MyQuery,
+  ): Promise<Page<MyDto, MyQuery>> {
+    const withLimit = query.withLimit({ default: 3, max: 5 });
+    const items = [...Array(withLimit.limit)].map(
+      (_, i) => new MyEntity({ id: `${i}`, someProp: i }),
+    );
+    const page = new Page<MyEntity, MyQuery>(items, withLimit, (i) => i.id);
+    return page.map(
+      ({ id, someProp }) =>
+        new MyDto({ stringId: id, description: `Item ${someProp}` }),
     );
   }
 }
@@ -173,6 +205,31 @@ describe('Page', () => {
 
       expect(actualPage.items).toHaveLength(1);
       expect(actualPage.nextPageQuery).toBeNull();
+    });
+  });
+
+  describe('map', () => {
+    it('should transform items while preserving pagination', () => {
+      const item1 = new MyEntity({ id: '123', someProp: 1 });
+      const item2 = new MyEntity({ id: '124', someProp: 2 });
+      const pageQuery = new MyQuery({ otherValue: '🔎' }).withMaxLimit(2);
+      const page = new Page([item1, item2], pageQuery);
+
+      const mappedPage = page.map((entity) => ({
+        stringId: entity.id,
+        description: `Item ${entity.someProp}`,
+      }));
+
+      expect(mappedPage).toBeInstanceOf(Page);
+      expect(mappedPage.items).toEqual([
+        { stringId: '123', description: 'Item 1' },
+        { stringId: '124', description: 'Item 2' },
+      ]);
+      expect(mappedPage.nextPageQuery).toEqual({
+        readAfter: '124',
+        limit: 2,
+        otherValue: '🔎',
+      });
     });
   });
 
@@ -245,6 +302,33 @@ describe('Page', () => {
           ).toString('base64')}&otherValue=%F0%9F%93%83`,
         });
     });
+
+    it('should handle transformed items and use the default limit', async () => {
+      await request.get('/with-limit').expect(200, {
+        items: [
+          { stringId: '0', description: '🎉 Item 0' },
+          { stringId: '1', description: '🎉 Item 1' },
+          { stringId: '2', description: '🎉 Item 2' },
+        ],
+        nextPageQuery: '?limit=3&readAfter=2',
+      });
+    });
+
+    it('should cap limit at max value', async () => {
+      await request
+        .get('/with-limit')
+        .query({ limit: 20 })
+        .expect(200, {
+          items: [
+            { stringId: '0', description: '🎉 Item 0' },
+            { stringId: '1', description: '🎉 Item 1' },
+            { stringId: '2', description: '🎉 Item 2' },
+            { stringId: '3', description: '🎉 Item 3' },
+            { stringId: '4', description: '🎉 Item 4' },
+          ],
+          nextPageQuery: `?limit=5&readAfter=4`,
+        });
+    });
   });
 
   describe('OpenAPI', () => {
@@ -254,12 +338,36 @@ describe('Page', () => {
       expect(actualDocument).toEqual({
         components: {
           schemas: {
+            MyDto: {
+              properties: {
+                stringId: { description: '🆔', type: 'string' },
+                description: { description: '📝', type: 'string' },
+              },
+              required: ['stringId', 'description'],
+              type: 'object',
+            },
             MyEntity: {
               properties: {
                 id: { description: '🆔', type: 'string' },
                 someProp: { description: '1️⃣', type: 'number' },
               },
               required: ['id', 'someProp'],
+              type: 'object',
+            },
+            PageOfMyDto: {
+              properties: {
+                nextPageQuery: {
+                  description:
+                    'The query to make to fetch the next page of results.',
+                  oneOf: [{ type: 'string' }, { type: 'null' }],
+                },
+                items: {
+                  description: 'The items in the current page.',
+                  type: 'array',
+                  items: { $ref: '#/components/schemas/MyDto' },
+                },
+              },
+              required: ['nextPageQuery', 'items'],
               type: 'object',
             },
             PageOfMyEntity: {
@@ -363,6 +471,53 @@ describe('Page', () => {
                   content: {
                     'application/json': {
                       schema: { $ref: '#/components/schemas/PageOfMyEntity' },
+                    },
+                  },
+                  description: '📃',
+                },
+              },
+            },
+          },
+          '/with-limit': {
+            get: {
+              operationId: 'MyController_getItemsWithLimit',
+              tags: expect.any(Array),
+              parameters: [
+                {
+                  description: 'The maximum number of returned results.',
+                  in: 'query',
+                  name: 'limit',
+                  required: false,
+                  schema: { type: 'number' },
+                },
+                {
+                  description:
+                    'The token to pass when fetching the next page of results. Provided by the previous query response.',
+                  in: 'query',
+                  name: 'readAfter',
+                  required: false,
+                  schema: { type: 'string' },
+                },
+                {
+                  description: '🔧',
+                  in: 'query',
+                  name: 'otherValue',
+                  required: false,
+                  schema: { type: 'string' },
+                },
+                {
+                  description: '📆',
+                  in: 'query',
+                  name: 'dateFilter',
+                  required: false,
+                  schema: { type: 'string', format: 'date-time' },
+                },
+              ],
+              responses: {
+                200: {
+                  content: {
+                    'application/json': {
+                      schema: { $ref: '#/components/schemas/PageOfMyDto' },
                     },
                   },
                   description: '📃',

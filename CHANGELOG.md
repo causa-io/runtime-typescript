@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+Features:
+
+- Implement `Page.map()` to transform items in a page but keep the pagination information.
+- Implement `PageQuery.withLimit()` to handle both a maximum and a default limit.
+
 ## v1.0.0 (2025-07-18)
 
 Breaking changes:
