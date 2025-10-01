@@ -1,6 +1,6 @@
 import type { Type } from '@nestjs/common';
 import { ApiProperty } from '@nestjs/swagger';
-import { Transform, instanceToPlain } from 'class-transformer';
+import { Transform, instanceToPlain, plainToInstance } from 'class-transformer';
 import { PageQuery, type WithLimit } from './query.js';
 
 /**
@@ -64,6 +64,21 @@ export class Page<T, PQ extends PageQuery<any> = PageQuery> {
     this.nextPageQuery = isPageFull
       ? query.copy({ readAfter: readAfterResolver(items.at(-1) as T) } as any)
       : null;
+  }
+
+  /**
+   * Creates a copy of the current page, with the items transformed using the provided function.
+   * This can be used to convert items to DTOs, for example.
+   * Pagination must be preserved, so the `nextPageQuery` is copied as-is.
+   *
+   * @param fn The function to apply to each item in the page.
+   * @returns The new page with the transformed items.
+   */
+  map<U>(fn: (item: T) => U): Page<U, PQ> {
+    return plainToInstance<Page<U, PQ>, any>(Page, {
+      items: this.items.map(fn),
+      nextPageQuery: this.nextPageQuery,
+    });
   }
 
   /**
