@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v1.1.0 (2025-10-01)
+
 Features:
 
 - Implement `Page.map()` to transform items in a page but keep the pagination information.
