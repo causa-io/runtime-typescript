@@ -1,4 +1,5 @@
 import { jest } from '@jest/globals';
+import 'reflect-metadata';
 import {
   orFallback,
   orFallbackFn,
@@ -274,6 +275,33 @@ describe('tryMap', () => {
       const result = instance.myMethod(new CustomError('💥'));
 
       expect(result).toBe('🚨');
+    });
+
+    it('should preserve the original method name', () => {
+      expect(instance.myMethod.name).toBe('myMethod');
+    });
+
+    it('should copy metadata from the original method to the wrapper', () => {
+      const metadataKey = '🔑';
+      const metadataValue = '🎉';
+      // Define a decorator that sets metadata before TryMap is applied
+      function SetMetadata(): MethodDecorator {
+        return (_target, _propertyKey, { value }) => {
+          Reflect.defineMetadata(metadataKey, metadataValue, value!);
+        };
+      }
+
+      class TestClass {
+        @TryMap(orFallback('default'))
+        @SetMetadata()
+        decoratedMethod() {}
+      }
+
+      const retrievedMetadata = Reflect.getMetadata(
+        metadataKey,
+        TestClass.prototype.decoratedMethod,
+      );
+      expect(retrievedMetadata).toEqual(metadataValue);
     });
   });
 });

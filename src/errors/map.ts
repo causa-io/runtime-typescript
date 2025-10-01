@@ -1,4 +1,5 @@
 import type { Type } from '@nestjs/common';
+import 'reflect-metadata';
 import { isPromise } from 'util/types';
 
 /**
@@ -309,9 +310,26 @@ export function TryMap<T>(...cases: ErrorCase<T, any>[]): MethodDecorator {
     descriptor: TypedPropertyDescriptor<any>,
   ): void => {
     const originalMethod = descriptor.value;
+    const nameDescriptor = Object.getOwnPropertyDescriptor(
+      originalMethod,
+      'name',
+    ) ?? { writable: false, value: originalMethod.name };
 
-    descriptor.value = function (...args: any[]) {
+    function wrapper(this: any, ...args: any[]) {
       return tryMap(() => originalMethod.apply(this, args), ...cases);
-    };
+    }
+
+    // The name and metadata of the original method are copied to the wrapper function, as it is used by NestJS, e.g.
+    // for controller routes and OpenAPI metadata.
+    Object.defineProperty(wrapper, 'name', nameDescriptor);
+    Reflect.getMetadataKeys(originalMethod).forEach((key) =>
+      Reflect.defineMetadata(
+        key,
+        Reflect.getMetadata(key, originalMethod),
+        wrapper,
+      ),
+    );
+
+    descriptor.value = wrapper;
   };
 }
