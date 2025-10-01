@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+Fixes:
+
+- Ensure the method name and metadata is preserved when wrapping using `@TryMap`.
+
 ## v1.2.0 (2025-10-01)
 
 Features:
