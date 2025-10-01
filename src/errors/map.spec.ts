@@ -242,6 +242,17 @@ describe('tryMap', () => {
 
       await expect(actualPromise).rejects.toThrow('💥');
     });
+
+    it('should match the error type and call the error async function', async () => {
+      const promise: Promise<string> = Promise.reject(new CustomError('💥'));
+
+      const result = await tryMap(
+        promise,
+        toValueFn(CustomError, () => Promise.resolve('🚨')),
+      );
+
+      expect(result).toBe('🚨');
+    });
   });
 
   describe('decorator', () => {

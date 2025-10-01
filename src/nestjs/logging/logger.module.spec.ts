@@ -11,7 +11,7 @@ import {
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { Test } from '@nestjs/testing';
 import type { PinoLogger as PinoLoggerType } from 'nestjs-pino';
-import { pino } from 'pino';
+import { pino, type Logger as PinoLogger } from 'pino';
 import supertest from 'supertest';
 import TestAgent from 'supertest/lib/agent.js';
 import type * as loggingTestingType from '../../logging/testing.js';
@@ -67,7 +67,7 @@ describe('LoggerModule', () => {
     ({ Logger: PinoNestJsLogger, PinoLogger } = await import('nestjs-pino'));
   });
 
-  async function initApp(options: { logger?: pino.Logger } = {}) {
+  async function initApp(options: { logger?: PinoLogger } = {}) {
     const testingModule = await Test.createTestingModule({
       imports: [
         options.logger
