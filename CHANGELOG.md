@@ -7,6 +7,10 @@ Features:
 - Implement `Page.map()` to transform items in a page but keep the pagination information.
 - Implement `PageQuery.withLimit()` to handle both a maximum and a default limit.
 
+Fixes:
+
+- Allow `tryMap` error cases to return the type or a promise of it.
+
 ## v1.0.0 (2025-07-18)
 
 Breaking changes:
