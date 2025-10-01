@@ -23,6 +23,17 @@ function convertQueryToSearchParams(query: PageQuery | null): string | null {
 }
 
 /**
+ * A version of {@link Page} where the `nextPageQuery` is serialized to a string.
+ * This is what the page looks like once it has been transformed to a plain object for serialization.
+ */
+export type SerializedPage<T extends Page<any>> = Omit<T, 'nextPageQuery'> & {
+  /**
+   * The query to make to fetch the next page of results.
+   */
+  readonly nextPageQuery: string | null;
+};
+
+/**
  * A generic page of items, along with the query to fetch the next page of results.
  */
 export class Page<T, PQ extends PageQuery<any> = PageQuery> {
@@ -79,6 +90,17 @@ export class Page<T, PQ extends PageQuery<any> = PageQuery> {
       items: this.items.map(fn),
       nextPageQuery: this.nextPageQuery,
     });
+  }
+
+  /**
+   * Casts the current page to look like a serialized version of itself.
+   * This simply returns the current instance. It should only be used as a last operation before returning the page from
+   * a controller, to ensure the types match the actual serialized DTO.
+   *
+   * @returns The current page with the `nextPageQuery` typed as a string.
+   */
+  serialize(): SerializedPage<this> {
+    return this as any;
   }
 
   /**

@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+Features:
+
+- Implement `Page.serialize()` to return a type matching a serialized DTO.
+
 ## v1.1.0 (2025-10-01)
 
 Features:
