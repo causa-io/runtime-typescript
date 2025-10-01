@@ -126,7 +126,7 @@ export function tryMap<T>(fn: () => T, ...cases: ErrorCase<T, any>[]): T;
  */
 export function tryMap<T>(
   fn: () => Promise<T>,
-  ...cases: ErrorCase<T, any>[]
+  ...cases: ErrorCase<T | Promise<T>, any>[]
 ): Promise<T>;
 /**
  * Awaits the given promise and evaluates the given error cases if it rejects.
@@ -136,7 +136,7 @@ export function tryMap<T>(
  */
 export function tryMap<T>(
   promise: Promise<T>,
-  ...cases: ErrorCase<T, any>[]
+  ...cases: ErrorCase<T | Promise<T>, any>[]
 ): Promise<T>;
 export function tryMap<T>(
   fnOrPromise: (() => T | Promise<T>) | Promise<T>,
