@@ -1,6 +1,7 @@
 import type { Type } from '@nestjs/common';
 import { ApiProperty } from '@nestjs/swagger';
 import { Transform, instanceToPlain, plainToInstance } from 'class-transformer';
+import { CUSTOM_READ_AFTER_METADATA_KEY } from './custom-read-after-type.decorator.js';
 import { PageQuery, type WithLimit } from './query.js';
 
 /**
@@ -85,11 +86,47 @@ export class Page<T, PQ extends PageQuery<any> = PageQuery> {
    * @param fn The function to apply to each item in the page.
    * @returns The new page with the transformed items.
    */
-  map<U>(fn: (item: T) => U): Page<U, PQ> {
-    return plainToInstance<Page<U, PQ>, any>(Page, {
-      items: this.items.map(fn),
-      nextPageQuery: this.nextPageQuery,
-    });
+  map<U>(fn: (item: T) => U): Page<U, PQ>;
+
+  /**
+   * Creates a copy of the current page, with the items transformed using the provided function and using the passed
+   * query as the basis for the `nextPageQuery`.
+   * This can be used to convert items to DTOs, for example.
+   * If the current page does not have a `nextPageQuery`, then neither will the new page. Pagination must be preserved,
+   * so the `readAfter` from the current `nextPageQuery` is copied over. Also, if the current `nextPageQuery` has a
+   * `limit` it is used, otherwise falling back to the `limit` of the passed query.
+   *
+   * @param fn The function to apply to each item in the page.
+   * @param query The query to use to create the `nextPageQuery`.
+   * @returns The new page with the transformed items.
+   */
+  map<U, PQ2 extends PageQuery<NonNullable<PQ['readAfter']>>>(
+    fn: (item: T) => U,
+    query: WithLimit<PQ2>,
+  ): Page<U, PQ2>;
+
+  map<U>(fn: (item: T) => U, query?: WithLimit<PageQuery>): Page<U, PageQuery> {
+    const items = this.items.map(fn);
+
+    let nextPageQuery: PageQuery | null = this.nextPageQuery;
+    if (nextPageQuery && query) {
+      let { readAfter } = nextPageQuery;
+
+      if (
+        readAfter !== undefined &&
+        Reflect.hasMetadata(CUSTOM_READ_AFTER_METADATA_KEY, query.constructor)
+      ) {
+        const type = Reflect.getMetadata('design:type', query, 'readAfter');
+        readAfter = plainToInstance(type, readAfter);
+      }
+
+      nextPageQuery = query.copy({
+        limit: nextPageQuery.limit ?? query.limit,
+        readAfter,
+      });
+    }
+
+    return plainToInstance(Page, { items, nextPageQuery }) as any;
   }
 
   /**
