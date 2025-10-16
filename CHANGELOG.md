@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v1.3.0 (2025-10-16)
+
 Features:
 
 - Add the `Writable` exported type.
