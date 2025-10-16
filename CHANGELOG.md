@@ -5,6 +5,7 @@
 Features:
 
 - Add the `Writable` exported type.
+- Support passing a query of a different type to `Page.map`.
 
 Chores:
 
