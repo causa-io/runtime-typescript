@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+Features:
+
+- Add the `Writable` exported type.
+
+Chores:
+
+- Rename flat types used in recursive types (e.g. `NullableAsOptional_`), and mark the originals as deprecated.
+
 ## v1.2.1 (2025-10-01)
 
 Fixes:
