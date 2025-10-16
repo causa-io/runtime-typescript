@@ -8,7 +8,7 @@ import { CUSTOM_READ_AFTER_METADATA_KEY } from './custom-read-after-type.decorat
 
 /**
  * Validates the `readAfter` value when the key type is the default one (`string`).
- * If the `PaginationKeyType` decorator has been used, the validation is skipped.
+ * If the `CustomReadAfterType` decorator has been used, the validation is skipped.
  *
  * @param validationOptions Base validation options.
  */

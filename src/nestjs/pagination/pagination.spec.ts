@@ -37,6 +37,10 @@ class MyQuery extends PageQuery<string> {
 }
 
 class CustomKey {
+  constructor(data?: Partial<CustomKey>) {
+    Object.assign(this, data);
+  }
+
   @IsNumberString()
   readonly someKeyValue!: string;
 
@@ -221,15 +225,104 @@ describe('Page', () => {
       }));
 
       expect(mappedPage).toBeInstanceOf(Page);
+      expect(mappedPage).toEqual({
+        items: [
+          { stringId: '123', description: 'Item 1' },
+          { stringId: '124', description: 'Item 2' },
+        ],
+        nextPageQuery: page.nextPageQuery,
+      });
+    });
+
+    it('should transform items and query type when query is provided', () => {
+      const item1 = new MyEntity({ id: '123', someProp: 1 });
+      const item2 = new MyEntity({ id: '124', someProp: 2 });
+      const page = new Page([item1, item2], new PageQuery().withMaxLimit(2));
+      const newQuery = new MyQuery({ otherValue: '🔍' }).withMaxLimit(10);
+
+      const mappedPage = page.map(
+        (entity) =>
+          new MyDto({
+            stringId: entity.id,
+            description: `Item ${entity.someProp}`,
+          }),
+        newQuery,
+      );
+
+      expect(mappedPage).toBeInstanceOf(Page);
       expect(mappedPage.items).toEqual([
-        { stringId: '123', description: 'Item 1' },
-        { stringId: '124', description: 'Item 2' },
+        new MyDto({ stringId: '123', description: 'Item 1' }),
+        new MyDto({ stringId: '124', description: 'Item 2' }),
       ]);
+      expect(mappedPage.nextPageQuery).toBeInstanceOf(MyQuery);
       expect(mappedPage.nextPageQuery).toEqual({
         readAfter: '124',
         limit: 2,
-        otherValue: '🔎',
+        otherValue: '🔍',
       });
+    });
+
+    it('should return null nextPageQuery when original page has none', () => {
+      const item = new MyEntity({ id: '123', someProp: 1 });
+      const pageQuery = new MyQuery({ otherValue: '🔎' }).withMaxLimit(10);
+      const page = new Page([item], pageQuery);
+      const newQuery = new MyQuery({ otherValue: '🔍' }).withMaxLimit(5);
+
+      const mappedPage = page.map((entity) => entity, newQuery);
+
+      expect(mappedPage).toEqual({ items: [item], nextPageQuery: null });
+    });
+
+    it('should handle custom readAfter type when mapping with query', () => {
+      const item = new MyEntity({ id: '123', someProp: 1000 });
+      // While the type it the same, `customKey` is not instantiated from `CustomKey`.
+      const customKey = { someKeyValue: '123', date: new Date(1000) };
+      const pageQuery = new MyComplexQuery().withMaxLimit(1);
+      const page = new Page([item], pageQuery, () => customKey);
+      const newQuery = new MyComplexQuery({ otherValue: '🔍' }).withMaxLimit(2);
+
+      const mappedPage = page.map(
+        (entity) =>
+          new MyDto({
+            stringId: entity.id,
+            description: `Item ${entity.someProp}`,
+          }),
+        newQuery,
+      );
+
+      expect(mappedPage).toEqual({
+        items: [new MyDto({ stringId: '123', description: 'Item 1000' })],
+        nextPageQuery: { readAfter: customKey, limit: 1, otherValue: '🔍' },
+      });
+      expect(mappedPage.nextPageQuery).toBeInstanceOf(MyComplexQuery);
+      expect(mappedPage.nextPageQuery!.readAfter).toBeInstanceOf(CustomKey);
+    });
+
+    it('should handle the custom readAfter being already an instance', () => {
+      const item = new MyEntity({ id: '123', someProp: 1000 });
+      const customKey = new CustomKey({
+        someKeyValue: '123',
+        date: new Date(1000),
+      });
+      const pageQuery = new MyComplexQuery().withMaxLimit(1);
+      const page = new Page([item], pageQuery, () => customKey);
+      const newQuery = new MyComplexQuery({ otherValue: '🔍' }).withMaxLimit(2);
+
+      const mappedPage = page.map(
+        (entity) =>
+          new MyDto({
+            stringId: entity.id,
+            description: `Item ${entity.someProp}`,
+          }),
+        newQuery,
+      );
+
+      expect(mappedPage).toEqual({
+        items: [new MyDto({ stringId: '123', description: 'Item 1000' })],
+        nextPageQuery: { readAfter: customKey, limit: 1, otherValue: '🔍' },
+      });
+      expect(mappedPage.nextPageQuery).toBeInstanceOf(MyComplexQuery);
+      expect(mappedPage.nextPageQuery!.readAfter).toBeInstanceOf(CustomKey);
     });
   });
 
