@@ -16,6 +16,8 @@ project:
 
 javascript:
   dependencies:
+    check:
+      allowlist: [GHSA-9965-vmph-33xx]
     update:
       packageTargets:
         # The following types should be manually updated to the next major version when the corresponding tool / package
