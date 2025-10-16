@@ -5,8 +5,8 @@ workspace:
 
 causa:
   modules:
-    '@causa/workspace-core': '>= 0.22.3'
-    '@causa/workspace-typescript': '>= 0.10.2'
+    '@causa/workspace-core': '>= 0.24.0'
+    '@causa/workspace-typescript': '>= 0.13.0'
 
 project:
   name: runtime-typescript
@@ -16,6 +16,8 @@ project:
 
 javascript:
   dependencies:
+    check:
+      allowlist: [GHSA-9965-vmph-33xx]
     update:
       packageTargets:
         # The following types should be manually updated to the next major version when the corresponding tool / package

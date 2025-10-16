@@ -1,5 +1,7 @@
 /**
  * A non-nullable type.
+ * Unlike {@link NonNullable}, this does not exclude nullable types, but rather sets a type that can be `null` to
+ * `never`.
  */
 export type NonNull<T> = T extends null ? never : T;
 
@@ -13,10 +15,16 @@ export type NullableKeys<T> = NonNullable<
 >;
 
 /**
+ * @deprecated Use {@link NullableAsOptionalFlat} instead.
+ */
+export type NullableAsOptional_<T> = Omit<T, NullableKeys<T>> &
+  Partial<Pick<T, NullableKeys<T>>>;
+
+/**
  * A type where nullable properties of `T` are made optional.
  * Note that this is not applied recursively.
  */
-export type NullableAsOptional_<T> = Omit<T, NullableKeys<T>> &
+export type NullableAsOptionalFlat<T> = Omit<T, NullableKeys<T>> &
   Partial<Pick<T, NullableKeys<T>>>;
 
 /**
@@ -28,7 +36,7 @@ export type NullableAsOptional<T> =
     : T extends Date
       ? Date
       : T extends object
-        ? NullableAsOptional_<{ [K in keyof T]: NullableAsOptional<T[K]> }>
+        ? NullableAsOptionalFlat<{ [K in keyof T]: NullableAsOptional<T[K]> }>
         : T;
 
 /**
@@ -39,10 +47,17 @@ export type OptionalKeys<T> = {
 }[keyof T];
 
 /**
+ * @deprecated Use {@link OptionalAsNullableFlat} instead.
+ */
+export type OptionalAsNullable_<T> = Omit<T, OptionalKeys<T>> & {
+  [K in OptionalKeys<T>]: NonNullable<T[K]> | null;
+};
+
+/**
  * A type where optional properties of `T` are made nullable but required.
  * Note that this is not applied recursively.
  */
-export type OptionalAsNullable_<T> = Omit<T, OptionalKeys<T>> & {
+export type OptionalAsNullableFlat<T> = Omit<T, OptionalKeys<T>> & {
   [K in OptionalKeys<T>]: NonNullable<T[K]> | null;
 };
 
@@ -55,5 +70,5 @@ export type OptionalAsNullable<T> =
     : T extends Date
       ? Date
       : T extends object
-        ? OptionalAsNullable_<{ [K in keyof T]: OptionalAsNullable<T[K]> }>
+        ? OptionalAsNullableFlat<{ [K in keyof T]: OptionalAsNullable<T[K]> }>
         : T;
