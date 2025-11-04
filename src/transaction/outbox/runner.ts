@@ -20,7 +20,7 @@ import { OutboxEventSender } from './sender.js';
  * Events are removed from the outbox when publishing succeeds.
  */
 export abstract class OutboxTransactionRunner<
-  RWT extends OutboxTransaction,
+  RWT extends OutboxTransaction & ROT,
   ROT extends ReadOnlyStateTransaction,
 > extends TransactionRunner<RWT, ROT> {
   /**

@@ -39,7 +39,7 @@ export type ReadWriteTransactionOptions = {
  * This is only defined for internal use, as the `run` method is overloaded to accept different types of options.
  */
 type RunOptions<
-  RWT extends Transaction,
+  RWT extends Transaction & ROT,
   ROT extends ReadOnlyStateTransaction,
 > =
   | TransactionOption<RWT>
@@ -60,7 +60,7 @@ export type TransactionFn<
  * occurring within the transaction is handled by the passed asynchronous function.
  */
 export abstract class TransactionRunner<
-  RWT extends Transaction,
+  RWT extends Transaction & ROT,
   ROT extends ReadOnlyStateTransaction,
 > {
   /**

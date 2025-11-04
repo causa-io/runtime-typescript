@@ -90,7 +90,7 @@ export type VersionedEntityManagerOptions = Pick<
  * It provides CRUD-like methods that publish events and update the state accordingly.
  */
 export class VersionedEntityManager<
-  RWT extends Transaction,
+  RWT extends Transaction & ROT,
   ROT extends ReadOnlyStateTransaction,
   E extends Event<string, VersionedEntityWithOptionalTimestamps>,
   R extends TransactionRunner<RWT, ROT> = TransactionRunner<RWT, ROT>,

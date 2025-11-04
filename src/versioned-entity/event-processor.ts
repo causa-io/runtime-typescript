@@ -96,7 +96,7 @@ export type VersionedEventProcessingOptions<
  *   (e.g. update secondary indexes as well).
  */
 export abstract class VersionedEventProcessor<
-  RWT extends Transaction,
+  RWT extends Transaction & ROT,
   ROT extends ReadOnlyStateTransaction,
   E extends object,
   P extends object,
