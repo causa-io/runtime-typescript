@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v1.4.0 (2025-11-04)
+
 Features:
 
 - Define `VersionedEventProcessor.getInTransaction` to get the projection. This allows customizing how the projection is retrieved when getting the primary key is more complex than just using the projection type.
