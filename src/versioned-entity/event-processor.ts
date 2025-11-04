@@ -96,7 +96,7 @@ export type VersionedEventProcessingOptions<
  *   (e.g. update secondary indexes as well).
  */
 export abstract class VersionedEventProcessor<
-  RWT extends Transaction,
+  RWT extends Transaction & ROT,
   ROT extends ReadOnlyStateTransaction,
   E extends object,
   P extends object,
@@ -215,6 +215,23 @@ export abstract class VersionedEventProcessor<
   }
 
   /**
+   * Retrieves the projection for the given key within the given transaction.
+   *
+   * The default behavior is to `transaction.get` with the projection type. This can be overridden if getting the
+   * primary key from the partial projection is more complex.
+   *
+   * @param key The partial projection, containing the properties defining the key for the projection / state.
+   * @param transaction The transaction to use.
+   * @returns The projection if it exists, or `null` if it does not.
+   */
+  protected async getInTransaction(
+    key: Partial<P>,
+    transaction: ROT,
+  ): Promise<P | null> {
+    return await transaction.get(this.projectionType, key);
+  }
+
+  /**
    * Retrieves the projection for the given key.
    * If the projection does not exist, an {@link EntityNotFoundError} is thrown.
    *
@@ -229,7 +246,7 @@ export abstract class VersionedEventProcessor<
     return await this.runner.run(
       { readOnly: true, transaction: options.transaction },
       async (transaction) => {
-        const state = await transaction.get(this.projectionType, key);
+        const state = await this.getInTransaction(key, transaction);
         if (!state) {
           this.throwNotFoundError(key);
         }
@@ -268,7 +285,7 @@ export abstract class VersionedEventProcessor<
             ? options.existingState
             : context.existingState !== undefined
               ? context.existingState
-              : await transaction.get(this.projectionType, projectionOrPartial);
+              : await this.getInTransaction(projectionOrPartial, transaction);
 
         const projection = context.defaultProjection
           ? plainToInstance(this.projectionType, {
