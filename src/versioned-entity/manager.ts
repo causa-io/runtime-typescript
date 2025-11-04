@@ -203,11 +203,7 @@ export class VersionedEntityManager<
     await this.runner.run(
       { transaction: options.transaction },
       async (transaction) => {
-        const existingEntity = await transaction.get(
-          this.projectionType,
-          entity,
-        );
-
+        const existingEntity = await this.getInTransaction(entity, transaction);
         if (!existingEntity) {
           return;
         }
@@ -243,16 +239,7 @@ export class VersionedEntityManager<
       { transaction: options.transaction },
       async (transaction) => {
         const existingEntity =
-          options.existingEntity ??
-          (await transaction.get(this.projectionType, entity));
-
-        if (
-          !existingEntity ||
-          (this.hasDeletionTimestampProperty &&
-            existingEntity.deletedAt !== null)
-        ) {
-          this.throwNotFoundError(entity);
-        }
+          options.existingEntity ?? (await this.get(entity, { transaction }));
 
         if (options.validationFn) {
           await options.validationFn(existingEntity, transaction);

@@ -472,4 +472,49 @@ describe('VersionedEntityEventProcessor', () => {
       await expect(actualPromise).rejects.toThrow('😢');
     });
   });
+
+  describe('getInTransaction', () => {
+    class MyOtherProcessor extends MyProcessor {
+      protected async getInTransaction(
+        key: Partial<MyEntity>,
+        transaction: MockTransaction,
+      ): Promise<MyEntity | null> {
+        return transaction.get(MyEntity, { id: key.someProperty });
+      }
+    }
+
+    it('should use getInTransaction to get the projection', async () => {
+      const processor = new MyOtherProcessor();
+      const expectedEntity = new MyEntity({ id: '123', someProperty: '💮' });
+      mockTransaction.set(expectedEntity);
+
+      const actualProjection = await processor.get({ someProperty: '123' });
+
+      expect(actualProjection).toEqual(expectedEntity);
+    });
+
+    it('should use getInTransaction in processEvent', async () => {
+      const processor = new MyOtherProcessor();
+      mockTransaction.set(
+        new MyEntity({ id: '123', updatedAt: new Date('2025-01-01') }),
+      );
+      const event: MyEvent = {
+        id: '1',
+        name: '📫',
+        producedAt: new Date('2020-01-01'),
+        data: {
+          id: '💮',
+          createdAt: new Date('2020-01-01'),
+          updatedAt: new Date('2020-01-01'),
+          deletedAt: null,
+          // This will be used as the key to get the existing entity.
+          originalProperty: '123',
+        },
+      };
+
+      const actualPromise = processor.processEvent(event);
+
+      await expect(actualPromise).rejects.toThrow(OldEntityVersionError);
+    });
+  });
 });
