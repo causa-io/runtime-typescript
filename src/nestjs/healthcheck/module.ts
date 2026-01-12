@@ -13,7 +13,7 @@ import {
   type HealthIndicatorFunction,
 } from '@nestjs/terminus';
 import { Public } from '../auth/index.js';
-import { BaseHealthIndicatorService } from './base-health-indicator.service.js';
+import type { HealthChecker } from './checker.js';
 import { HEALTHCHECK_ENDPOINT } from './index.js';
 import { terminusModuleWithLogger } from './terminus.module.js';
 
@@ -24,16 +24,14 @@ import { terminusModuleWithLogger } from './terminus.module.js';
 export class HealthCheckModule {
   /**
    * Creates the health check module for the given indicator types.
-   * Indicators should extend the {@link BaseHealthIndicatorService}. They will be used as providers for this module,
+   * Indicators should implement the {@link HealthChecker} interface. They will be used as providers for this module,
    * there is no need to export them from another module. However, their dependencies should be available in the rest of
    * the application's modules.
    *
    * @param indicatorTypes The types of the health indicators to be used.
    * @returns The module.
    */
-  static forIndicators(
-    indicatorTypes: Type<BaseHealthIndicatorService>[],
-  ): DynamicModule {
+  static forIndicators(indicatorTypes: Type<HealthChecker>[]): DynamicModule {
     @ApiExcludeController()
     @Controller(HEALTHCHECK_ENDPOINT)
     class HealthcheckController {

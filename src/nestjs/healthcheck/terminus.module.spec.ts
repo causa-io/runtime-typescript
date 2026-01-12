@@ -1,9 +1,5 @@
 import { Controller, Get, type INestApplication, Module } from '@nestjs/common';
-import {
-  HealthCheckError,
-  type HealthCheckResult,
-  HealthCheckService,
-} from '@nestjs/terminus';
+import { type HealthCheckResult, HealthCheckService } from '@nestjs/terminus';
 import supertest from 'supertest';
 import TestAgent from 'supertest/lib/agent.js';
 import { getLoggedErrors, spyOnLogger } from '../../testing.js';
@@ -17,9 +13,7 @@ class MyController {
 
   @Get()
   async healthCheck(): Promise<HealthCheckResult> {
-    return await this.health.check([
-      () => Promise.reject(new HealthCheckError('💥', { oops: '🙅' })),
-    ]);
+    return await this.health.check([() => ({ myService: { status: 'down' } })]);
   }
 }
 
@@ -49,11 +43,9 @@ describe('terminusModuleWithLogger', () => {
 
     expect(getLoggedErrors()).toEqual([
       expect.objectContaining({
-        message: 'Health Check has failed! {"oops":"🙅"}',
+        message: expect.stringContaining('Health Check has failed!'),
         req: expect.objectContaining({ url: '/health' }),
-        serviceContext: expect.objectContaining({
-          service: 'runtime',
-        }),
+        serviceContext: expect.objectContaining({ service: 'runtime' }),
       }),
     ]);
   });

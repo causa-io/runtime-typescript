@@ -7,6 +7,7 @@ Features:
 - Make the `throwFn` argument optional in the `rethrow` error case utility. If not provided, the original error is rethrown.
 - Support `existingEntity` option in `VersionedEntityManager.create` to skip the entity lookup.
 - Support `useExisting` option in `LockManager.acquire` to reuse an existing released lock entity.
+- Deprecate the `BaseHealthIndicatorService` in favor of the `HealthChecker` interface.
 
 ## v1.4.0 (2025-11-04)
 
