@@ -5,6 +5,7 @@
 Features:
 
 - Make the `throwFn` argument optional in the `rethrow` error case utility. If not provided, the original error is rethrown.
+- Support `existingEntity` option in `VersionedEntityManager.create` to skip the entity lookup.
 
 ## v1.4.0 (2025-11-04)
 
