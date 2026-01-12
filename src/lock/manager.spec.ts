@@ -176,6 +176,66 @@ describe('LockManager', () => {
 
       expect(runner.runReadWrite).not.toHaveBeenCalled();
     });
+
+    it('should reuse an existing expired lock when useExisting is true', async () => {
+      const id = uuid.v4();
+      const existingLock = new MyLock({
+        id,
+        lock: uuid.v4(),
+        expiresAt: new Date('2000-01-01'),
+        someCustomData: '📦',
+      });
+      await mockTransaction.set(existingLock);
+
+      const returnedLock = await manager.acquire(id, {
+        useExisting: true,
+        extraData: { someCustomData: '🙈' },
+      });
+
+      expect(returnedLock).toEqual({
+        id,
+        lock: expect.any(String),
+        expiresAt: new Date(mockTransaction.timestamp.getTime() + 1000),
+        someCustomData: '📦',
+      });
+      const actualLock = await mockTransaction.get(MyLock, { id });
+      expect(actualLock).toEqual(returnedLock);
+    });
+
+    it('should create a new lock when useExisting is true but no lock exists', async () => {
+      const id = uuid.v4();
+
+      const returnedLock = await manager.acquire(id, {
+        useExisting: true,
+        extraData: { someCustomData: '💡' },
+      });
+
+      expect(returnedLock).toEqual({
+        id,
+        lock: expect.any(String),
+        expiresAt: new Date(mockTransaction.timestamp.getTime() + 1000),
+        someCustomData: '💡',
+      });
+      const actualLock = await mockTransaction.get(MyLock, { id });
+      expect(actualLock).toEqual(returnedLock);
+    });
+
+    it('should fail to acquire when useExisting is true and lock is not expired', async () => {
+      const id = uuid.v4();
+      const existingLock = new MyLock({
+        id,
+        lock: uuid.v4(),
+        expiresAt: new Date('3000-01-01'),
+        someCustomData: '📦',
+      });
+      await mockTransaction.set(existingLock);
+
+      const actualPromise = manager.acquire(id, { useExisting: true });
+
+      await expect(actualPromise).rejects.toThrow(LockAcquisitionError);
+      const actualLock = await mockTransaction.get(MyLock, { id });
+      expect(actualLock).toEqual(existingLock);
+    });
   });
 
   describe('checkNotAcquiredOrFail', () => {
