@@ -40,6 +40,13 @@ type AcquireLockOptions<
    * Defaults to {@link LockManager.expirationDelay}.
    */
   expirationDelay?: number;
+
+  /**
+   * Whether to reuse an existing (released) lock entity instead of creating a new one.
+   * When `true` and a released lock exists, only the `lock` and `expiresAt` fields are updated.
+   * Defaults to `false`.
+   */
+  useExisting?: boolean;
 };
 
 /**
@@ -115,12 +122,19 @@ export class LockManager<T extends Transaction, E extends LockEntity> {
     return await this.runner.run(
       { transaction: options.transaction },
       async (transaction) => {
-        await this.checkNotAcquiredOrFail(id, transaction, {
-          extraValidation: options.extraValidation,
-        });
+        const key = { id } as Partial<E>;
+        const existingLock = await transaction.get(this.lockType, key);
+
+        if (existingLock) {
+          this.validateNotAcquired(existingLock, transaction.timestamp, {
+            extraValidation: options.extraValidation,
+          });
+        }
 
         const lock = plainToInstance(this.lockType, {
-          ...options.extraData,
+          ...(existingLock && options.useExisting
+            ? existingLock
+            : options.extraData),
           id,
           lock: uuid.v4(),
           expiresAt: new Date(
