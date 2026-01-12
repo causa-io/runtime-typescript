@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v1.5.0 (2026-01-12)
+
 Features:
 
 - Make the `throwFn` argument optional in the `rethrow` error case utility. If not provided, the original error is rethrown.
