@@ -94,7 +94,7 @@ NestJS provides the [`@nestjs/terminus`](https://github.com/nestjs/terminus) pac
 
 When implementing a health check route, it should be exposed under the `HEALTHCHECK_ENDPOINT`, such that only error responses are logged by pino.
 
-The `HealthCheckModule` can also be used to implement the health check route. In this case, only indicators, extending the `BaseHealthIndicatorService`, have to be implemented.
+The `HealthCheckModule` can also be used to implement the health check route. In this case, only indicators, implementing the `HealthChecker` interface, have to be provided.
 
 #### Logging
 
