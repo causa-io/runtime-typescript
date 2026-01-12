@@ -51,6 +51,20 @@ export type VersionedEntityOperationOptions<T extends Transaction> =
   };
 
 /**
+ * Options when performing a create operation on a versioned entity.
+ */
+export type VersionedEntityCreationOptions<
+  T extends Transaction,
+  P extends VersionedEntityWithOptionalTimestamps,
+> = VersionedEntityOperationOptions<T> & {
+  /**
+   * The existing entity (or `null` if it does not exist) to use instead of looking it up from the state.
+   * If the entity exists and is not soft-deleted, an {@link EntityAlreadyExistsError} will be thrown.
+   */
+  existingEntity?: P | null;
+};
+
+/**
  * Options when performing an update operation on a versioned entity.
  */
 export type VersionedEntityUpdateOptions<
@@ -198,12 +212,19 @@ export class VersionedEntityManager<
    */
   protected async checkDoesNotExistOrFail(
     entity: Partial<EventData<E>>,
-    options: TransactionOption<RWT> = {},
+    options: TransactionOption<RWT> &
+      Pick<
+        VersionedEntityCreationOptions<RWT, EventData<E>>,
+        'existingEntity'
+      > = {},
   ): Promise<void> {
     await this.runner.run(
       { transaction: options.transaction },
       async (transaction) => {
-        const existingEntity = await this.getInTransaction(entity, transaction);
+        const existingEntity =
+          options.existingEntity === undefined
+            ? await this.getInTransaction(entity, transaction)
+            : options.existingEntity;
         if (!existingEntity) {
           return;
         }
@@ -343,13 +364,14 @@ export class VersionedEntityManager<
   async create(
     eventName: EventName<E>,
     creation: VersionedEntityCreation<EventData<E>>,
-    options: VersionedEntityOperationOptions<RWT> = {},
+    options: VersionedEntityCreationOptions<RWT, EventData<E>> = {},
   ): Promise<E> {
     return await this.runner.run(
       { transaction: options.transaction },
       async (transaction) => {
         await this.checkDoesNotExistOrFail(creation as Partial<EventData<E>>, {
           transaction,
+          existingEntity: options.existingEntity,
         });
 
         const entity = plainToInstance(this.projectionType, {

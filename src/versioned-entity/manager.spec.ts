@@ -274,6 +274,43 @@ describe('VersionedEntityManager', () => {
       expect(manager.runner.runReadWrite).not.toHaveBeenCalled();
       expectPublishedEvent(actualEvent, { att1: '🎁' });
     });
+
+    it('should skip the existence check when existingEntity is null', async () => {
+      // An entity already exists in the state, but `existingEntity: null` should skip the lookup.
+      mockTransaction.set(new MyEntity({ id: 'abc' }));
+
+      await manager.create(
+        'myEntityCreated',
+        { id: 'abc', someProperty: '🎉' },
+        { transaction: mockTransaction, existingEntity: null },
+      );
+    });
+
+    it('should fail when existingEntity is provided and not soft-deleted', async () => {
+      const existingEntity = new MyEntity({ id: 'abc' });
+
+      const actualPromise = manager.create(
+        'myEntityCreated',
+        { id: 'abc', someProperty: '🎉' },
+        { existingEntity },
+      );
+
+      await expect(actualPromise).rejects.toThrow(EntityAlreadyExistsError);
+      expect(mockTransaction.events).toBeEmpty();
+    });
+
+    it('should succeed when existingEntity is soft-deleted', async () => {
+      const existingEntity = new MyEntity({
+        id: 'abc',
+        deletedAt: new Date('2023-01-01'),
+      });
+
+      await manager.create(
+        'myEntityCreated',
+        { id: 'abc', someProperty: '🎉' },
+        { existingEntity },
+      );
+    });
   });
 
   describe('update', () => {
