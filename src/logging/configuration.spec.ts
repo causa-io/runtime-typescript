@@ -27,9 +27,8 @@ describe('configuration', () => {
       '{"name":"@my-org/my-service","version":"0.1.2"}',
     );
     loggedLines.splice(0, loggedLines.length);
-    ({ getPinoConfiguration, updatePinoConfiguration } = await import(
-      './configuration.js'
-    ));
+    ({ getPinoConfiguration, updatePinoConfiguration } =
+      await import('./configuration.js'));
   });
 
   afterEach(async () => {
