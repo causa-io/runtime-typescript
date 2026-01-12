@@ -160,6 +160,14 @@ describe('tryMap', () => {
       }).toThrow('🚨');
     });
 
+    it('should rethrow the original error when no throwFn is provided', () => {
+      const error = new CustomError('💥');
+
+      expect(() => {
+        tryMap(() => testFn(error), rethrow(CustomError), orFallback('🤷'));
+      }).toThrow(error);
+    });
+
     it('should throw an base error with a message', () => {
       expect(() => {
         tryMap(

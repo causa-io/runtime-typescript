@@ -236,16 +236,18 @@ export function toNull<E>(
 
 /**
  * Returns an {@link ErrorCase} that rethrows the error using a function creating the new error.
+ * If no function is provided, the original error is rethrown.
  *
  * @param type The type of the error to match.
- * @param throwFn A function that takes the error and returns a new error to throw.
+ * @param throwFn A function that takes the error and returns a new error to throw. If not provided, the original error
+ *   is rethrown.
  * @returns The {@link ErrorCase}.
  */
 export function rethrow<E>(
   type: Type<E>,
-  throwFn: (e: E) => Error,
+  throwFn?: (e: E) => Error,
 ): ErrorCase<never, E> {
-  return { type, throw: throwFn };
+  return { type, throw: throwFn ?? ((e) => e) };
 }
 
 /**
