@@ -19,6 +19,19 @@ import type { RequestWithEvent } from './request-with-event.js';
 import { EVENT_HANDLER_KEY } from './use-event-handler.decorator.js';
 
 /**
+ * Options for the {@link BaseEventHandlerInterceptor}.
+ */
+export type EventHandlerInterceptorOptions = {
+  /**
+   * Whether this interceptor is the default event handler.
+   * When `true` (default), the interceptor processes all requests unless a different handler is explicitly specified
+   * using the `@UseEventHandler` decorator.
+   * When `false`, the interceptor only processes requests where it is explicitly enabled using `@UseEventHandler`.
+   */
+  isDefault?: boolean;
+};
+
+/**
  * The intercepted request, parsed as event pushed to the endpoint.
  */
 export type ParsedEventRequest = {
@@ -45,17 +58,25 @@ export type ParsedEventRequest = {
  */
 export abstract class BaseEventHandlerInterceptor implements NestInterceptor {
   /**
+   * Whether this interceptor is the default event handler.
+   */
+  readonly isDefault: boolean;
+
+  /**
    * Creates a new {@link BaseEventHandlerInterceptor}.
    *
    * @param id The unique ID of the interceptor.
    * @param reflector The {@link Reflector} to use to retrieve the event body type.
    * @param logger The logger to use.
+   * @param options Options for the interceptor.
    */
   constructor(
     readonly id: string,
     protected readonly reflector: Reflector,
     protected readonly logger: Logger,
+    options: EventHandlerInterceptorOptions = {},
   ) {
+    this.isDefault = options.isDefault ?? true;
     this.logger.setContext(BaseEventHandlerInterceptor.name);
   }
 
@@ -126,7 +147,7 @@ export abstract class BaseEventHandlerInterceptor implements NestInterceptor {
       EVENT_HANDLER_KEY,
       [context.getHandler(), context.getClass()],
     );
-    if (handlerId !== undefined && handlerId !== this.id) {
+    if (handlerId !== this.id && (handlerId !== undefined || !this.isDefault)) {
       return next.handle();
     }
 

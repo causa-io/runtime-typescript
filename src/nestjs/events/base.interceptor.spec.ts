@@ -27,16 +27,21 @@ import { parseObject } from '../../validation/index.js';
 import { LoggerModule } from '../logging/index.js';
 import {
   BaseEventHandlerInterceptor,
+  type EventHandlerInterceptorOptions,
   type ParsedEventRequest,
 } from './base.interceptor.js';
 import { EventAttributes } from './event-attributes.decorator.js';
 import { EventBody } from './event-body.decorator.js';
 import { UseEventHandler } from './use-event-handler.decorator.js';
 
-@Injectable()
 class MyEventHandlerInterceptor extends BaseEventHandlerInterceptor {
-  constructor(reflector: Reflector, logger: PinoLogger) {
-    super('myHandler', reflector, logger);
+  constructor(
+    id: string,
+    reflector: Reflector,
+    logger: PinoLogger,
+    options?: EventHandlerInterceptorOptions,
+  ) {
+    super(id, reflector, logger, options);
   }
 
   protected async parseEventFromContext(
@@ -64,6 +69,20 @@ class MyEventHandlerInterceptor extends BaseEventHandlerInterceptor {
       : {};
 
     return { body, attributes };
+  }
+}
+
+@Injectable()
+class DefaultEventHandlerInterceptor extends MyEventHandlerInterceptor {
+  constructor(reflector: Reflector, logger: PinoLogger) {
+    super('myHandler', reflector, logger);
+  }
+}
+
+@Injectable()
+class OptInOnlyEventHandlerInterceptor extends MyEventHandlerInterceptor {
+  constructor(reflector: Reflector, logger: PinoLogger) {
+    super('optInOnly', reflector, logger, { isDefault: false });
   }
 }
 
@@ -111,6 +130,13 @@ class MyController {
   async correctHandler(@EventBody() body: MyEvent) {
     return body;
   }
+
+  @Post('/optInOnly')
+  @UseEventHandler('optInOnly')
+  async optInOnlyHandler(@EventBody() body: MyEvent) {
+    this.logger.info('🎯');
+    return body;
+  }
 }
 
 describe('BaseEventHandlerInterceptor', () => {
@@ -124,7 +150,11 @@ describe('BaseEventHandlerInterceptor', () => {
       imports: [LoggerModule.forRoot()],
       controllers: [MyController],
       providers: [
-        { provide: APP_INTERCEPTOR, useClass: MyEventHandlerInterceptor },
+        { provide: APP_INTERCEPTOR, useClass: DefaultEventHandlerInterceptor },
+        {
+          provide: APP_INTERCEPTOR,
+          useClass: OptInOnlyEventHandlerInterceptor,
+        },
       ],
     }).compile();
     app = testModule.createNestApplication();
@@ -148,6 +178,12 @@ describe('BaseEventHandlerInterceptor', () => {
         attributes: {},
       }),
     ]);
+    // Only the default handler should have parsed the event.
+    expect(
+      getLoggedInfos({
+        predicate: (o) => o.message === 'Successfully parsed event body.',
+      }),
+    ).toHaveLength(1);
   });
 
   it('should parse attributes', async () => {
@@ -261,5 +297,22 @@ describe('BaseEventHandlerInterceptor', () => {
         message: '💥',
       }),
     ]);
+  });
+
+  it('should process a route with UseEventHandler when isDefault is false', async () => {
+    await request
+      .post('/optInOnly')
+      .send({ id: '1234', someValue: 'hello' })
+      .expect(201, { id: '1234', someValue: 'HELLO' });
+
+    expect(getLoggedInfos({ predicate: (o) => o.message === '🎯' })).toEqual([
+      expect.objectContaining({ eventId: '1234', message: '🎯' }),
+    ]);
+    // Only the opt-in handler should have parsed the event.
+    expect(
+      getLoggedInfos({
+        predicate: (o) => o.message === 'Successfully parsed event body.',
+      }),
+    ).toHaveLength(1);
   });
 });
