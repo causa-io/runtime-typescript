@@ -69,15 +69,31 @@ export type ErrorCase<T, E> =
   | DefaultErrorCase<T>;
 
 /**
+ * Options for the internal tryMap implementation.
+ */
+type TryMapOptions = {
+  /**
+   * The `this` context to use when calling case functions.
+   */
+  thisArg?: unknown;
+};
+
+/**
  * Handles a caught error based on the provided cases.
  * It will return the value of the first case that matches the error.
  * If no case matches, it will return the default case or throw the error if no default case is provided.
  *
  * @param error The caught error to handle.
  * @param cases The {@link ErrorCase}s to test.
+ * @param options The options for handling the error.
  * @returns The value to return based on the matched case, or the default case if no match is found.
  */
-function handleError<T>(error: unknown, cases: ErrorCase<T, any>[]): T {
+function handleError<T>(
+  error: unknown,
+  cases: ErrorCase<T, any>[],
+  options: TryMapOptions = {},
+): T {
+  const { thisArg } = options;
   let defaultCase: DefaultErrorCase<T> | undefined;
 
   for (const c of cases) {
@@ -97,10 +113,10 @@ function handleError<T>(error: unknown, cases: ErrorCase<T, any>[]): T {
     }
 
     if ('throw' in c) {
-      throw c.throw(error);
+      throw c.throw.call(thisArg, error);
     }
 
-    return 'valueFn' in c ? c.valueFn(error) : c.value;
+    return 'valueFn' in c ? c.valueFn.call(thisArg, error) : c.value;
   }
 
   if (!defaultCase) {
@@ -108,8 +124,38 @@ function handleError<T>(error: unknown, cases: ErrorCase<T, any>[]): T {
   }
 
   return 'defaultFn' in defaultCase
-    ? defaultCase.defaultFn(error)
+    ? defaultCase.defaultFn.call(thisArg, error)
     : defaultCase.default;
+}
+
+/**
+ * Internal implementation of `tryMap` that accepts options.
+ *
+ * @param fnOrPromise The function or promise to execute.
+ * @param options The options for handling errors.
+ * @param cases The {@link ErrorCase}s to test against a caught error.
+ * @returns The result of the function or promise, or the handled error value.
+ */
+function tryMapInternal<T>(
+  fnOrPromise: (() => T | Promise<T>) | Promise<T>,
+  options: TryMapOptions,
+  cases: ErrorCase<T, any>[],
+): T | Promise<T> {
+  if (isPromise(fnOrPromise)) {
+    return fnOrPromise.catch((error) => handleError(error, cases, options));
+  }
+
+  try {
+    const result = fnOrPromise();
+
+    if (!isPromise(result)) {
+      return result;
+    }
+
+    return result.catch((error) => handleError(error, cases, options));
+  } catch (error) {
+    return handleError(error, cases, options);
+  }
 }
 
 /**
@@ -143,21 +189,7 @@ export function tryMap<T>(
   fnOrPromise: (() => T | Promise<T>) | Promise<T>,
   ...cases: ErrorCase<T, any>[]
 ): T | Promise<T> {
-  if (isPromise(fnOrPromise)) {
-    return fnOrPromise.catch((error) => handleError(error, cases));
-  }
-
-  try {
-    const result = fnOrPromise();
-
-    if (!isPromise(result)) {
-      return result;
-    }
-
-    return result.catch((error) => handleError(error, cases));
-  } catch (error) {
-    return handleError(error, cases);
-  }
+  return tryMapInternal(fnOrPromise, {}, cases);
 }
 
 /**
@@ -302,6 +334,8 @@ export function orFallbackFn<T>(
 
 /**
  * Decorates a method to handle errors using the provided error cases.
+ * Functions within the error cases (such as `valueFn`, `throw`, or `defaultFn`) are applied to the class instance,
+ * meaning `this` refers to the same object as in the decorated method.
  *
  * @param cases The {@link ErrorCase}s to handle.
  */
@@ -318,7 +352,11 @@ export function TryMap<T>(...cases: ErrorCase<T, any>[]): MethodDecorator {
     ) ?? { writable: false, value: originalMethod.name };
 
     function wrapper(this: any, ...args: any[]) {
-      return tryMap(() => originalMethod.apply(this, args), ...cases);
+      return tryMapInternal(
+        () => originalMethod.apply(this, args),
+        { thisArg: this },
+        cases,
+      );
     }
 
     // The name and metadata of the original method are copied to the wrapper function, as it is used by NestJS, e.g.
