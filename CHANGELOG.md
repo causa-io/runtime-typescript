@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+Features:
+
+- Accept `ErrorOptions` when creating a `RetryableError`.
+- Bind `this` to error cases provided to the `TryMap` decorator.
+
 ## v1.5.0 (2026-01-12)
 
 Features:
