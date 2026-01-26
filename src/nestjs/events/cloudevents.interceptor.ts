@@ -12,6 +12,7 @@ import type { ObjectSerializer } from '../../serialization/index.js';
 import { Logger } from '../logging/index.js';
 import {
   BaseEventHandlerInterceptor,
+  type EventHandlerInterceptorOptions,
   type ParsedEventRequest,
 } from './base.interceptor.js';
 
@@ -41,13 +42,15 @@ export class CloudEventsEventHandlerInterceptor extends BaseEventHandlerIntercep
    * @param serializer The serializer to use to deserialize the event from the request body.
    * @param reflector The {@link Reflector} to use.
    * @param logger The {@link Logger} to use.
+   * @param options Options for the interceptor.
    */
   constructor(
     protected readonly serializer: ObjectSerializer,
     reflector: Reflector,
     logger: Logger,
+    options: EventHandlerInterceptorOptions = {},
   ) {
-    super(CLOUDEVENTS_EVENT_HANDLER_ID, reflector, logger);
+    super(CLOUDEVENTS_EVENT_HANDLER_ID, reflector, logger, options);
     this.logger.setContext(CloudEventsEventHandlerInterceptor.name);
   }
 
@@ -110,15 +113,17 @@ export class CloudEventsEventHandlerInterceptor extends BaseEventHandlerIntercep
    * This can be used with the `UseInterceptors` decorator.
    *
    * @param serializer The {@link ObjectSerializer} to use to deserialize the event data.
+   * @param options Options for the interceptor.
    * @returns A class that can be used as an interceptor for CloudEvents event handlers.
    */
   static withSerializer(
     serializer: ObjectSerializer,
+    options: EventHandlerInterceptorOptions = {},
   ): Type<CloudEventsEventHandlerInterceptor> {
     @Injectable()
     class CloudEventEventHandlerInterceptorWithSerializer extends CloudEventsEventHandlerInterceptor {
       constructor(reflector: Reflector, logger: Logger) {
-        super(serializer, reflector, logger);
+        super(serializer, reflector, logger, options);
       }
     }
 
