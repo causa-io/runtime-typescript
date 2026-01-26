@@ -1,5 +1,8 @@
 export { BaseEventHandlerInterceptor } from './base.interceptor.js';
-export type { ParsedEventRequest } from './base.interceptor.js';
+export type {
+  EventHandlerInterceptorOptions,
+  ParsedEventRequest,
+} from './base.interceptor.js';
 export {
   CLOUDEVENTS_EVENT_HANDLER_ID,
   CloudEventsEventHandlerInterceptor,

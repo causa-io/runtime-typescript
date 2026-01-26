@@ -6,6 +6,7 @@ Features:
 
 - Accept `ErrorOptions` when creating a `RetryableError`.
 - Bind `this` to error cases provided to the `TryMap` decorator.
+- Add the `isDefault` option to the `BaseEventHandlerInterceptor` and `CloudEventsEventHandlerInterceptor`, which can be set to `false` to disable the interceptor for routes that do not explicitly use the `@UseEventHandler` decorator.
 
 ## v1.5.0 (2026-01-12)
 
