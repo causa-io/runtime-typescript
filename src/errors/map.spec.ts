@@ -311,5 +311,58 @@ describe('tryMap', () => {
       );
       expect(retrievedMetadata).toEqual(metadataValue);
     });
+
+    it('should bind this to case functions', async () => {
+      class TestClass {
+        readonly instanceValue = '📦';
+
+        @TryMap(
+          toValueFn(CustomError, function (this: TestClass) {
+            return this.instanceValue;
+          }),
+        )
+        methodWithValueFn(error: unknown): string {
+          throw error;
+        }
+
+        @TryMap(
+          rethrow(CustomError, function (this: TestClass) {
+            return new Error(this.instanceValue);
+          }),
+        )
+        methodWithThrow(error: unknown): string {
+          throw error;
+        }
+
+        @TryMap(
+          orFallbackFn(function (this: TestClass) {
+            return this.instanceValue;
+          }),
+        )
+        methodWithDefaultFn(error: unknown): string {
+          throw error;
+        }
+
+        @TryMap(
+          toValueFn(CustomError, function (this: TestClass) {
+            return this.instanceValue;
+          }),
+        )
+        async asyncMethodWithValueFn(error: unknown): Promise<string> {
+          throw error;
+        }
+      }
+
+      const testInstance = new TestClass();
+
+      expect(testInstance.methodWithValueFn(new CustomError('💥'))).toBe('📦');
+      expect(() => testInstance.methodWithThrow(new CustomError('💥'))).toThrow(
+        '📦',
+      );
+      expect(testInstance.methodWithDefaultFn(new Error('💥'))).toBe('📦');
+      expect(
+        await testInstance.asyncMethodWithValueFn(new CustomError('💥')),
+      ).toBe('📦');
+    });
   });
 });
