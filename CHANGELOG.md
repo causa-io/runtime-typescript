@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v1.6.0 (2026-01-26)
+
 Features:
 
 - Accept `ErrorOptions` when creating a `RetryableError`.
