@@ -351,6 +351,16 @@ describe('tryMap', () => {
         async asyncMethodWithValueFn(error: unknown): Promise<string> {
           throw error;
         }
+
+        @TryMap(
+          toNull(CustomError, function (this: TestClass, e: CustomError) {
+            expect(this.instanceValue).toBe('📦');
+            expect(e.message).toBe('💥');
+          }),
+        )
+        methodWithToNull(error: unknown): string | null {
+          throw error;
+        }
       }
 
       const testInstance = new TestClass();
@@ -363,6 +373,7 @@ describe('tryMap', () => {
       expect(
         await testInstance.asyncMethodWithValueFn(new CustomError('💥')),
       ).toBe('📦');
+      expect(testInstance.methodWithToNull(new CustomError('💥'))).toBeNull();
     });
   });
 });

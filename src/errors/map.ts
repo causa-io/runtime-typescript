@@ -259,8 +259,8 @@ export function toNull<E>(
 ): ErrorCase<null, E> {
   return {
     type,
-    valueFn: (e) => {
-      sideEffect?.(e);
+    valueFn: function (e: E) {
+      sideEffect?.call(this, e);
       return null;
     },
   };
