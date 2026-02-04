@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v1.6.1 (2026-02-04)
+
 Fixes:
 
 - Bind `toNull`'s `sideEffect` to `this` for `TryMap` decorator usage.
