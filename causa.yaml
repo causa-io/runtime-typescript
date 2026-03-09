@@ -5,8 +5,8 @@ workspace:
 
 causa:
   modules:
-    '@causa/workspace-core': '>= 0.27.0'
-    '@causa/workspace-typescript': '>= 0.17.0'
+    "@causa/workspace-core": ">= 0.28.0"
+    "@causa/workspace-typescript": ">= 0.18.0"
 
 project:
   name: runtime-typescript
@@ -22,5 +22,4 @@ javascript:
       packageTargets:
         # The following types should be manually updated to the next major version when the corresponding tool / package
         # is updated.
-        '@types/node': minor
-        '@types/express': minor
+        "@types/node": minor
