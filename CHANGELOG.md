@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## v1.6.3 (2026-03-09)
+
+Chore:
+
+- Upgrade dependencies.
+
 ## v1.6.2 (2026-02-06)
 
 Chore:
