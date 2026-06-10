@@ -329,8 +329,7 @@ describe('VersionedEntityEventProcessor', () => {
         ...expectedEntity,
         updatedAt: new Date('2020-01-01'),
       });
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { someProperty: _, ...fromProjection } = expectedEntity;
+      const { someProperty, ...fromProjection } = expectedEntity;
       projectionFn.mockResolvedValueOnce([
         fromProjection as any,
         { defaultProjection: { someProperty: '🙅' } },
