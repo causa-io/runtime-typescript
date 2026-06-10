@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+Breaking changes:
+
+- Upgrade the minimum Node.js version to `22`.
+
+Chore:
+
+- Upgrade dependencies.
+
 ## v1.6.3 (2026-03-09)
 
 Chore:
