@@ -1,6 +1,6 @@
 import type { Type } from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
-import * as uuid from 'uuid';
+import { randomUUID } from 'node:crypto';
 import {
   EntityAlreadyExistsError,
   IncorrectEntityVersionError,
@@ -187,7 +187,7 @@ export class VersionedEntityManager<
    * @returns A unique ID for an event.
    */
   protected generateEventId(): string {
-    return uuid.v4();
+    return randomUUID();
   }
 
   /**

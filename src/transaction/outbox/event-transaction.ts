@@ -1,4 +1,4 @@
-import * as uuid from 'uuid';
+import { randomUUID } from 'node:crypto';
 import type { EventPublisher, PublishOptions } from '../../events/index.js';
 import type {
   EventTransaction,
@@ -55,7 +55,7 @@ export class OutboxEventTransaction implements EventTransaction {
     });
 
     const staged: StagedOutboxEvent = {
-      id: uuid.v4(),
+      id: randomUUID(),
       topic: prepared.topic,
       data: prepared.data,
       attributes: prepared.attributes ?? {},
