@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+Chore:
+
+- Remove the `uuid` package in favor of the native `randomUUID` function.
+
 ## v2.0.0-beta.1 (2026-06-10)
 
 Breaking changes:

@@ -1,6 +1,6 @@
 import type { Type } from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
-import * as uuid from 'uuid';
+import { randomUUID } from 'node:crypto';
 import {
   Transaction,
   TransactionRunner,
@@ -136,7 +136,7 @@ export class LockManager<T extends Transaction, E extends LockEntity> {
             ? existingLock
             : options.extraData),
           id,
-          lock: uuid.v4(),
+          lock: randomUUID(),
           expiresAt: new Date(
             transaction.timestamp.getTime() + expirationDelay,
           ),

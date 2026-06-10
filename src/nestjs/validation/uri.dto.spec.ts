@@ -1,12 +1,12 @@
 import 'jest-extended';
-import * as uuid from 'uuid';
+import { randomUUID } from 'node:crypto';
 import { ValidationError, parseObject } from '../../validation/index.js';
 import { IdParams, VersionedMutationQuery } from './uri.dto.js';
 
 describe('URI DTOs', () => {
   describe('IdParams', () => {
     it('should validate a correct UUID', async () => {
-      const actualPromise = parseObject(IdParams, { id: uuid.v4() });
+      const actualPromise = parseObject(IdParams, { id: randomUUID() });
 
       await expect(actualPromise).toResolve();
     });

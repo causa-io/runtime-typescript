@@ -1,6 +1,6 @@
 import { jest } from '@jest/globals';
 import 'jest-extended';
-import * as uuid from 'uuid';
+import { randomUUID } from 'node:crypto';
 import {
   MockRunner,
   type MockTransaction,
@@ -36,10 +36,10 @@ describe('LockManager', () => {
 
   describe('acquire', () => {
     it('should fail to acquire the lock when it is not expired', async () => {
-      const id = uuid.v4();
+      const id = randomUUID();
       const existingLock = new MyLock({
         id,
-        lock: uuid.v4(),
+        lock: randomUUID(),
         expiresAt: new Date('3000-01-01'),
         someCustomData: '📦',
       });
@@ -53,10 +53,10 @@ describe('LockManager', () => {
     });
 
     it('should acquire an existing but expired lock', async () => {
-      const id = uuid.v4();
+      const id = randomUUID();
       const existingLock = new MyLock({
         id,
-        lock: uuid.v4(),
+        lock: randomUUID(),
         expiresAt: new Date('2000-01-01'),
         someCustomData: null,
       });
@@ -75,7 +75,7 @@ describe('LockManager', () => {
     });
 
     it('should acquire the lock', async () => {
-      const id = uuid.v4();
+      const id = randomUUID();
 
       const returnedLock = await manager.acquire(id);
 
@@ -90,7 +90,7 @@ describe('LockManager', () => {
     });
 
     it('should store the passed extra data', async () => {
-      const id = uuid.v4();
+      const id = randomUUID();
 
       const returnedLock = await manager.acquire(id, {
         extraData: { someCustomData: '💡' },
@@ -107,10 +107,10 @@ describe('LockManager', () => {
     });
 
     it('should fail to acquire the lock if extra validation fails', async () => {
-      const id = uuid.v4();
+      const id = randomUUID();
       const existingLock = new MyLock({
         id,
-        lock: uuid.v4(),
+        lock: randomUUID(),
         expiresAt: new Date('2021-01-01'),
         someCustomData: 'nope',
       });
@@ -130,7 +130,7 @@ describe('LockManager', () => {
     });
 
     it('should set a custom expiration delay', async () => {
-      const id = uuid.v4();
+      const id = randomUUID();
 
       const returnedLock = await manager.acquire(id, {
         expirationDelay: 2000,
@@ -147,7 +147,7 @@ describe('LockManager', () => {
     });
 
     it('should acquire an existing lock with null values', async () => {
-      const id = uuid.v4();
+      const id = randomUUID();
       const existingLock = new MyLock({
         id,
         lock: null,
@@ -170,7 +170,7 @@ describe('LockManager', () => {
 
     it('should run in a transaction', async () => {
       jest.spyOn(runner, 'runReadWrite');
-      const id = uuid.v4();
+      const id = randomUUID();
 
       await manager.acquire(id, { transaction: mockTransaction });
 
@@ -178,10 +178,10 @@ describe('LockManager', () => {
     });
 
     it('should reuse an existing expired lock when useExisting is true', async () => {
-      const id = uuid.v4();
+      const id = randomUUID();
       const existingLock = new MyLock({
         id,
-        lock: uuid.v4(),
+        lock: randomUUID(),
         expiresAt: new Date('2000-01-01'),
         someCustomData: '📦',
       });
@@ -203,7 +203,7 @@ describe('LockManager', () => {
     });
 
     it('should create a new lock when useExisting is true but no lock exists', async () => {
-      const id = uuid.v4();
+      const id = randomUUID();
 
       const returnedLock = await manager.acquire(id, {
         useExisting: true,
@@ -221,10 +221,10 @@ describe('LockManager', () => {
     });
 
     it('should fail to acquire when useExisting is true and lock is not expired', async () => {
-      const id = uuid.v4();
+      const id = randomUUID();
       const existingLock = new MyLock({
         id,
-        lock: uuid.v4(),
+        lock: randomUUID(),
         expiresAt: new Date('3000-01-01'),
         someCustomData: '📦',
       });
@@ -240,10 +240,10 @@ describe('LockManager', () => {
 
   describe('checkNotAcquiredOrFail', () => {
     it('should throw when the lock is not expired', async () => {
-      const id = uuid.v4();
+      const id = randomUUID();
       const existingLock = new MyLock({
         id,
-        lock: uuid.v4(),
+        lock: randomUUID(),
         expiresAt: new Date('3000-01-01'),
         someCustomData: '📦',
       });
@@ -255,10 +255,10 @@ describe('LockManager', () => {
     });
 
     it('should not throw for an existing but expired lock', async () => {
-      const id = uuid.v4();
+      const id = randomUUID();
       const existingLock = new MyLock({
         id,
-        lock: uuid.v4(),
+        lock: randomUUID(),
         expiresAt: new Date('2000-01-01'),
         someCustomData: null,
       });
@@ -270,7 +270,7 @@ describe('LockManager', () => {
     });
 
     it('should not throw when the lock does not exist', async () => {
-      const id = uuid.v4();
+      const id = randomUUID();
 
       const actualPromise = manager.checkNotAcquiredOrFail(id, mockTransaction);
 
@@ -278,10 +278,10 @@ describe('LockManager', () => {
     });
 
     it('should fail if extra validation fails', async () => {
-      const id = uuid.v4();
+      const id = randomUUID();
       const existingLock = new MyLock({
         id,
-        lock: uuid.v4(),
+        lock: randomUUID(),
         expiresAt: new Date('2021-01-01'),
         someCustomData: 'nope',
       });
@@ -305,9 +305,9 @@ describe('LockManager', () => {
 
   describe('release', () => {
     it('should fail to release a lock that does not exist', async () => {
-      const id = uuid.v4();
+      const id = randomUUID();
 
-      const releaseLockPromise = manager.release({ id, lock: uuid.v4() });
+      const releaseLockPromise = manager.release({ id, lock: randomUUID() });
 
       await expect(releaseLockPromise).rejects.toThrow(LockReleaseError);
       await expect(releaseLockPromise).rejects.toThrow(
@@ -318,8 +318,8 @@ describe('LockManager', () => {
     });
 
     it('should fail to release a lock that does not match', async () => {
-      const id = uuid.v4();
-      const lock = uuid.v4();
+      const id = randomUUID();
+      const lock = randomUUID();
       const existingLock = new MyLock({
         id,
         lock,
@@ -329,7 +329,7 @@ describe('LockManager', () => {
       await mockTransaction.set(existingLock);
 
       const releaseLockPromise = manager.release(
-        { id, lock: uuid.v4() },
+        { id, lock: randomUUID() },
         { delete: false },
       );
 
@@ -342,8 +342,8 @@ describe('LockManager', () => {
     });
 
     it('should delete the lock', async () => {
-      const id = uuid.v4();
-      const lock = uuid.v4();
+      const id = randomUUID();
+      const lock = randomUUID();
       const existingLock = new MyLock({
         id,
         lock,
@@ -358,8 +358,8 @@ describe('LockManager', () => {
     });
 
     it('should set the lock to null instead of deleting it', async () => {
-      const id = uuid.v4();
-      const lock = uuid.v4();
+      const id = randomUUID();
+      const lock = randomUUID();
       const existingLock = new MyLock({
         id,
         lock,
@@ -379,8 +379,8 @@ describe('LockManager', () => {
     });
 
     it('should set the lock to null and write extra data', async () => {
-      const id = uuid.v4();
-      const lock = uuid.v4();
+      const id = randomUUID();
+      const lock = randomUUID();
       const existingLock = new MyLock({
         id,
         lock,
@@ -405,8 +405,8 @@ describe('LockManager', () => {
 
     it('should run in a transaction', async () => {
       jest.spyOn(runner, 'runReadWrite');
-      const id = uuid.v4();
-      const lock = uuid.v4();
+      const id = randomUUID();
+      const lock = randomUUID();
       const existingLock = new MyLock({
         id,
         lock,

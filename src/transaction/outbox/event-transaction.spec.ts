@@ -1,4 +1,3 @@
-import * as uuid from 'uuid';
 import { OutboxEventTransaction } from './event-transaction.js';
 import { MockPublisher } from './utils.test.js';
 
@@ -30,7 +29,9 @@ describe('OutboxEventTransaction', () => {
           id: expect.any(String),
         },
       ]);
-      expect(uuid.version(transaction.events[0].id)).toBe(4);
+      expect(transaction.events[0].id).toMatch(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
+      );
     });
 
     it('should override transaction-wide attributes', async () => {
@@ -48,7 +49,9 @@ describe('OutboxEventTransaction', () => {
           id: expect.any(String),
         },
       ]);
-      expect(uuid.version(transaction.events[0].id)).toBe(4);
+      expect(transaction.events[0].id).toMatch(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
+      );
     });
   });
 });
