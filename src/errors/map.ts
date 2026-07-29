@@ -65,8 +65,7 @@ type DefaultErrorCase<T> =
  * A case that defines to which type of error it applies and how to handle it.
  */
 export type ErrorCase<T, E> =
-  | (ErrorMatcher<E> & ErrorResult<T, E>)
-  | DefaultErrorCase<T>;
+  (ErrorMatcher<E> & ErrorResult<T, E>) | DefaultErrorCase<T>;
 
 /**
  * Options for the internal tryMap implementation.
