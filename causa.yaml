@@ -17,9 +17,10 @@ project:
 javascript:
   dependencies:
     check:
-      allowlist: []
+      allowlist: [GHSA-mh99-v99m-4gvg, GHSA-pm4m-ph32-ghv5]
     update:
       packageTargets:
         # The following types should be manually updated to the next major version when the corresponding tool / package
         # is updated.
         "@types/node": minor
+        typescript: minor

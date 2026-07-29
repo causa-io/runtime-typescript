@@ -223,6 +223,18 @@ export class AppFixture {
     );
     await this.app.init();
 
+    // The server is explicitly started on the loopback address, such that `supertest` does not bind it itself. When it
+    // does, it listens on the IPv6 wildcard address, which can conflict with an unrelated process listening on
+    // `127.0.0.1` with the same port. Requests would then be routed to that process instead of the application.
+    await new Promise<void>((resolve, reject) => {
+      const server = this.app.getHttpServer();
+      server.once('error', reject);
+      server.listen(0, '127.0.0.1', () => {
+        server.removeListener('error', reject);
+        resolve();
+      });
+    });
+
     (this as any).request = supertest(this.app.getHttpServer());
   }
 
