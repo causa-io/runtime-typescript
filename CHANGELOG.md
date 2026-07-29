@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v2.0.1 (2026-07-29)
+
 Fixes:
 
 - Make the `AppFixture` start the application's HTTP server on the loopback address during initialization, rather than letting `supertest` bind it to the IPv6 wildcard address for each request. This avoids requests being routed to an unrelated process listening on `127.0.0.1` with the same port.
