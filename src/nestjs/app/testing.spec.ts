@@ -54,9 +54,9 @@ describe('AppFixture', () => {
   let appFixture!: AppFixture;
 
   afterEach(async () => {
-    if ((appFixture as any)?.state === 'Active') {
-      await appFixture?.delete();
-    }
+    // Some tests do not initialize the fixture, or already delete it. In those cases, `delete` throws and there is
+    // nothing to clean up.
+    await appFixture?.delete().catch(() => {});
   });
 
   describe('constructor', () => {
@@ -218,6 +218,16 @@ describe('AppFixture', () => {
       await appFixture.init();
 
       await appFixture.request.options('/test').expect(204);
+    });
+
+    it('should make the server listen on the loopback address before supertest binds it', async () => {
+      appFixture = new AppFixture(AppModule, {});
+
+      await appFixture.init();
+
+      const server = appFixture.app.getHttpServer();
+      expect(server.listening).toBeTrue();
+      expect(server.address()).toMatchObject({ address: '127.0.0.1' });
     });
 
     it('should throw if init is called twice', async () => {
