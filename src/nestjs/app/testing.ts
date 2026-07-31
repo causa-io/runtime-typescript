@@ -61,6 +61,12 @@ enum AppFixtureState {
    * The app fixture has been deleted, meaning the application has been closed and all fixtures have been deleted.
    */
   Deleted,
+
+  /**
+   * The initialization of the app fixture failed. Any resource allocated before the failure has been released as part
+   * of {@link AppFixture.init}, which means {@link AppFixture.clear} and {@link AppFixture.delete} have nothing to do.
+   */
+  Failed,
 }
 
 /**
@@ -200,42 +206,72 @@ export class AppFixture {
   /**
    * Initializes the application and all fixtures.
    * This should only be called once, before tests.
+   *
+   * If initialization fails, any resource allocated before the failure is released before the original error is
+   * rethrown. The fixture then permanently transitions to a failed state, where {@link AppFixture.clear} and
+   * {@link AppFixture.delete} are no-ops.
    */
   async init(): Promise<void> {
     if (this.state !== AppFixtureState.Uninitialized) {
       throw new Error('Cannot initialize the application more than once.');
     }
-    this.state = AppFixtureState.Active;
 
-    let builder = Test.createTestingModule({
-      imports: [createAppModule(this.appModule)],
-    });
+    // The fixtures that did initialize, and which must be deleted during cleanup if the initialization fails.
+    let initializedFixtures: Fixture[] = [];
+    let app: INestApplication | undefined;
 
-    const overrides = await Promise.all(this.fixtures.map((f) => f.init(this)));
-    [...overrides, this.override]
-      .filter((o) => !!o)
-      .forEach((o) => (builder = o(builder)));
-
-    const moduleRef = await builder.compile();
-
-    (this as any).app = moduleRef.createNestApplication(
-      this.nestApplicationOptions,
-    );
-    await this.app.init();
-
-    // The server is explicitly started on the loopback address, such that `supertest` does not bind it itself. When it
-    // does, it listens on the IPv6 wildcard address, which can conflict with an unrelated process listening on
-    // `127.0.0.1` with the same port. Requests would then be routed to that process instead of the application.
-    await new Promise<void>((resolve, reject) => {
-      const server = this.app.getHttpServer();
-      server.once('error', reject);
-      server.listen(0, '127.0.0.1', () => {
-        server.removeListener('error', reject);
-        resolve();
+    try {
+      let builder = Test.createTestingModule({
+        imports: [createAppModule(this.appModule)],
       });
-    });
 
-    (this as any).request = supertest(this.app.getHttpServer());
+      const results = await Promise.allSettled(
+        this.fixtures.map((fixture) => fixture.init(this)),
+      );
+      initializedFixtures = this.fixtures.filter(
+        (_, i) => results[i].status === 'fulfilled',
+      );
+
+      const failure = results.find((r) => r.status === 'rejected');
+      if (failure) {
+        throw failure.reason;
+      }
+
+      const overrides = results
+        .filter((r) => r.status === 'fulfilled')
+        .map((r) => r.value);
+      [...overrides, this.override]
+        .filter((o) => !!o)
+        .forEach((o) => (builder = o(builder)));
+
+      const moduleRef = await builder.compile();
+
+      app = moduleRef.createNestApplication(this.nestApplicationOptions);
+      await app.init();
+
+      // The server is explicitly started on the loopback address, such that `supertest` does not bind it itself.
+      // When it does, it listens on the IPv6 wildcard address, which can conflict with an unrelated process listening
+      // on `127.0.0.1` with the same port. Requests would then be routed to that process instead of the application.
+      const server = app.getHttpServer();
+      await new Promise<void>((resolve, reject) => {
+        server.once('error', reject);
+        server.listen(0, '127.0.0.1', () => {
+          server.removeListener('error', reject);
+          resolve();
+        });
+      });
+
+      (this as any).app = app;
+      (this as any).request = supertest(server);
+      this.state = AppFixtureState.Active;
+    } catch (error) {
+      this.state = AppFixtureState.Failed;
+
+      await app?.close().catch(() => {});
+      await Promise.allSettled(initializedFixtures.map((f) => f.delete()));
+
+      throw error;
+    }
   }
 
   /**
@@ -243,6 +279,10 @@ export class AppFixture {
    * This is useful to reset the state of the application between tests.
    */
   async clear(): Promise<void> {
+    if (this.state === AppFixtureState.Failed) {
+      return;
+    }
+
     if (this.state !== AppFixtureState.Active) {
       throw new Error('Cannot clear fixtures that are not active.');
     }
@@ -260,6 +300,10 @@ export class AppFixture {
    * Closes the application and deletes all fixtures.
    */
   async delete(): Promise<void> {
+    if (this.state === AppFixtureState.Failed) {
+      return;
+    }
+
     if (this.state !== AppFixtureState.Active) {
       throw new Error('Cannot delete fixtures that are not active.');
     }
