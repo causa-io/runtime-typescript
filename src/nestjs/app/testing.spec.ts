@@ -1,5 +1,10 @@
 import { jest } from '@jest/globals';
-import { Controller, Injectable, Module } from '@nestjs/common';
+import {
+  Controller,
+  Injectable,
+  Module,
+  type OnModuleInit,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { LoggingFixture } from '../testing.js';
 import { ConfigFixture } from './config-fixture.js';
@@ -33,6 +38,19 @@ class TestModule {}
 })
 class AppModule {}
 
+@Module({ controllers: [TestController] })
+class UnresolvableModule {}
+
+@Injectable()
+class FailingOnInitService implements OnModuleInit {
+  async onModuleInit(): Promise<void> {
+    throw new Error('🔥');
+  }
+}
+
+@Module({ providers: [FailingOnInitService] })
+class FailingOnInitModule {}
+
 class Fixture1 implements Fixture {
   async init(): Promise<NestJsModuleOverrider> {
     return (builder) =>
@@ -46,6 +64,14 @@ class Fixture1 implements Fixture {
 
 class Fixture2 implements Fixture {
   async init(): Promise<undefined> {}
+  async clear() {}
+  async delete() {}
+}
+
+class FailingFixture implements Fixture {
+  async init(): Promise<undefined> {
+    throw new Error('💥');
+  }
   async clear() {}
   async delete() {}
 }
@@ -239,6 +265,65 @@ describe('AppFixture', () => {
       await expect(actualPromise).rejects.toThrow(
         'Cannot initialize the application more than once.',
       );
+    });
+
+    it('should delete the initialized fixtures and rethrow when a fixture fails to initialize', async () => {
+      const fixture1 = new Fixture1();
+      const failingFixture = new FailingFixture();
+      jest.spyOn(fixture1, 'delete');
+      jest.spyOn(failingFixture, 'delete');
+      appFixture = new AppFixture(AppModule, {
+        fixtures: [fixture1, failingFixture],
+      });
+
+      const actualPromise = appFixture.init();
+
+      await expect(actualPromise).rejects.toThrow('💥');
+      expect(fixture1.delete).toHaveBeenCalledOnce();
+      expect(failingFixture.delete).not.toHaveBeenCalled();
+    });
+
+    it('should delete the fixtures and rethrow when the module fails to compile', async () => {
+      const fixture2 = new Fixture2();
+      jest.spyOn(fixture2, 'delete');
+      appFixture = new AppFixture(UnresolvableModule, { fixtures: [fixture2] });
+
+      const actualPromise = appFixture.init();
+
+      await expect(actualPromise).rejects.toThrow(/Nest can't resolve/);
+      expect(fixture2.delete).toHaveBeenCalledOnce();
+    });
+
+    it('should close the application and delete the fixtures when the application fails to initialize', async () => {
+      const fixture2 = new Fixture2();
+      jest.spyOn(fixture2, 'delete');
+      appFixture = new AppFixture(FailingOnInitModule, {
+        fixtures: [fixture2],
+      });
+
+      const actualPromise = appFixture.init();
+
+      await expect(actualPromise).rejects.toThrow('🔥');
+      expect(fixture2.delete).toHaveBeenCalledOnce();
+      expect(appFixture.app).toBeUndefined();
+      expect(appFixture.request).toBeUndefined();
+    });
+
+    it('should make clear and delete no-ops after a failed initialization', async () => {
+      const fixture1 = new Fixture1();
+      jest.spyOn(fixture1, 'clear');
+      jest.spyOn(fixture1, 'delete');
+      appFixture = new AppFixture(AppModule, {
+        fixtures: [fixture1, new FailingFixture()],
+      });
+      await expect(appFixture.init()).rejects.toThrow('💥');
+      (fixture1.delete as jest.Mock).mockClear();
+
+      await appFixture.clear();
+      await appFixture.delete();
+
+      expect(fixture1.clear).not.toHaveBeenCalled();
+      expect(fixture1.delete).not.toHaveBeenCalled();
     });
   });
 
