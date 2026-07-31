@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v2.0.2 (2026-07-31)
+
 Fixes:
 
 - Make the `AppFixture` release the resources it has allocated when its initialization fails.
