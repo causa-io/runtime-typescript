@@ -1,10 +1,12 @@
 import type { Type } from '@nestjs/common';
 import {
+  ForbiddenError,
   IncorrectEntityVersionError,
   type ErrorCase,
 } from '../../errors/index.js';
 import { ValidationError } from '../../validation/index.js';
 import {
+  ForbiddenErrorDto,
   IncorrectVersionErrorDto,
   ValidationErrorDto,
   type ErrorDto,
@@ -49,6 +51,12 @@ export const incorrectEntityVersionErrorAsDto = toDtoType(
   IncorrectEntityVersionError,
   IncorrectVersionErrorDto,
 );
+
+/**
+ * Maps a {@link ForbiddenError} to a {@link ForbiddenErrorDto}.
+ * The message of the error is not returned to the caller.
+ */
+export const forbiddenErrorAsDto = toDtoType(ForbiddenError, ForbiddenErrorDto);
 
 /**
  * Returns an {@link ErrorCase} that maps a {@link ValidationError} to a {@link ValidationErrorDto}.
