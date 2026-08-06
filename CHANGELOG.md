@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v2.1.1 (2026-08-06)
+
 Fixes:
 
 - Fix import cycles.
