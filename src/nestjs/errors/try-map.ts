@@ -3,7 +3,12 @@ import {
   IncorrectEntityVersionError,
   type ErrorCase,
 } from '../../errors/index.js';
-import { IncorrectVersionErrorDto, type ErrorDto } from './errors.dto.js';
+import { ValidationError } from '../../validation/index.js';
+import {
+  IncorrectVersionErrorDto,
+  ValidationErrorDto,
+  type ErrorDto,
+} from './errors.dto.js';
 import { makeHttpException } from './http-error.js';
 
 /**
@@ -44,3 +49,24 @@ export const incorrectEntityVersionErrorAsDto = toDtoType(
   IncorrectEntityVersionError,
   IncorrectVersionErrorDto,
 );
+
+/**
+ * Returns an {@link ErrorCase} that maps a {@link ValidationError} to a {@link ValidationErrorDto}.
+ * The {@link ValidationError.validationMessages} are formatted as a bullet list.
+ *
+ * @param type The type of the error to match, which can be narrower than the base {@link ValidationError}.
+ *   Defaults to the {@link ValidationError} itself.
+ * @returns The {@link ErrorCase}.
+ */
+export function validationErrorAsDto(
+  type: Type<ValidationError> = ValidationError,
+): ErrorCase<never, ValidationError> {
+  return toDto(
+    type,
+    (error) =>
+      new ValidationErrorDto(
+        error.validationMessages.map((message) => `- ${message}`).join('\n'),
+        error.fields,
+      ),
+  );
+}
