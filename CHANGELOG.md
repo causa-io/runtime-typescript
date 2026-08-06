@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v2.1.0 (2026-08-06)
+
 Features:
 
 - Expose the `fields` property on the `ValidationError`, listing the path to each property that failed validation.
