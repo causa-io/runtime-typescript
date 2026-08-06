@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+Features:
+
+- Expose the `fields` property on the `ValidationError`, listing the path to each property that failed validation.
+- Add the `validationErrorAsDto` utility, mapping a `ValidationError` (or a subclass of it) to a `ValidationErrorDto`.
+- Add the `ForbiddenError`, meant to be thrown by authorization logic, along with the `forbiddenErrorAsDto` utility mapping it to a `ForbiddenErrorDto`.
+
 ## v2.0.2 (2026-07-31)
 
 Fixes:

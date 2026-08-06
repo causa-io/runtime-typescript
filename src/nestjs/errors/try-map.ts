@@ -1,6 +1,16 @@
 import type { Type } from '@nestjs/common';
-import type { ErrorCase } from '../../errors/index.js';
-import type { ErrorDto } from './errors.dto.js';
+import {
+  ForbiddenError,
+  IncorrectEntityVersionError,
+  type ErrorCase,
+} from '../../errors/index.js';
+import { ValidationError } from '../../validation/index.js';
+import {
+  ForbiddenErrorDto,
+  IncorrectVersionErrorDto,
+  ValidationErrorDto,
+  type ErrorDto,
+} from './errors.dto.js';
 import { makeHttpException } from './http-error.js';
 
 /**
@@ -32,4 +42,39 @@ export function toDtoType<E>(
     type,
     throw: () => makeHttpException(new dtoType()),
   };
+}
+
+/**
+ * Maps an {@link IncorrectEntityVersionError} to an {@link IncorrectVersionErrorDto}.
+ */
+export const incorrectEntityVersionErrorAsDto = toDtoType(
+  IncorrectEntityVersionError,
+  IncorrectVersionErrorDto,
+);
+
+/**
+ * Maps a {@link ForbiddenError} to a {@link ForbiddenErrorDto}.
+ * The message of the error is not returned to the caller.
+ */
+export const forbiddenErrorAsDto = toDtoType(ForbiddenError, ForbiddenErrorDto);
+
+/**
+ * Returns an {@link ErrorCase} that maps a {@link ValidationError} to a {@link ValidationErrorDto}.
+ * The {@link ValidationError.validationMessages} are formatted as a bullet list.
+ *
+ * @param type The type of the error to match, which can be narrower than the base {@link ValidationError}.
+ *   Defaults to the {@link ValidationError} itself.
+ * @returns The {@link ErrorCase}.
+ */
+export function validationErrorAsDto(
+  type: Type<ValidationError> = ValidationError,
+): ErrorCase<never, ValidationError> {
+  return toDto(
+    type,
+    (error) =>
+      new ValidationErrorDto(
+        error.validationMessages.map((message) => `- ${message}`).join('\n'),
+        error.fields,
+      ),
+  );
 }

@@ -1,5 +1,6 @@
-import { IsBoolean, IsString } from 'class-validator';
+import { IsBoolean, IsString, MaxLength } from 'class-validator';
 import 'jest-extended';
+import { ValidateNestedType } from './decorators/index.js';
 import { ValidationError } from './errors.js';
 import { parseObject, validateObject } from './parser.js';
 
@@ -13,6 +14,28 @@ class MyObject {
 
   @IsBoolean()
   booleanProperty!: boolean;
+}
+
+class MyObjectWithSeveralConstraints {
+  constructor(data: MyObjectWithSeveralConstraints) {
+    Object.assign(this, data);
+  }
+
+  @IsString()
+  @MaxLength(3)
+  stringProperty!: string;
+}
+
+class MyParentObject {
+  constructor(data: MyParentObject) {
+    Object.assign(this, data);
+  }
+
+  @ValidateNestedType(() => MyObject)
+  child!: MyObject;
+
+  @ValidateNestedType(() => MyObject)
+  children!: MyObject[];
 }
 
 describe('parser', () => {
@@ -39,14 +62,16 @@ describe('parser', () => {
 
       await expect(actualPromise).rejects.toThrow(ValidationError);
       await expect(actualPromise).rejects.toMatchObject({
-        validationMessages: expect.toSatisfy((messages: string[]) => {
-          expect(messages.sort()).toEqual([
-            'booleanProperty must be a boolean value',
-            'property unknownProperty should not exist',
-            'stringProperty must be a string',
-          ]);
-          return true;
-        }),
+        validationMessages: expect.toIncludeSameMembers([
+          'booleanProperty must be a boolean value',
+          'property unknownProperty should not exist',
+          'stringProperty must be a string',
+        ]),
+        fields: expect.toIncludeSameMembers([
+          'booleanProperty',
+          'stringProperty',
+          'unknownProperty',
+        ]),
       });
     });
 
@@ -59,6 +84,7 @@ describe('parser', () => {
           expect(messages).toEqual(['input must be an object']);
           return true;
         }),
+        fields: [],
       });
     });
 
@@ -71,6 +97,7 @@ describe('parser', () => {
           expect(messages).toEqual(['input must be an object']);
           return true;
         }),
+        fields: [],
       });
     });
 
@@ -87,6 +114,55 @@ describe('parser', () => {
       });
 
       await expect(actualPromise).resolves.toBeUndefined();
+    });
+
+    it('should deduplicate the fields that failed validation', async () => {
+      const obj = new MyObjectWithSeveralConstraints({
+        stringProperty: 1234 as any,
+      });
+
+      const actualPromise = validateObject(obj);
+
+      await expect(actualPromise).rejects.toMatchObject({
+        validationMessages: expect.toIncludeSameMembers([
+          'stringProperty must be a string',
+          'stringProperty must be shorter than or equal to 3 characters',
+        ]),
+        fields: ['stringProperty'],
+      });
+    });
+
+    it('should reference the paths to the nested fields that failed validation', async () => {
+      const obj = new MyParentObject({
+        child: new MyObject({
+          stringProperty: '✅',
+          booleanProperty: '❌' as any,
+        }),
+        children: [
+          new MyObject({ stringProperty: '✅', booleanProperty: true }),
+          new MyObject({ stringProperty: 1234 as any, booleanProperty: true }),
+        ],
+      });
+
+      const actualPromise = validateObject(obj);
+
+      await expect(actualPromise).rejects.toMatchObject({
+        fields: expect.toIncludeSameMembers([
+          'child.booleanProperty',
+          'children.1.stringProperty',
+        ]),
+      });
+    });
+
+    it('should not reference any field when the input has no validation metadata', async () => {
+      const actualPromise = validateObject({ someProperty: '👋' });
+
+      await expect(actualPromise).rejects.toMatchObject({
+        validationMessages: [
+          'an unknown value was passed to the validate function',
+        ],
+        fields: [],
+      });
     });
   });
 
@@ -117,14 +193,16 @@ describe('parser', () => {
 
       await expect(actualPromise).rejects.toThrow(ValidationError);
       await expect(actualPromise).rejects.toMatchObject({
-        validationMessages: expect.toSatisfy((messages: string[]) => {
-          expect(messages.sort()).toEqual([
-            'booleanProperty must be a boolean value',
-            'property unknownProperty should not exist',
-            'stringProperty must be a string',
-          ]);
-          return true;
-        }),
+        validationMessages: expect.toIncludeSameMembers([
+          'booleanProperty must be a boolean value',
+          'property unknownProperty should not exist',
+          'stringProperty must be a string',
+        ]),
+        fields: expect.toIncludeSameMembers([
+          'booleanProperty',
+          'stringProperty',
+          'unknownProperty',
+        ]),
       });
     });
 
@@ -137,6 +215,7 @@ describe('parser', () => {
           expect(messages).toEqual(['payload must be a plain object']);
           return true;
         }),
+        fields: [],
       });
     });
 

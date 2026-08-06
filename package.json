@@ -54,7 +54,7 @@
   },
   "devDependencies": {
     "@nestjs/testing": "^11.1.28",
-    "@swc/core": "^1.15.46",
+    "@swc/core": "^1.15.47",
     "@swc/jest": "^0.2.39",
     "@tsconfig/node22": "^22.0.5",
     "@types/express": "^5.0.6",
