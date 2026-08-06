@@ -1,6 +1,9 @@
 import type { Type } from '@nestjs/common';
-import type { ErrorCase } from '../../errors/index.js';
-import type { ErrorDto } from './errors.dto.js';
+import {
+  IncorrectEntityVersionError,
+  type ErrorCase,
+} from '../../errors/index.js';
+import { IncorrectVersionErrorDto, type ErrorDto } from './errors.dto.js';
 import { makeHttpException } from './http-error.js';
 
 /**
@@ -33,3 +36,11 @@ export function toDtoType<E>(
     throw: () => makeHttpException(new dtoType()),
   };
 }
+
+/**
+ * Maps an {@link IncorrectEntityVersionError} to an {@link IncorrectVersionErrorDto}.
+ */
+export const incorrectEntityVersionErrorAsDto = toDtoType(
+  IncorrectEntityVersionError,
+  IncorrectVersionErrorDto,
+);
