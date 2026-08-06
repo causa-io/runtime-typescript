@@ -14,7 +14,7 @@ import {
 } from '@nestjs/terminus';
 import { Public } from '../auth/index.js';
 import type { HealthChecker } from './checker.js';
-import { HEALTHCHECK_ENDPOINT } from './index.js';
+import { HEALTHCHECK_ENDPOINT } from './endpoint.js';
 import { terminusModuleWithLogger } from './terminus.module.js';
 
 /**

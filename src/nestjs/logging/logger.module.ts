@@ -2,7 +2,7 @@ import type { DynamicModule, ModuleMetadata } from '@nestjs/common';
 import { LoggerModule as PinoLoggerModule } from 'nestjs-pino';
 import type { Logger } from 'pino';
 import { getDefaultLogger } from '../../logging/index.js';
-import { HEALTHCHECK_ENDPOINT } from '../healthcheck/index.js';
+import { HEALTHCHECK_ENDPOINT } from '../healthcheck/endpoint.js';
 
 /**
  * The NestJS injection token for the {@link LoggerModuleOptions}.

@@ -1,5 +1,5 @@
 import { type Type } from '@nestjs/common';
-import { ErrorDto } from '../errors/index.js';
+import type { ErrorDto } from '../errors/errors.dto.js';
 
 /**
  * The metadata key used to store the API error description.
