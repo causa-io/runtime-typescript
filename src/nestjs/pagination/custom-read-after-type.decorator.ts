@@ -2,7 +2,7 @@ import { plainToInstance, Transform } from 'class-transformer';
 import { ValidateNested } from 'class-validator';
 import { ValidationErrorDto } from '../errors/errors.dto.js';
 import { throwHttpErrorResponse } from '../errors/http-error.js';
-import { PageQuery } from './query.js';
+import type { PageQuery } from './query.js';
 
 /**
  * Flag to detect that the {@link PageQuery.readAfter} property has been decorated with {@link CustomReadAfterType}, and

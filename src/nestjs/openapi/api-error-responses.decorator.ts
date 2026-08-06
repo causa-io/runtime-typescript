@@ -1,6 +1,6 @@
 import type { Type } from '@nestjs/common';
 import { ApiExtraModels, ApiResponse, refs } from '@nestjs/swagger';
-import { ErrorDto } from '../index.js';
+import type { ErrorDto } from '../errors/errors.dto.js';
 import { getApiErrorDescription } from './api-error-description.decorator.js';
 import { getApiErrorStatusCode } from './api-error-status-code.decorator.js';
 

@@ -1,7 +1,7 @@
 import { HttpStatus } from '@nestjs/common';
 import { ApiProperty } from '@nestjs/swagger';
 import { IsString } from 'class-validator';
-import { ApiConstantProperty } from '../openapi/index.js';
+import { ApiConstantProperty } from '../openapi/api-constant-property.decorator.js';
 import type { ErrorResponse } from './http-error.js';
 
 /**

@@ -1,5 +1,5 @@
 import { HttpStatus, type Type } from '@nestjs/common';
-import { ErrorDto } from '../errors/index.js';
+import type { ErrorDto } from '../errors/errors.dto.js';
 import { ApiConstantProperty } from './api-constant-property.decorator.js';
 
 /**
