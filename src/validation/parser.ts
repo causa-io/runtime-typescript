@@ -10,16 +10,46 @@ import { validatorOptions } from './configuration.js';
 import { ValidationError } from './errors.js';
 
 /**
- * Flattens all the validation error messages contained in the given errors and their children.
+ * A single validation failure, referencing the path to the property that failed validation.
+ */
+type ValidationFailure = {
+  /**
+   * The path to the property that failed validation, e.g. `items.0.name`.
+   * This is an empty string when the failure applies to the validated payload as a whole.
+   */
+  field: string;
+
+  /**
+   * The message describing why the validation failed.
+   */
+  message: string;
+};
+
+/**
+ * Flattens all the validation failures contained in the given errors and their children.
  *
  * @param errors The errors returned by `class-validator`'s {@link validate}.
- * @returns The error messages.
+ * @param parentPath The path to the property holding the given errors, if any.
+ * @returns The validation failures.
  */
-function getErrorMessages(errors: ClassValidationError[]): string[] {
-  return errors.flatMap((error) => [
-    ...Object.values(error.constraints ?? {}),
-    ...getErrorMessages(error.children ?? []),
-  ]);
+function getFailures(
+  errors: ClassValidationError[],
+  parentPath = '',
+): ValidationFailure[] {
+  return errors.flatMap((error) => {
+    // Although it is not typed as such, `property` is `undefined` for the error returned when `forbidUnknownValues` is
+    // enabled and the validated object has no metadata at all.
+    const property = error.property ?? '';
+    const field = parentPath ? `${parentPath}.${property}` : property;
+
+    return [
+      ...Object.values(error.constraints ?? {}).map((message) => ({
+        field,
+        message,
+      })),
+      ...getFailures(error.children ?? [], field),
+    ];
+  });
 }
 
 /**
@@ -41,8 +71,11 @@ export async function validateObject(
   const errors = await validate(obj, { ...validatorOptions, ...options });
 
   if (errors.length > 0) {
-    const validationMessages = getErrorMessages(errors);
-    throw new ValidationError(validationMessages);
+    const failures = getFailures(errors);
+    throw new ValidationError(
+      failures.map(({ message }) => message),
+      [...new Set(failures.map(({ field }) => field).filter((f) => f))],
+    );
   }
 }
 
