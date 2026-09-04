@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v3.0.0-beta.1 (2026-09-04)
+
 Breaking changes:
 
 - Upgrade to NestJS 12 and `nestjs-pino` 5.
