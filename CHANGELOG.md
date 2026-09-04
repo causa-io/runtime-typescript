@@ -7,6 +7,7 @@ Breaking changes:
 - Upgrade to NestJS 12 and `nestjs-pino` 5.
 - Upgrade the minimum Node.js version to `22.12`, as required by NestJS 12.
 - Remove the deprecated `BaseHealthIndicatorService`. Health indicators should implement the `HealthChecker` interface directly, and build their results using the injected `HealthIndicatorService`.
+- Remove the deprecated `NullableAsOptional_` and `OptionalAsNullable_` types, in favor of `NullableAsOptionalFlat` and `OptionalAsNullableFlat`.
 
 Fixes:
 
