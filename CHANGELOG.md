@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+Breaking changes:
+
+- Upgrade to NestJS 12 and `nestjs-pino` 5.
+- Upgrade the minimum Node.js version to `22.12`, as required by NestJS 12.
+- Remove the deprecated `BaseHealthIndicatorService`. Health indicators should implement the `HealthChecker` interface directly, and build their results using the injected `HealthIndicatorService`.
+
+Fixes:
+
+- The `OutboxEventSender` now stops polling and waits for its ongoing operations in `beforeApplicationShutdown` rather than `onApplicationShutdown`.
+
 ## v2.1.1 (2026-08-06)
 
 Fixes:
