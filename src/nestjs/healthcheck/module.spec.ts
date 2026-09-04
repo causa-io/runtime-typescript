@@ -1,5 +1,8 @@
-import { type INestApplication, Module } from '@nestjs/common';
-import { HealthCheckError, type HealthIndicatorResult } from '@nestjs/terminus';
+import { Injectable, type INestApplication, Module } from '@nestjs/common';
+import {
+  HealthIndicatorService,
+  type HealthIndicatorResult,
+} from '@nestjs/terminus';
 import 'jest-extended';
 import supertest from 'supertest';
 import TestAgent from 'supertest/lib/agent.js';
@@ -8,24 +11,32 @@ import { createApp } from '../app/index.js';
 import { AuthModule } from '../auth/index.js';
 import { LoggerModule } from '../logging/index.js';
 import { generateOpenApiDocument } from '../openapi/utils.test.js';
-import { BaseHealthIndicatorService } from './base-health-indicator.service.js';
+import type { HealthChecker } from './checker.js';
 import { HealthCheckModule } from './module.js';
 
 let isIndicator1Healthy = true;
+let indicator1Error: Error | undefined;
 
-class Indicator1 extends BaseHealthIndicatorService {
+@Injectable()
+class Indicator1 implements HealthChecker {
+  constructor(private readonly healthIndicator: HealthIndicatorService) {}
+
   async check(): Promise<HealthIndicatorResult> {
-    if (!isIndicator1Healthy) {
-      throw new HealthCheckError('Oopsie', this.getStatus('indicator1', false));
+    if (indicator1Error) {
+      throw indicator1Error;
     }
 
-    return this.getStatus('indicator1', true);
+    const session = this.healthIndicator.check('indicator1');
+    return isIndicator1Healthy ? session.up() : session.down();
   }
 }
 
-class Indicator2 extends BaseHealthIndicatorService {
+@Injectable()
+class Indicator2 implements HealthChecker {
+  constructor(private readonly healthIndicator: HealthIndicatorService) {}
+
   async check(): Promise<HealthIndicatorResult> {
-    return this.getStatus('indicator2', true);
+    return this.healthIndicator.check('indicator2').up();
   }
 }
 
@@ -51,6 +62,7 @@ describe('HealthcheckModule', () => {
 
   beforeEach(() => {
     isIndicator1Healthy = true;
+    indicator1Error = undefined;
   });
 
   afterAll(async () => {
@@ -80,6 +92,12 @@ describe('HealthcheckModule', () => {
         }),
       }),
     ]);
+  });
+
+  it('should return an internal server error if one of the indicators throws', async () => {
+    indicator1Error = new Error('💥');
+
+    await request.get('/health').expect(500);
   });
 
   it('should exclude the health endpoint from the OpenAPI documentation', async () => {

@@ -1,15 +1,8 @@
 import { jest } from '@jest/globals';
-import {
-  Controller,
-  Get,
-  HttpException,
-  HttpStatus,
-  type INestApplication,
-  Inject,
-  Logger,
-} from '@nestjs/common';
+import type * as nestjsCommonType from '@nestjs/common';
+import type { INestApplication, Type } from '@nestjs/common';
 import type { NestExpressApplication } from '@nestjs/platform-express';
-import { Test } from '@nestjs/testing';
+import type { Test as TestType } from '@nestjs/testing';
 import type { PinoLogger as PinoLoggerType } from 'nestjs-pino';
 import { pino, type Logger as PinoLogger } from 'pino';
 import supertest from 'supertest';
@@ -19,39 +12,51 @@ import type { LoggerModule as LoggerModuleType } from './logger.module.js';
 
 describe('LoggerModule', () => {
   let loggingTesting: typeof loggingTestingType;
+  // NestJS packages are imported dynamically, such that they are the very same instances as the ones used by the
+  // dynamically imported `LoggerModule` and `nestjs-pino`. Otherwise, `jest.resetModules()` leaves two copies of
+  // `@nestjs/common` and `@nestjs/core` in play, which breaks dependency injection and `instanceof` checks.
+  let Test: typeof TestType;
+  let TestController: Type;
   let LoggerModule: typeof LoggerModuleType;
   let PinoNestJsLogger: any;
   let PinoLogger: typeof PinoLoggerType;
 
   let healthFun: () => string;
 
-  @Controller()
-  class TestController {
-    private readonly logger = new Logger(TestController.name);
+  function createTestController(common: typeof nestjsCommonType): Type {
+    const { Controller, Get, HttpException, HttpStatus, Inject, Logger } =
+      common;
 
-    constructor(
-      // This allows to inject `PinoLogger` without importing the class at the root of this file.
-      // This would otherwise interfere with mocking.
-      @Inject('PinoLoggerCustomToken')
-      private readonly pinoLogger: PinoLoggerType,
-    ) {}
+    @Controller()
+    class TestController {
+      private readonly logger = new Logger(TestController.name);
 
-    @Get('health')
-    health() {
-      return healthFun();
+      constructor(
+        // This allows to inject `PinoLogger` without importing the class at the root of this file.
+        // This would otherwise interfere with mocking.
+        @Inject('PinoLoggerCustomToken')
+        private readonly pinoLogger: PinoLoggerType,
+      ) {}
+
+      @Get('health')
+      health() {
+        return healthFun();
+      }
+
+      @Get('someRoute')
+      route() {
+        this.logger.warn({ extraParam: '✨' }, 'some warning');
+        this.pinoLogger.assign({ assigned: '🍦' });
+        return 'Yo';
+      }
+
+      @Get('someError')
+      routeError() {
+        throw new HttpException({}, HttpStatus.I_AM_A_TEAPOT);
+      }
     }
 
-    @Get('someRoute')
-    route() {
-      this.logger.warn({ extraParam: '✨' }, 'some warning');
-      this.pinoLogger.assign({ assigned: '🍦' });
-      return 'Yo';
-    }
-
-    @Get('someError')
-    routeError() {
-      throw new HttpException({}, HttpStatus.I_AM_A_TEAPOT);
-    }
+    return TestController;
   }
 
   let app: INestApplication;
@@ -62,6 +67,8 @@ describe('LoggerModule', () => {
 
     jest.resetModules();
 
+    ({ Test } = await import('@nestjs/testing'));
+    TestController = createTestController(await import('@nestjs/common'));
     loggingTesting = await import('../../logging/testing.js');
     ({ LoggerModule } = await import('./logger.module.js'));
     ({ Logger: PinoNestJsLogger, PinoLogger } = await import('nestjs-pino'));
