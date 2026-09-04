@@ -36,7 +36,7 @@ describe('OutboxEventSender', () => {
     let sender: MockSender | undefined;
 
     afterEach(async () => {
-      await sender?.onApplicationShutdown();
+      await sender?.beforeApplicationShutdown();
       sender = undefined;
     });
 
@@ -62,7 +62,7 @@ describe('OutboxEventSender', () => {
       });
 
       (sender as any).pollOutboxAtInterval();
-      const actualPromise = sender.onApplicationShutdown();
+      const actualPromise = sender.beforeApplicationShutdown();
       const actualFirstResult = await Promise.race([
         actualPromise,
         setTimeout(50, 'finishesFirst'),
@@ -85,7 +85,7 @@ describe('OutboxEventSender', () => {
       sender.publish([
         { id: '2', topic: 'topic2', data: Buffer.from('🎁'), attributes: {} },
       ]);
-      const actualPromise = sender.onApplicationShutdown();
+      const actualPromise = sender.beforeApplicationShutdown();
       const actualFirstResult = await Promise.race([
         actualPromise,
         setTimeout(50, 'finishesFirst'),
@@ -119,7 +119,7 @@ describe('OutboxEventSender', () => {
     });
 
     it('should not start polling when the application is shutting down', async () => {
-      await sender.onApplicationShutdown();
+      await sender.beforeApplicationShutdown();
       await (sender as any).pollOutboxAtInterval();
 
       expect(fetchEventsSpy).not.toHaveBeenCalled();
@@ -262,7 +262,7 @@ describe('OutboxEventSender', () => {
     });
 
     it('should not start publishing when the application is shutting down', async () => {
-      await sender.onApplicationShutdown();
+      await sender.beforeApplicationShutdown();
 
       await sender.publish([
         { id: '1', topic: 'topic1', data: Buffer.from('🎉'), attributes: {} },

@@ -1,4 +1,4 @@
-import type { OnApplicationShutdown } from '@nestjs/common';
+import type { BeforeApplicationShutdown } from '@nestjs/common';
 import type { EventPublisher } from '../../events/index.js';
 import { Logger } from '../../nestjs/index.js';
 import type { OutboxEvent } from './event.js';
@@ -49,7 +49,7 @@ const DEFAULT_LEASE_DURATION = 30000;
 /**
  * A sender that polls an outbox for events and publishes them.
  */
-export abstract class OutboxEventSender implements OnApplicationShutdown {
+export abstract class OutboxEventSender implements BeforeApplicationShutdown {
   /**
    * The maximum number of events to publish in a single batch when polling the outbox.
    */
@@ -109,7 +109,14 @@ export abstract class OutboxEventSender implements OnApplicationShutdown {
       : undefined;
   }
 
-  async onApplicationShutdown(): Promise<void> {
+  /**
+   * Stops polling the outbox and waits for the ongoing operations to finish.
+   * NestJS calls `beforeApplicationShutdown` on every module before calling `onApplicationShutdown` on any of them.
+   * Draining here rather than in `onApplicationShutdown` ensures the events being published are flushed before the
+   * resources the sender depends on (e.g. the database and the publisher's client) are closed, whatever the order in
+   * which the corresponding modules are shut down.
+   */
+  async beforeApplicationShutdown(): Promise<void> {
     this.isShuttingDown = true;
 
     if (this.pollingIntervalTimeout) {
