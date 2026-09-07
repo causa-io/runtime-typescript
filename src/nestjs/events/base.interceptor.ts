@@ -121,7 +121,7 @@ export abstract class BaseEventHandlerInterceptor implements NestInterceptor {
     try {
       const result = await parseFn();
 
-      this.logger.info('Successfully parsed event body.');
+      this.logger.debug('Successfully parsed event body.');
 
       return result;
     } catch (error: any) {
