@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v3.0.0-beta.2 (2026-09-07)
+
 Chores:
 
 - Set most logs to debug level.
