@@ -49,7 +49,7 @@ type GetLoggedObjectsOptions = {
   logger?: Logger;
 
   /**
-   * The level of the messages to return (`30` for info, `40` for warn, `50` for error).
+   * The level of the messages to return (`20` for debug, `30` for info, `40` for warn, `50` for error).
    */
   level?: number;
 
@@ -89,6 +89,20 @@ export function getLoggedObjects(
 
       return true;
     });
+}
+
+/**
+ * Retrieves objects logged by `pino` at the debug level.
+ * See {@link getLoggedObjects}.
+ * Note that the logger must be configured with a `debug` level for those logs to be emitted at all.
+ *
+ * @param options Options when getting the logged objects.
+ * @returns A list of JavaScript objects for debug logs.
+ */
+export function getLoggedDebugs(
+  options: Omit<GetLoggedObjectsOptions, 'level'> = {},
+): Record<string, any>[] {
+  return getLoggedObjects({ ...options, level: 20 });
 }
 
 /**
