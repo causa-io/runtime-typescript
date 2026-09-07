@@ -13,11 +13,14 @@ import { IsString } from 'class-validator';
 import type { Request } from 'express';
 import 'jest-extended';
 import { PinoLogger } from 'nestjs-pino';
+import type { Logger } from 'pino';
 import supertest from 'supertest';
 import TestAgent from 'supertest/lib/agent.js';
 import { RetryableError } from '../../errors/index.js';
 import { InvalidEventError } from '../../events/index.js';
+import { createLogger } from '../../logging/index.js';
 import {
+  getLoggedDebugs,
   getLoggedErrors,
   getLoggedInfos,
   getLoggedWarnings,
@@ -142,12 +145,15 @@ class MyController {
 describe('BaseEventHandlerInterceptor', () => {
   let app: INestApplication;
   let request: TestAgent<supertest.Test>;
+  let logger: Logger;
 
   beforeEach(async () => {
-    spyOnLogger();
+    logger = createLogger();
+    logger.level = 'debug';
+    spyOnLogger(logger);
 
     const testModule = await Test.createTestingModule({
-      imports: [LoggerModule.forRoot()],
+      imports: [LoggerModule.forRoot({ logger })],
       controllers: [MyController],
       providers: [
         { provide: APP_INTERCEPTOR, useClass: DefaultEventHandlerInterceptor },
@@ -172,7 +178,9 @@ describe('BaseEventHandlerInterceptor', () => {
       .send({ id: '1234', someValue: 'hello' })
       .expect(201, { id: '1234', someValue: 'HELLO' });
 
-    expect(getLoggedInfos({ predicate: (o) => o.message === '👋' })).toEqual([
+    expect(
+      getLoggedInfos({ logger, predicate: (o) => o.message === '👋' }),
+    ).toEqual([
       expect.objectContaining({
         eventId: '1234',
         attributes: {},
@@ -180,7 +188,8 @@ describe('BaseEventHandlerInterceptor', () => {
     ]);
     // Only the default handler should have parsed the event.
     expect(
-      getLoggedInfos({
+      getLoggedDebugs({
+        logger,
         predicate: (o) => o.message === 'Successfully parsed event body.',
       }),
     ).toHaveLength(1);
@@ -193,7 +202,9 @@ describe('BaseEventHandlerInterceptor', () => {
       .send({ id: '1234', someValue: 'hello' })
       .expect(201, { id: '1234', someValue: 'HELLO' });
 
-    expect(getLoggedInfos({ predicate: (o) => o.message === '👋' })).toEqual([
+    expect(
+      getLoggedInfos({ logger, predicate: (o) => o.message === '👋' }),
+    ).toEqual([
       expect.objectContaining({
         eventId: '1234',
         attributes: { someAttribute: 'yay!' },
@@ -212,9 +223,9 @@ describe('BaseEventHandlerInterceptor', () => {
     await request.post('/').send({ id: '1234' }).expect(201);
 
     expect(
-      getLoggedInfos({ predicate: (o) => o.message === '👋' }),
+      getLoggedInfos({ logger, predicate: (o) => o.message === '👋' }),
     ).toBeEmpty();
-    expect(getLoggedErrors()).toEqual([
+    expect(getLoggedErrors({ logger })).toEqual([
       expect.objectContaining({
         eventId: '1234',
         validationMessages: ['someValue must be a string'],
@@ -226,18 +237,18 @@ describe('BaseEventHandlerInterceptor', () => {
     await request.post('/other').expect(201);
 
     expect(
-      getLoggedInfos({ predicate: (o) => o.message === '👋' }),
+      getLoggedInfos({ logger, predicate: (o) => o.message === '👋' }),
     ).toBeEmpty();
-    expect(getLoggedErrors()).toBeEmpty();
+    expect(getLoggedErrors({ logger })).toBeEmpty();
   });
 
   it('should not process a route for a different event handler', async () => {
     await request.post('/otherHandler').expect(201, {});
 
     expect(
-      getLoggedInfos({ predicate: (o) => o.message === '👋' }),
+      getLoggedInfos({ logger, predicate: (o) => o.message === '👋' }),
     ).toBeEmpty();
-    expect(getLoggedErrors()).toBeEmpty();
+    expect(getLoggedErrors({ logger })).toBeEmpty();
   });
 
   it('should process a route for the correct event handler', async () => {
@@ -246,14 +257,14 @@ describe('BaseEventHandlerInterceptor', () => {
       .send({ id: '1234', someValue: 'hello' })
       .expect(201, { id: '1234', someValue: 'HELLO' });
 
-    expect(getLoggedErrors()).toBeEmpty();
+    expect(getLoggedErrors({ logger })).toBeEmpty();
   });
 
   it('should catch InvalidEventErrors from the parser', async () => {
     await request.post('/').set('x-boom', 'invalidEvent').expect(201);
 
     expect(
-      getLoggedInfos({ predicate: (o) => o.message === '👋' }),
+      getLoggedInfos({ logger, predicate: (o) => o.message === '👋' }),
     ).toBeEmpty();
   });
 
@@ -261,7 +272,7 @@ describe('BaseEventHandlerInterceptor', () => {
     await request.post('/').set('x-boom', 'unknownError').expect(500);
 
     expect(
-      getLoggedInfos({ predicate: (o) => o.message === '👋' }),
+      getLoggedInfos({ logger, predicate: (o) => o.message === '👋' }),
     ).toBeEmpty();
   });
 
@@ -272,25 +283,25 @@ describe('BaseEventHandlerInterceptor', () => {
 
     expect(responseTime - requestTime).toBeGreaterThanOrEqual(500);
     expect(
-      getLoggedInfos({ predicate: (o) => o.message === '👋' }),
+      getLoggedInfos({ logger, predicate: (o) => o.message === '👋' }),
     ).toBeEmpty();
-    expect(getLoggedWarnings()).toEqual([
+    expect(getLoggedWarnings({ logger })).toEqual([
       expect.objectContaining({
         eventId: '1234',
         error: expect.stringContaining('♻️'),
         message: '♻️',
       }),
     ]);
-    expect(getLoggedErrors()).toBeEmpty();
+    expect(getLoggedErrors({ logger })).toBeEmpty();
   });
 
   it('should return 201 and log an error when the handler throws a non-retryable error', async () => {
     await request.post('/').send({ id: '1234', someValue: '💥' }).expect(201);
 
     expect(
-      getLoggedInfos({ predicate: (o) => o.message === '👋' }),
+      getLoggedInfos({ logger, predicate: (o) => o.message === '👋' }),
     ).toBeEmpty();
-    expect(getLoggedErrors()).toEqual([
+    expect(getLoggedErrors({ logger })).toEqual([
       expect.objectContaining({
         eventId: '1234',
         error: expect.stringContaining('💥'),
@@ -305,12 +316,13 @@ describe('BaseEventHandlerInterceptor', () => {
       .send({ id: '1234', someValue: 'hello' })
       .expect(201, { id: '1234', someValue: 'HELLO' });
 
-    expect(getLoggedInfos({ predicate: (o) => o.message === '🎯' })).toEqual([
-      expect.objectContaining({ eventId: '1234', message: '🎯' }),
-    ]);
+    expect(
+      getLoggedInfos({ logger, predicate: (o) => o.message === '🎯' }),
+    ).toEqual([expect.objectContaining({ eventId: '1234', message: '🎯' })]);
     // Only the opt-in handler should have parsed the event.
     expect(
-      getLoggedInfos({
+      getLoggedDebugs({
+        logger,
         predicate: (o) => o.message === 'Successfully parsed event body.',
       }),
     ).toHaveLength(1);

@@ -81,7 +81,7 @@ export abstract class OutboxTransactionRunner<
     options: ReadWriteTransactionOptions,
     runFn: TransactionFn<RWT, RT>,
   ): Promise<RT> {
-    this.logger.info('Starting a transaction.');
+    this.logger.debug('Starting a transaction.');
 
     const { result, events } = await this.runStateTransaction(
       () =>
@@ -91,13 +91,13 @@ export abstract class OutboxTransactionRunner<
         ),
       options,
       async (transaction) => {
-        this.logger.info('Starting transaction attempt.');
+        this.logger.debug('Starting transaction attempt.');
 
         const result = await runFn(transaction);
 
         const events = await this.commitEvents(transaction);
 
-        this.logger.info(
+        this.logger.debug(
           { numStagedEvents: events.length },
           'Committing the transaction.',
         );
@@ -106,13 +106,13 @@ export abstract class OutboxTransactionRunner<
     );
 
     const numCommittedEvents = events.length;
-    this.logger.info(
+    this.logger.debug(
       { numCommittedEvents },
       'Successfully committed the transaction.',
     );
 
     if (numCommittedEvents > 0) {
-      this.logger.info(
+      this.logger.debug(
         { numTransactionEvents: numCommittedEvents },
         'Publishing transaction events.',
       );

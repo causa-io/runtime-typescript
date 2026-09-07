@@ -228,7 +228,7 @@ export abstract class OutboxEventSender implements BeforeApplicationShutdown {
       ([, success]) => success,
     ).length;
     const numFailedEvents = numBatchedEvents - numPublishedEvents;
-    this.logger.info(
+    this.logger.debug(
       { numBatchedEvents, numPublishedEvents, numFailedEvents },
       'Finished publishing events.',
     );
