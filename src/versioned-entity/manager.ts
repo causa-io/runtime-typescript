@@ -419,10 +419,11 @@ export class VersionedEntityManager<
 
   /**
    * Defines how an entity should be updated.
-   * The default implementation performs a shallow merge of the existing entity and the update data. Override this
-   * method to customize the update behavior.
-   * This method does not have to return a class instance, as it will be passed to `plainToInstance` to create the
-   * updated entity.
+   * The default implementation performs a shallow merge of the existing entity and the update data. Only the update
+   * data is transformed using `plainToInstance`, and the existing entity is not deep-copied. Override this method to
+   * customize the update behavior.
+   * This method does not have to return a class instance. If it does not, the returned object is transformed using
+   * `plainToInstance` to create the updated entity.
    *
    * @param existingEntity The existing entity to update.
    * @param update The update data.
@@ -432,10 +433,23 @@ export class VersionedEntityManager<
     existingEntity: EventData<E>,
     update: VersionedEntityUpdate<EventData<E>>,
   ): EventData<E> {
-    return {
-      ...existingEntity,
-      ...update,
-    };
+    if (!(existingEntity instanceof this.projectionType)) {
+      return { ...existingEntity, ...update };
+    }
+
+    const transformedUpdate: Record<string, any> = plainToInstance(
+      this.projectionType,
+      update,
+    );
+    const entity = Object.assign(
+      Object.create(this.projectionType.prototype),
+      existingEntity,
+    );
+    // Only the keys of the update are copied, as the transformed update may contain other (`undefined`) properties.
+    for (const key of Object.keys(update)) {
+      entity[key] = transformedUpdate[key];
+    }
+    return entity;
   }
 
   /**
@@ -476,13 +490,10 @@ export class VersionedEntityManager<
           update = await update(existingEntity, transaction);
         }
 
-        const entity = plainToInstance(
-          this.projectionType,
-          this.makeUpdatedObject(existingEntity, {
-            ...update,
-            updatedAt: transaction.timestamp,
-          }),
-        );
+        const entity = this.makeUpdatedObject(existingEntity, {
+          ...update,
+          updatedAt: transaction.timestamp,
+        });
 
         const event = await this.makeProcessAndPublishEvent(eventName, entity, {
           transaction,
@@ -529,11 +540,18 @@ export class VersionedEntityManager<
           validationFn: options.validationFn,
         });
 
-        const entity = plainToInstance(this.projectionType, {
-          ...existingEntity,
-          updatedAt: transaction.timestamp,
-          deletedAt: transaction.timestamp,
-        });
+        // Avoids deep-copying the existing entity when it is already an instance. Otherwise, the plain object is
+        // transformed when creating the event.
+        const entity: EventData<E> = Object.assign(
+          existingEntity instanceof this.projectionType
+            ? Object.create(this.projectionType.prototype)
+            : {},
+          existingEntity,
+          {
+            updatedAt: new Date(transaction.timestamp),
+            deletedAt: new Date(transaction.timestamp),
+          },
+        );
 
         const event = await this.makeProcessAndPublishEvent(eventName, entity, {
           transaction,
