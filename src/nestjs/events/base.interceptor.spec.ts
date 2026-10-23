@@ -147,11 +147,15 @@ describe('BaseEventHandlerInterceptor', () => {
   let request: TestAgent<supertest.Test>;
   let logger: Logger;
 
-  beforeEach(async () => {
+  beforeAll(() => {
+    // The `nestjs-pino` HTTP middleware is created once per process, with the logger of the first application.
+    // The same logger must be used by all applications, and its logged calls are cleared between tests.
     logger = createLogger();
     logger.level = 'debug';
     spyOnLogger(logger);
+  });
 
+  beforeEach(async () => {
     const testModule = await Test.createTestingModule({
       imports: [LoggerModule.forRoot({ logger })],
       controllers: [MyController],
