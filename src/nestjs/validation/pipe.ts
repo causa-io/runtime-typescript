@@ -9,28 +9,54 @@ import { ValidationErrorDto } from '../errors/errors.dto.js';
 import { makeHttpException } from '../errors/index.js';
 
 /**
- * Removes all `undefined` properties from the given object recursively.
+ * Returns the given value without `undefined` properties, recursively.
+ * Rather than deleting properties, objects holding `undefined` properties are replaced by copies with the same
+ * prototype. In V8, deleting properties switches objects to a slower "dictionary mode". Other objects and arrays are
+ * returned as is, although their children may be replaced in place.
  *
- * @param object The object to remove `undefined` properties from.
+ * @param value The value from which `undefined` properties should be removed.
+ * @returns The value without `undefined` properties.
  */
-function removeUndefinedPropertiesRecursively(object: any): void {
-  if (!object || typeof object !== 'object' || object instanceof Date) {
-    return;
+function withoutUndefinedProperties<T>(value: T): T {
+  if (!value || typeof value !== 'object' || value instanceof Date) {
+    return value;
   }
 
-  if (Array.isArray(object)) {
-    object.forEach(removeUndefinedPropertiesRecursively);
-    return;
+  if (Array.isArray(value)) {
+    value.forEach((item, index) => {
+      const stripped = withoutUndefinedProperties(item);
+      if (stripped !== item) {
+        value[index] = stripped;
+      }
+    });
+    return value;
   }
 
-  Object.entries(object).forEach(([key, value]) => {
-    if (value === undefined) {
-      delete object[key];
+  const object = value as Record<string, any>;
+  let hasUndefinedProperties = false;
+  Object.entries(object).forEach(([key, child]) => {
+    if (child === undefined) {
+      hasUndefinedProperties = true;
       return;
     }
 
-    removeUndefinedPropertiesRecursively(value);
+    const stripped = withoutUndefinedProperties(child);
+    if (stripped !== child) {
+      object[key] = stripped;
+    }
   });
+
+  if (!hasUndefinedProperties) {
+    return value;
+  }
+
+  const copy = Object.create(Object.getPrototypeOf(object));
+  Object.entries(object).forEach(([key, child]) => {
+    if (child !== undefined) {
+      copy[key] = child;
+    }
+  });
+  return copy;
 }
 
 /**
@@ -74,9 +100,7 @@ export class ValidationPipe extends BaseValidationPipe {
     // Value is being copied/transformed by `class-transformer`, however in ES2022 `undefined` (optional) class
     // properties will still be present.
     const transformed = await super.transform(value, metadata);
-    // Removing the `undefined` properties without copying the object because `class-transformer` already did that.
-    removeUndefinedPropertiesRecursively(transformed);
-    return transformed;
+    return withoutUndefinedProperties(transformed);
   }
 
   protected prependConstraintsWithParentProp(
