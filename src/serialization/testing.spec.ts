@@ -1,4 +1,5 @@
 import { Transform } from 'class-transformer';
+import { JsonObjectSerializer } from './json.js';
 import { serializeAsJavaScriptObject } from './testing.js';
 
 describe('testing', () => {
@@ -24,10 +25,21 @@ describe('testing', () => {
       });
     });
 
-    it('should serialize an object with transforms', async () => {
+    it('should not apply class-transformer decorators', async () => {
       const obj = new MyObject({ myString: 'hello' });
 
       const actualSerialized = await serializeAsJavaScriptObject(obj);
+
+      expect(actualSerialized).toEqual({ myString: 'hello' });
+    });
+
+    it('should use the provided serializer', async () => {
+      const obj = new MyObject({ myString: 'hello' });
+
+      const actualSerialized = await serializeAsJavaScriptObject(
+        obj,
+        new JsonObjectSerializer({ transformOnSerialize: true }),
+      );
 
       expect(actualSerialized).toEqual({ myString: 'HELLO' });
     });

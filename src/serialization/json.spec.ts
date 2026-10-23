@@ -19,7 +19,16 @@ describe('JsonObjectSerializer', () => {
   });
 
   describe('serialize', () => {
-    it('should convert to a plain object and serialize to JSON', async () => {
+    it('should serialize to JSON without applying class-transformer decorators', async () => {
+      const obj = new MyObject('foo');
+
+      const actualBuffer = await serializer.serialize(obj);
+
+      expect(actualBuffer.toString()).toEqual('{"value":"foo"}');
+    });
+
+    it('should apply class-transformer decorators when transformOnSerialize is set', async () => {
+      serializer = new JsonObjectSerializer({ transformOnSerialize: true });
       const obj = new MyObject('foo');
 
       const actualBuffer = await serializer.serialize(obj);

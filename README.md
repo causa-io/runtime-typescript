@@ -124,7 +124,7 @@ Basic validation classes (`IdParams` and `VersionedMutationQuery`) are also prov
 
 ### Serialization
 
-The `JsonObjectSerializer`, which implements the `ObjectSerializer` interface, performs JSON (de)serialization from and to a `Buffer` containing the JSON string. The `JsonSerializationOf` and `JsonSerializableTo` types can be used to represent JavaScript objects that have gone through JSON serialization and back (e.g. `Date`s being transformed into `string`s).
+The `JsonObjectSerializer`, which implements the `ObjectSerializer` interface, performs JSON (de)serialization from and to a `Buffer` containing the JSON string. Serialization uses `JSON.stringify` only, while deserialization uses `class-transformer` to create an instance of the requested type. To apply `class-transformer` decorators when serializing (e.g. `@Exclude` or `@Transform`), a custom `ObjectSerializer` calling `instanceToPlain` before `JSON.stringify` can be used instead. The `JsonSerializationOf` and `JsonSerializableTo` types can be used to represent JavaScript objects that have gone through JSON serialization and back (e.g. `Date`s being transformed into `string`s).
 
 The `serializeAsJavaScriptObject` testing utility from `@causa/runtime/testing` can for example be used to compare HTTP responses with typed objects.
 
