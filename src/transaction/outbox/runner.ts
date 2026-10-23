@@ -1,5 +1,4 @@
 import type { Type } from '@nestjs/common';
-import { plainToInstance } from 'class-transformer';
 import { Logger } from '../../nestjs/index.js';
 import type { ReadOnlyStateTransaction } from '../state-transaction.js';
 import {
@@ -26,7 +25,8 @@ export abstract class OutboxTransactionRunner<
   /**
    * Creates a new {@link OutboxTransactionRunner}.
    *
-   * @param outboxEventType The type for the entity representing an outbox event.
+   * @param outboxEventType The type for the entity representing an outbox event. Instances are created by calling the
+   *   constructor without arguments and assigning the event properties. `class-transformer` decorators are not applied.
    * @param sender The {@link OutboxEventSender} to use to publish events from the outbox.
    * @param logger The {@link Logger} to use.
    */
@@ -68,9 +68,9 @@ export abstract class OutboxTransactionRunner<
 
     // Not based on the transaction timestamp because we don't know how long the transaction took.
     const leaseExpiration = new Date(Date.now() + this.sender.leaseDuration);
-    const plainEvents = stagedEvents.map((e) => ({ ...e, leaseExpiration }));
-
-    const events = plainToInstance(this.outboxEventType, plainEvents);
+    const events = stagedEvents.map((e) =>
+      Object.assign(new this.outboxEventType(), e, { leaseExpiration }),
+    );
 
     await Promise.all(events.map((e) => transaction.set(e)));
 
