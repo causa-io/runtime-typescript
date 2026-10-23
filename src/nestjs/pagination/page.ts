@@ -126,7 +126,8 @@ export class Page<T, PQ extends PageQuery<any> = PageQuery> {
       });
     }
 
-    return plainToInstance(Page, { items, nextPageQuery }) as any;
+    const page = new Page<U, PageQuery>(items, null);
+    return Object.assign(page, { nextPageQuery });
   }
 
   /**
