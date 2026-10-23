@@ -142,6 +142,20 @@ export class Page<T, PQ extends PageQuery<any> = PageQuery> {
   }
 
   /**
+   * Returns the representation of the page used by `JSON.stringify`, with the `nextPageQuery` converted to a search
+   * params string.
+   * This matches the transformation applied to `nextPageQuery` by `instanceToPlain`, without deep-copying the items.
+   *
+   * @returns The serialized page.
+   */
+  toJSON(): Omit<SerializedPage<this>, 'map' | 'serialize' | 'toJSON'> {
+    return {
+      ...this,
+      nextPageQuery: convertQueryToSearchParams(this.nextPageQuery),
+    };
+  }
+
+  /**
    * Returns a {@link Page} subclass that can be used for OpenAPI generation (e.g. in `ApiResponse` decorators).
    *
    * @param type The type of items in the page.

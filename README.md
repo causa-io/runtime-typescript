@@ -88,6 +88,8 @@ The `createApp` function can be used to initialize a NestJS application from a r
 
 Note that the `AuthModule` is not automatically added because it is only relevant for front-facing APIs, and requires an additional Passport strategy to work.
 
+Responses are serialized using `JSON.stringify`, without `class-transformer`. To serialize responses using `class-transformer` decorators (e.g. `@Exclude`, `@Expose`, or `@Transform`), NestJS's `ClassSerializerInterceptor` can be applied to specific controllers or routes using `@UseInterceptors`, or globally by adding `{ provide: APP_INTERCEPTOR, useClass: ClassSerializerInterceptor }` to the providers of the business module.
+
 #### Health check
 
 NestJS provides the [`@nestjs/terminus`](https://github.com/nestjs/terminus) package to implement health checks, and not much can be added generically on top. The implementation of the actual health check may depend on the tech stack for example. However the `terminusModuleWithLogger` module provides Terminus properly configured with the pino logger.

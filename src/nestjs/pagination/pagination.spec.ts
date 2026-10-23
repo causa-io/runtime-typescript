@@ -6,7 +6,6 @@ import {
   Query,
 } from '@nestjs/common';
 import { ApiOkResponse, ApiProperty } from '@nestjs/swagger';
-import { Transform } from 'class-transformer';
 import { IsInt, IsNumberString, IsString, IsUUID } from 'class-validator';
 import 'jest-extended';
 import 'reflect-metadata';
@@ -88,7 +87,6 @@ class MyDto {
 
   @IsString()
   @ApiProperty({ description: '📝' })
-  @Transform(({ value }) => `🎉 ${value}`, { toPlainOnly: true })
   readonly description!: string;
 }
 
@@ -399,9 +397,9 @@ describe('Page', () => {
     it('should handle transformed items and use the default limit', async () => {
       await request.get('/with-limit').expect(200, {
         items: [
-          { stringId: '0', description: '🎉 Item 0' },
-          { stringId: '1', description: '🎉 Item 1' },
-          { stringId: '2', description: '🎉 Item 2' },
+          { stringId: '0', description: 'Item 0' },
+          { stringId: '1', description: 'Item 1' },
+          { stringId: '2', description: 'Item 2' },
         ],
         nextPageQuery: '?limit=3&readAfter=2',
       });
@@ -413,11 +411,11 @@ describe('Page', () => {
         .query({ limit: 20 })
         .expect(200, {
           items: [
-            { stringId: '0', description: '🎉 Item 0' },
-            { stringId: '1', description: '🎉 Item 1' },
-            { stringId: '2', description: '🎉 Item 2' },
-            { stringId: '3', description: '🎉 Item 3' },
-            { stringId: '4', description: '🎉 Item 4' },
+            { stringId: '0', description: 'Item 0' },
+            { stringId: '1', description: 'Item 1' },
+            { stringId: '2', description: 'Item 2' },
+            { stringId: '3', description: 'Item 3' },
+            { stringId: '4', description: 'Item 4' },
           ],
           nextPageQuery: `?limit=5&readAfter=4`,
         });
