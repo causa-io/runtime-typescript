@@ -28,9 +28,8 @@ export function hasEmptyIntersectionWith(
     return false;
   }
 
-  const hasCommonElements = array.some((element) =>
-    otherArray.includes(element),
-  );
+  const otherElements = new Set(otherArray);
+  const hasCommonElements = array.some((element) => otherElements.has(element));
   return !hasCommonElements;
 }
 
