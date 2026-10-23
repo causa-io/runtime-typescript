@@ -203,6 +203,34 @@ export class VersionedEntityManager<
   }
 
   /**
+   * Creates the event for the given entity, as part of an entity mutation.
+   * The default implementation only transforms the event envelope using `plainToInstance`, and sets the entity as the
+   * event `data`. This avoids deep-copying the entity. Override this method if the event requires more transformations,
+   * e.g. if the `data` property uses a `@Transform` decorator.
+   *
+   * @param eventName The name of the event.
+   * @param entity The entity to use as the event data.
+   * @param producedAt The date at which the event is produced.
+   * @returns The event.
+   */
+  protected makeEvent(
+    eventName: EventName<E>,
+    entity: EventData<E>,
+    producedAt: Date,
+  ): E {
+    const event = plainToInstance(this.eventType, {
+      id: this.generateEventId(),
+      name: eventName,
+      producedAt,
+    });
+    const data =
+      entity instanceof this.projectionType
+        ? entity
+        : plainToInstance(this.projectionType, entity);
+    return Object.assign(event, { data });
+  }
+
+  /**
    * Checks whether an entity with the same primary key columns as the given entity exists.
    * If a soft-deleted entity exists, it will be considered as not existing. However, its deleted date will be checked
    * against the transaction timestamp.
@@ -312,12 +340,7 @@ export class VersionedEntityManager<
     return await this.runner.run(
       { transaction: options.transaction },
       async (transaction) => {
-        const event = plainToInstance(this.eventType, {
-          id: this.generateEventId(),
-          name: eventName,
-          producedAt: transaction.timestamp,
-          data: entity,
-        });
+        const event = this.makeEvent(eventName, entity, transaction.timestamp);
 
         const basePublishOptions = this.getPublishOptionsForEvent(event);
         await transaction.publish(this.topic, event, {

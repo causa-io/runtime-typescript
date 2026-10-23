@@ -311,6 +311,51 @@ describe('VersionedEntityManager', () => {
         { existingEntity },
       );
     });
+
+    it('should use the provided custom event creation logic', async () => {
+      class MyManager extends VersionedEntityManager<
+        Transaction,
+        Transaction,
+        MyEvent,
+        MockRunner
+      > {
+        protected makeEvent(
+          eventName: string,
+          entity: MyEntity,
+          producedAt: Date,
+        ): MyEvent {
+          return new MyEvent({
+            id: '🆔',
+            name: eventName,
+            producedAt,
+            data: new MyEntity({ ...entity, someProperty: '🎨' }),
+          });
+        }
+      }
+      manager = new MyManager('my-topic', MyEvent, MyEntity, new MockRunner());
+
+      const actualEvent = await manager.create('myEntityCreated', {
+        id: 'abc',
+        someProperty: '🎉',
+      });
+
+      expect(actualEvent).toEqual(
+        new MyEvent({
+          id: '🆔',
+          producedAt: mockTransaction.timestamp,
+          name: 'myEntityCreated',
+          data: new MyEntity({
+            id: 'abc',
+            createdAt: mockTransaction.timestamp,
+            updatedAt: mockTransaction.timestamp,
+            deletedAt: null,
+            someProperty: '🎨',
+          }),
+        }),
+      );
+      expect(mockTransaction.entities).toEqual({ abc: actualEvent.data });
+      expectPublishedEvent(actualEvent);
+    });
   });
 
   describe('update', () => {
