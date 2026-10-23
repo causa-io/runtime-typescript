@@ -162,29 +162,42 @@ export abstract class OutboxEventSender implements BeforeApplicationShutdown {
 
   /**
    * Fetches events from the outbox and publishes them.
+   * As long as full batches of events are fetched, successfully published, and removed from the outbox, the outbox is
+   * polled again immediately, such that a backlog of events is not limited to one batch per polling interval.
    */
   async pollOutbox(): Promise<void> {
-    let events: OutboxEvent[];
-    try {
-      events = await this.fetchEvents();
-    } catch (error: any) {
-      this.logger.error(
-        { error: error.stack },
-        'Failed to fetch events from the outbox.',
+    while (!this.isShuttingDown) {
+      let events: OutboxEvent[];
+      try {
+        events = await this.fetchEvents();
+      } catch (error: any) {
+        this.logger.error(
+          { error: error.stack },
+          'Failed to fetch events from the outbox.',
+        );
+        return;
+      }
+
+      const numPolledOutboxEvents = events.length;
+      if (numPolledOutboxEvents === 0) {
+        return;
+      }
+
+      this.logger.info(
+        { numPolledOutboxEvents },
+        'Publishing events polled from outbox.',
       );
-      return;
-    }
+      const { result, outboxUpdated } = await this.publish(events);
 
-    const numPolledOutboxEvents = events.length;
-    if (numPolledOutboxEvents === 0) {
-      return;
+      const hasFailedEvents = Object.values(result).some((success) => !success);
+      if (
+        numPolledOutboxEvents < this.batchSize ||
+        hasFailedEvents ||
+        !outboxUpdated
+      ) {
+        return;
+      }
     }
-
-    this.logger.info(
-      { numPolledOutboxEvents },
-      'Publishing events polled from outbox.',
-    );
-    await this.publish(events);
   }
 
   /**
@@ -194,10 +207,14 @@ export abstract class OutboxEventSender implements BeforeApplicationShutdown {
    * should be in the outbox and can be picked up by another instance of the sender.
    *
    * @param events The events to publish.
+   * @returns The result of publishing the events, which is empty if no event was published, and whether the outbox was
+   *   successfully updated.
    */
-  async publish(events: OutboxEvent[]): Promise<void> {
+  async publish(
+    events: OutboxEvent[],
+  ): Promise<{ result: OutboxEventPublishResult; outboxUpdated: boolean }> {
     if (events.length === 0 || this.isShuttingDown) {
-      return;
+      return { result: {}, outboxUpdated: true };
     }
 
     let resolve!: () => void;
@@ -235,13 +252,17 @@ export abstract class OutboxEventSender implements BeforeApplicationShutdown {
 
     const result = Object.fromEntries(resultEntries);
 
+    let outboxUpdated = true;
     try {
       await this.updateOutbox(result);
     } catch (error: any) {
+      outboxUpdated = false;
       this.logger.error({ error: error.stack }, 'Failed to update the outbox.');
     }
 
     this.ongoingPublishing.delete(ongoingPromise);
     resolve();
+
+    return { result, outboxUpdated };
   }
 }
