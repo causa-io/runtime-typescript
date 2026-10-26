@@ -29,6 +29,8 @@ const CLOUDEVENTS_HTTP_HEADER_PREFIX = 'ce-';
 /**
  * The interceptor that should be added to controllers handling CloudEvents events.
  * Request bodies are deserialized using the provided {@link ObjectSerializer}.
+ * If the body has already been parsed by the JSON body parser and `rawBody` is not set, the parsed body is serialized
+ * back to JSON before being deserialized.
  * CloudEvents attributes are parsed from `ce-*` headers and set as the event attributes.
  * They can be retrieved using the `@EventAttributes` decorator.
  */
@@ -96,9 +98,13 @@ export class CloudEventsEventHandlerInterceptor extends BaseEventHandlerIntercep
         buffer = await rawBody(request);
       } else if (request.rawBody) {
         buffer = request.rawBody;
+      } else if (request.body !== undefined && request.is('json')) {
+        // The body has been consumed by the JSON body parser. Serializing it back avoids having to set `rawBody: true`,
+        // which would keep a copy of the body of all requests.
+        buffer = Buffer.from(JSON.stringify(request.body));
       } else {
         throw new Error(
-          'Failed to get request body as buffer. Make sure that the body is not consumed before the interceptor, or to set `rawBody: true`.',
+          'Failed to get request body as buffer. Make sure that the body is not consumed before the interceptor by a parser other than the JSON one, or set `rawBody: true`.',
         );
       }
 
