@@ -16,6 +16,7 @@ import {
   VersionedEventProcessor,
   type ProjectionWithContext,
   type VersionedProjectionOptions,
+  type VersionedStateUpdateOptions,
 } from './event-processor.js';
 import type { VersionedEntity } from './versioned-entity.js';
 
@@ -369,17 +370,23 @@ describe('VersionedEntityEventProcessor', () => {
   });
 
   describe('updateState', () => {
-    it('should allow overriding the updateState method', async () => {
+    it('should allow overriding the updateState method and pass the existing state', async () => {
       const updateStateSpy = jest.fn();
       class MyOtherProcessor extends MyProcessor {
         async updateState(
           projection: MyEntity,
           transaction: MockTransaction,
+          options?: VersionedStateUpdateOptions<MyEntity>,
         ): Promise<void> {
-          updateStateSpy(projection, transaction);
+          updateStateSpy(projection, transaction, options);
         }
       }
       const processor = new MyOtherProcessor();
+      const existingEntity = new MyEntity({
+        ...expectedEntity,
+        updatedAt: new Date('2020-01-01'),
+      });
+      mockTransaction.set(existingEntity);
 
       const actualProjection = await processor.processEvent(event);
 
@@ -387,6 +394,7 @@ describe('VersionedEntityEventProcessor', () => {
       expect(updateStateSpy).toHaveBeenCalledExactlyOnceWith(
         expectedEntity,
         mockTransaction,
+        { existingState: existingEntity },
       );
       expect(updateStateSpy.mock.calls[0][0]).toBeInstanceOf(MyEntity);
     });

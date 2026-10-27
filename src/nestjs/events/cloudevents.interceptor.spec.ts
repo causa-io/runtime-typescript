@@ -103,6 +103,19 @@ describe('CloudEventsEventHandlerInterceptor', () => {
     expectReceivedEvent({ prop: '💻' }, { id: '123', type: 'test' });
   });
 
+  it('should parse the event data and attributes from the body parsed by the JSON body parser', async () => {
+    await createAppAndRequest();
+
+    await request
+      .post('/')
+      .set('ce-id', '123')
+      .set('ce-type', 'test')
+      .send({ prop: '💻' })
+      .expect(201);
+
+    expectReceivedEvent({ prop: '💻' }, { id: '123', type: 'test' });
+  });
+
   it('should log an error when the event body cannot be obtained', async () => {
     await createAppAndRequest();
 
@@ -110,6 +123,7 @@ describe('CloudEventsEventHandlerInterceptor', () => {
       .post('/')
       .set('ce-id', '123')
       .set('ce-type', 'test')
+      .type('form')
       .send({ prop: '💻' })
       .expect(201);
 

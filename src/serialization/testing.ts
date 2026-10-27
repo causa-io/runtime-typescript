@@ -12,9 +12,13 @@ const testingJsonSerializer = new JsonObjectSerializer();
  * would exist in an HTTP response or an event.
  *
  * @param obj The object to serialize.
+ * @param serializer The serializer to use. Defaults to a {@link JsonObjectSerializer} with default options.
  * @returns The serialized object.
  */
-export async function serializeAsJavaScriptObject(obj: any): Promise<any> {
-  const buffer = await testingJsonSerializer.serialize(obj);
+export async function serializeAsJavaScriptObject(
+  obj: any,
+  serializer: JsonObjectSerializer = testingJsonSerializer,
+): Promise<any> {
+  const buffer = await serializer.serialize(obj);
   return JSON.parse(buffer.toString());
 }

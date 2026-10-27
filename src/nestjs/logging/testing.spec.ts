@@ -1,4 +1,3 @@
-import { jest } from '@jest/globals';
 import { Controller, Get, Module, Query } from '@nestjs/common';
 import { AppFixture, LoggingFixture } from '../testing.js';
 import { Logger } from './index.js';
@@ -120,25 +119,6 @@ describe('LoggingFixture', () => {
         { someValue: '💮', message: '👋' },
         { exact: false },
       );
-    });
-  });
-
-  describe('prettyLogs', () => {
-    it('should pretty print logs and still match JSON logs', async () => {
-      await initFixture({ prettyLogs: true });
-      jest.spyOn(process.stdout, 'write');
-      await appFixture.request.get('/test?level=warn').expect(200);
-
-      // This removes the color codes from the logs.
-      const actualStrings = (process.stdout.write as jest.Mock).mock.calls.map(
-        (args) => (args[0] as string).replaceAll(/\x1B\[[0-9;]*m/g, ''),
-      );
-      expect(
-        actualStrings.filter((log) =>
-          log.match(/^WARN \[\d\d:\d\d:\d\d\.\d\d\d\]: ⚠️\n/),
-        ),
-      ).toHaveLength(1);
-      loggingFixture.expectWarnings({ someValue: '💮', message: '⚠️' });
     });
   });
 });

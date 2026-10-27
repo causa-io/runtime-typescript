@@ -26,13 +26,36 @@ export type JsonSerializableTo<T, S = Date | bigint> = string extends T
     };
 
 /**
+ * Options for the {@link JsonObjectSerializer}.
+ */
+export type JsonObjectSerializerOptions = {
+  /**
+   * Whether objects should be converted to plain objects using `class-transformer` before being serialized.
+   * This applies `class-transformer` decorators at the cost of deep-copying each serialized object.
+   * Defaults to `false`.
+   */
+  readonly transformOnSerialize?: boolean;
+};
+
+/**
  * An {@link ObjectSerializer} that serializes and deserializes objects to and from JSON.
- * It uses `class-transformer` to convert instances to plain objects and vice-versa.
- * This means decorators can be used to customize the (de)serialization.
+ * By default, objects are serialized using `JSON.stringify` only, which means `class-transformer` decorators are not
+ * applied. The `transformOnSerialize` option can be set to apply them.
+ * Deserialization uses `class-transformer` to convert the parsed JSON to an instance of the requested type, which means
+ * decorators can be used to customize it.
  */
 export class JsonObjectSerializer implements ObjectSerializer {
+  /**
+   * Creates a new {@link JsonObjectSerializer}.
+   *
+   * @param options Options for the serializer.
+   */
+  constructor(private readonly options: JsonObjectSerializerOptions = {}) {}
+
   async serialize(obj: any): Promise<Buffer> {
-    const plain = instanceToPlain(obj);
+    const plain = this.options.transformOnSerialize
+      ? instanceToPlain(obj)
+      : obj;
     return Buffer.from(JSON.stringify(plain));
   }
 

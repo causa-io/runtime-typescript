@@ -1,3 +1,5 @@
+import { jest } from '@jest/globals';
+import 'jest-extended';
 import { createLogger, getDefaultLogger } from './logger.js';
 
 describe('logger', () => {
@@ -11,6 +13,23 @@ describe('logger', () => {
       logger.info('😎');
 
       expect(loggedLines[0]).toMatchObject({ message: '😎' });
+    });
+
+    it('should set the standard output and error in blocking mode', () => {
+      const streams = [process.stdout, process.stderr] as any[];
+      const originalHandles = streams.map((stream) => stream._handle);
+      const mockHandles = streams.map(() => ({ setBlocking: jest.fn() }));
+      streams.forEach((stream, i) => (stream._handle = mockHandles[i]));
+
+      try {
+        createLogger();
+      } finally {
+        streams.forEach((stream, i) => (stream._handle = originalHandles[i]));
+      }
+
+      mockHandles.forEach((handle) =>
+        expect(handle.setBlocking).toHaveBeenCalledExactlyOnceWith(true),
+      );
     });
   });
 

@@ -2,6 +2,32 @@
 
 ## Unreleased
 
+Breaking changes:
+
+- Declare most dependencies as peer dependencies.
+- Remove the global `ClassSerializerInterceptor` from `createApp` and `createAppModule`. Responses are now serialized using `JSON.stringify` only, which avoids deep-copying them with `class-transformer`. Responses relying on `class-transformer` decorators (e.g. `@Exclude`, `@Expose`, or `@Transform`), `@SerializeOptions`, or `JsonSerializableBigInt` should use the `ClassSerializerInterceptor` explicitly. It can be restored globally by adding `{ provide: APP_INTERCEPTOR, useClass: ClassSerializerInterceptor }` to the providers of the business module.
+- `OutboxEventSender.publish` now returns the `OutboxEventPublishResult`, along with whether the outbox was successfully updated (`{ result, outboxUpdated }`). This only affects subclasses overriding the method.
+- `OutboxTransactionRunner` creates outbox events by calling the `outboxEventType` constructor without arguments and assigning the event properties, rather than using `plainToInstance`. This avoids copying the event payloads. `class-transformer` decorators on the outbox event type are no longer applied.
+- `JsonObjectSerializer.serialize` uses `JSON.stringify` only, which avoids deep-copying objects with `class-transformer`. `class-transformer` decorators (e.g. `@Exclude`, `@Expose`, `@Transform`, or `JsonSerializableBigInt`) are no longer applied when serializing, including in `serializeAsJavaScriptObject`. Deserialization is unchanged. The previous behavior can be restored with the `transformOnSerialize` option.
+- `VersionedEntityManager.update` and `delete` no longer deep-copy the existing entity. Only the update is transformed using `plainToInstance`, and the existing entity's properties are shallow-copied. An instance returned by an overridden `makeUpdatedObject` (or passed to `makeEvent`) is used as is, without being transformed using `plainToInstance`. A plain object is still transformed.
+- `VersionedEntityManager` no longer deep-copies the entity when creating the event. Only the event envelope is transformed using `plainToInstance`, and the entity is set as the event's `data` as is. `class-transformer` decorators on the event's `data` property (e.g. `@Type` or `@Transform`) are no longer applied to the entity.
+
+Features:
+
+- Implement `Page.toJSON`, which serializes the `nextPageQuery` to a search params string without requiring `class-transformer`.
+- Expose the `VersionedEntityManager.makeEvent` method, which can be overridden to customize how events are created from entities.
+- Pass the existing state to `VersionedEventProcessor.updateState`, which can be used to only write what changed compared to the existing state.
+- Support requests whose body has already been parsed by the JSON body parser in the `CloudEventsEventHandlerInterceptor`, by serializing the parsed body back to JSON. JSON CloudEvents no longer require setting `rawBody: true`, which keeps a copy of the body of all requests.
+
+Fixes:
+
+- Avoid deep-copying items in `Page.map`. Mapped items are now used as-is in the returned page.
+- Set the standard output and error in blocking mode when creating the default logger destination. This avoids blocking the event loop for 100 ms each time the output pipe is full.
+- Make `PageQuery.copy` perform a shallow copy rather than a deep copy using `instanceToInstance`. Nested values (e.g. a custom `readAfter`) are now shared with the copied query.
+- Make `OutboxEventSender.pollOutbox` poll the outbox again immediately as long as full batches of events are fetched, successfully published, and removed from the outbox, rather than processing a single batch per polling interval.
+- Remove `undefined` properties in the `ValidationPipe` by copying the objects holding them rather than deleting properties.
+- Use a `Set` in `hasEmptyIntersectionWith` (and `@HasEmptyIntersectionWith`), rather than scanning the other array for each element.
+
 ## v3.0.0 (2026-09-07)
 
 ## v3.0.0-beta.2 (2026-09-07)

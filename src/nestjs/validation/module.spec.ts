@@ -35,6 +35,14 @@ class Dto {
   @IsNullable()
   @ValidateNestedType(() => ChildDto)
   nullableChild!: ChildDto | null;
+
+  @AllowMissing()
+  @ValidateNestedType(() => ChildDto)
+  children?: ChildDto[];
+
+  @AllowMissing()
+  @MaxLength(3)
+  optionalString?: string;
 }
 
 @Controller('/')
@@ -47,6 +55,19 @@ class TestController {
   @Post('/checkNullsAndNoUndefined')
   async checkNullsAndNoUndefined(@Body() dto: Dto): Promise<string> {
     return 'array' in dto.child || dto.nullableChild !== null ? '❌' : '✅';
+  }
+
+  @Post('/checkTypesAndNoUndefined')
+  async checkTypesAndNoUndefined(@Body() dto: Dto): Promise<string> {
+    const objects = [dto, dto.child, ...(dto.children ?? [])];
+    const hasUndefined = objects.some((o) =>
+      Object.values(o).includes(undefined),
+    );
+    const hasTypes =
+      dto instanceof Dto &&
+      dto.child instanceof ChildDto &&
+      !!dto.children?.every((c) => c instanceof ChildDto);
+    return !hasUndefined && hasTypes ? '✅' : '❌';
   }
 }
 
@@ -132,6 +153,18 @@ describe('object', () => {
         phoneNumber: '+33600000000',
         child: { shortString: '👍' },
         nullableChild: null,
+      })
+      .expect(201, '✅');
+  });
+
+  it('should keep the types of objects from which undefined properties are removed', async () => {
+    return request
+      .post('/checkTypesAndNoUndefined')
+      .send({
+        phoneNumber: '+33600000000',
+        child: { shortString: '👍' },
+        nullableChild: null,
+        children: [{ shortString: '1' }, { shortString: '2', array: [2] }],
       })
       .expect(201, '✅');
   });

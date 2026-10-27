@@ -12,7 +12,7 @@ import { LOGGER_MODULE_OPTIONS_INJECTION_TOKEN } from './logger.module.js';
 
 /**
  * A promise that resolves to a {@link Logger} using the `pino-pretty` formatter.
- * If `pino-pretty` is not installed, the promise resolves to `undefined`.
+ * If `pino-pretty` (an optional peer dependency) is not installed, the promise resolves to the default logger.
  */
 const prettyLoggerPromise: Promise<Logger> = (async () => {
   try {

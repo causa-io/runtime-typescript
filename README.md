@@ -88,6 +88,8 @@ The `createApp` function can be used to initialize a NestJS application from a r
 
 Note that the `AuthModule` is not automatically added because it is only relevant for front-facing APIs, and requires an additional Passport strategy to work.
 
+Responses are serialized using `JSON.stringify`, without `class-transformer`. To serialize responses using `class-transformer` decorators (e.g. `@Exclude`, `@Expose`, or `@Transform`), NestJS's `ClassSerializerInterceptor` can be applied to specific controllers or routes using `@UseInterceptors`, or globally by adding `{ provide: APP_INTERCEPTOR, useClass: ClassSerializerInterceptor }` to the providers of the business module.
+
 #### Health check
 
 NestJS provides the [`@nestjs/terminus`](https://github.com/nestjs/terminus) package to implement health checks, and not much can be added generically on top. The implementation of the actual health check may depend on the tech stack for example. However the `terminusModuleWithLogger` module provides Terminus properly configured with the pino logger.
@@ -122,7 +124,7 @@ Basic validation classes (`IdParams` and `VersionedMutationQuery`) are also prov
 
 ### Serialization
 
-The `JsonObjectSerializer`, which implements the `ObjectSerializer` interface, performs JSON (de)serialization from and to a `Buffer` containing the JSON string. The `JsonSerializationOf` and `JsonSerializableTo` types can be used to represent JavaScript objects that have gone through JSON serialization and back (e.g. `Date`s being transformed into `string`s).
+The `JsonObjectSerializer`, which implements the `ObjectSerializer` interface, performs JSON (de)serialization from and to a `Buffer` containing the JSON string. Serialization uses `JSON.stringify` only, while deserialization uses `class-transformer` to create an instance of the requested type. To apply `class-transformer` decorators when serializing (e.g. `@Exclude` or `@Transform`), a custom `ObjectSerializer` calling `instanceToPlain` before `JSON.stringify` can be used instead. The `JsonSerializationOf` and `JsonSerializableTo` types can be used to represent JavaScript objects that have gone through JSON serialization and back (e.g. `Date`s being transformed into `string`s).
 
 The `serializeAsJavaScriptObject` testing utility from `@causa/runtime/testing` can for example be used to compare HTTP responses with typed objects.
 

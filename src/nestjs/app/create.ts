@@ -1,12 +1,11 @@
 import {
-  ClassSerializerInterceptor,
   type INestApplication,
   Module,
   type ModuleMetadata,
   type NestApplicationOptions,
 } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { APP_INTERCEPTOR, NestFactory } from '@nestjs/core';
+import { NestFactory } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { Logger } from 'nestjs-pino';
 import { ExceptionFilterModule } from '../errors/index.js';
@@ -28,12 +27,7 @@ export function createAppModule(businessModule: any): any {
     businessModule,
   ];
 
-  @Module({
-    imports,
-    providers: [
-      { provide: APP_INTERCEPTOR, useClass: ClassSerializerInterceptor },
-    ],
-  })
+  @Module({ imports })
   class AppModule {}
 
   return AppModule;

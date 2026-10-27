@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Type, instanceToInstance } from 'class-transformer';
+import { Type } from 'class-transformer';
 import { IsInt, IsPositive } from 'class-validator';
 import { AllowMissing } from '../../validation/index.js';
 import { IsKeyTypeStringOrSkip } from './is-key-type-string-or-skip.decorator.js';
@@ -77,13 +77,17 @@ export class PageQuery<T = string> {
 
   /**
    * Creates a copy of the current query, with the provided parameters overriding the current ones.
+   * The copy is shallow: nested values (e.g. a custom `readAfter` or `Date` filters) are shared with the current query.
    *
    * @param overrides The query parameters to change.
    * @returns A copy of the current query with the provided parameters.
    */
   copy(overrides: Partial<this> = {}): this {
-    const copy = instanceToInstance(this);
-    return Object.assign(copy, overrides);
+    return Object.assign(
+      Object.create(Object.getPrototypeOf(this)),
+      this,
+      overrides,
+    );
   }
 }
 

@@ -17,7 +17,7 @@ project:
 javascript:
   dependencies:
     check:
-      allowlist: [GHSA-pm4m-ph32-ghv5]
+      allowlist: [GHSA-q7qp-rjg7-q26m]
     update:
       packageTargets:
         # The following types should be manually updated to the next major version when the corresponding tool / package

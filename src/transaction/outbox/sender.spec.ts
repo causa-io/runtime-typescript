@@ -160,6 +160,109 @@ describe('OutboxEventSender', () => {
       expect(getLoggedErrors()).toBeEmpty();
     });
 
+    it('should keep polling while full batches of events are fetched', async () => {
+      sender = new MockSender(publisher, logger, {
+        pollingInterval: 0,
+        batchSize: 2,
+      });
+      updateOutboxSpy = jest
+        .spyOn(sender as any, 'updateOutbox')
+        .mockResolvedValue(undefined);
+      fetchEventsSpy = jest
+        .spyOn(sender as any, 'fetchEvents')
+        .mockResolvedValueOnce([
+          { id: '1', topic: 'topic1', data: Buffer.from('1️⃣'), attributes: {} },
+          { id: '2', topic: 'topic1', data: Buffer.from('2️⃣'), attributes: {} },
+        ])
+        .mockResolvedValueOnce([
+          { id: '3', topic: 'topic1', data: Buffer.from('3️⃣'), attributes: {} },
+          { id: '4', topic: 'topic1', data: Buffer.from('4️⃣'), attributes: {} },
+        ])
+        .mockResolvedValueOnce([
+          { id: '5', topic: 'topic1', data: Buffer.from('5️⃣'), attributes: {} },
+        ]);
+
+      await sender.pollOutbox();
+
+      expect(fetchEventsSpy).toHaveBeenCalledTimes(3);
+      expect(publisher.publish).toHaveBeenCalledTimes(5);
+      expect(updateOutboxSpy.mock.calls).toEqual([
+        [{ '1': true, '2': true }],
+        [{ '3': true, '4': true }],
+        [{ '5': true }],
+      ]);
+    });
+
+    it('should stop polling when an event fails to be published', async () => {
+      sender = new MockSender(publisher, logger, {
+        pollingInterval: 0,
+        batchSize: 1,
+      });
+      updateOutboxSpy = jest
+        .spyOn(sender as any, 'updateOutbox')
+        .mockResolvedValue(undefined);
+      fetchEventsSpy = jest
+        .spyOn(sender as any, 'fetchEvents')
+        .mockResolvedValue([
+          { id: '1', topic: 'topic1', data: Buffer.from('🎉'), attributes: {} },
+        ]);
+      publishSpy.mockRejectedValueOnce(new Error('💥'));
+
+      await sender.pollOutbox();
+
+      expect(fetchEventsSpy).toHaveBeenCalledExactlyOnceWith();
+      expect(updateOutboxSpy).toHaveBeenCalledExactlyOnceWith({ '1': false });
+    });
+
+    it('should stop polling when the outbox fails to be updated', async () => {
+      sender = new MockSender(publisher, logger, {
+        pollingInterval: 0,
+        batchSize: 1,
+      });
+      updateOutboxSpy = jest
+        .spyOn(sender as any, 'updateOutbox')
+        .mockRejectedValue(new Error('💥'));
+      fetchEventsSpy = jest
+        .spyOn(sender as any, 'fetchEvents')
+        .mockResolvedValueOnce([
+          { id: '1', topic: 'topic1', data: Buffer.from('1️⃣'), attributes: {} },
+        ])
+        .mockResolvedValueOnce([
+          { id: '2', topic: 'topic1', data: Buffer.from('2️⃣'), attributes: {} },
+        ])
+        .mockResolvedValue([]);
+
+      await sender.pollOutbox();
+
+      expect(fetchEventsSpy).toHaveBeenCalledExactlyOnceWith();
+      expect(updateOutboxSpy).toHaveBeenCalledExactlyOnceWith({ '1': true });
+    });
+
+    it('should stop polling when the application is shutting down', async () => {
+      sender = new MockSender(publisher, logger, {
+        pollingInterval: 0,
+        batchSize: 1,
+      });
+      fetchEventsSpy = jest
+        .spyOn(sender as any, 'fetchEvents')
+        .mockImplementation(async () => {
+          sender.beforeApplicationShutdown();
+          return [
+            {
+              id: '1',
+              topic: 'topic1',
+              data: Buffer.from('🎉'),
+              attributes: {},
+            },
+          ];
+        });
+
+      await sender.pollOutbox();
+
+      expect(fetchEventsSpy).toHaveBeenCalledExactlyOnceWith();
+      expect(publisher.publish).not.toHaveBeenCalled();
+    });
+
     it('should do nothing if there are no events to publish', async () => {
       await sender.pollOutbox();
 
@@ -188,7 +291,7 @@ describe('OutboxEventSender', () => {
 
   describe('publish', () => {
     it('should publish events and update the outbox', async () => {
-      await sender.publish([
+      const actualResult = await sender.publish([
         { id: '1', topic: 'topic1', data: Buffer.from('🎉'), attributes: {} },
         {
           id: '2',
@@ -213,13 +316,17 @@ describe('OutboxEventSender', () => {
         '1': true,
         '2': true,
       });
+      expect(actualResult).toEqual({
+        result: { '1': true, '2': true },
+        outboxUpdated: true,
+      });
       expect(getLoggedErrors()).toBeEmpty();
     });
 
     it('should log an error if publishing fails and update the outbox', async () => {
       publishSpy.mockRejectedValueOnce(new Error('💥'));
 
-      await sender.publish([
+      const actualResult = await sender.publish([
         { id: '1', topic: 'topic1', data: Buffer.from('🎉'), attributes: {} },
       ]);
 
@@ -230,6 +337,10 @@ describe('OutboxEventSender', () => {
         key: undefined,
       });
       expect(updateOutboxSpy).toHaveBeenCalledExactlyOnceWith({ '1': false });
+      expect(actualResult).toEqual({
+        result: { '1': false },
+        outboxUpdated: true,
+      });
       expect(getLoggedErrors()).toEqual([
         expect.objectContaining({
           message: 'Failed to publish an event.',
@@ -242,7 +353,7 @@ describe('OutboxEventSender', () => {
     it('should log an error if updating the outbox fails', async () => {
       updateOutboxSpy.mockRejectedValueOnce(new Error('💥'));
 
-      await sender.publish([
+      const actualResult = await sender.publish([
         { id: '1', topic: 'topic1', data: Buffer.from('🎉'), attributes: {} },
       ]);
 
@@ -253,6 +364,10 @@ describe('OutboxEventSender', () => {
         key: undefined,
       });
       expect(updateOutboxSpy).toHaveBeenCalledExactlyOnceWith({ '1': true });
+      expect(actualResult).toEqual({
+        result: { '1': true },
+        outboxUpdated: false,
+      });
       expect(getLoggedErrors()).toEqual([
         expect.objectContaining({
           message: 'Failed to update the outbox.',
@@ -264,10 +379,11 @@ describe('OutboxEventSender', () => {
     it('should not start publishing when the application is shutting down', async () => {
       await sender.beforeApplicationShutdown();
 
-      await sender.publish([
+      const actualResult = await sender.publish([
         { id: '1', topic: 'topic1', data: Buffer.from('🎉'), attributes: {} },
       ]);
 
+      expect(actualResult).toEqual({ result: {}, outboxUpdated: true });
       expect(publisher.publish).not.toHaveBeenCalled();
       expect(updateOutboxSpy).not.toHaveBeenCalled();
       expect(getLoggedErrors()).toBeEmpty();

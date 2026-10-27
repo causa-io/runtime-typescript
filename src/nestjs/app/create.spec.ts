@@ -1,5 +1,6 @@
 import {
   Body,
+  ClassSerializerInterceptor,
   Controller,
   Get,
   type INestApplication,
@@ -7,6 +8,7 @@ import {
   Post,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { APP_INTERCEPTOR } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
 import { Transform } from 'class-transformer';
 import { IsPhoneNumber } from 'class-validator';
@@ -59,6 +61,14 @@ class TestModule {}
   imports: [TestModule],
 })
 class AppModule {}
+
+@Module({
+  imports: [TestModule],
+  providers: [
+    { provide: APP_INTERCEPTOR, useClass: ClassSerializerInterceptor },
+  ],
+})
+class AppModuleWithClassSerializer {}
 
 describe('createApp', () => {
   let app: INestApplication;
@@ -135,11 +145,24 @@ describe('createApp', () => {
       });
   });
 
-  it('should transform the response', async () => {
+  it('should not use class-transformer to serialize the response', async () => {
     await request
       .post('/test')
       .send({ phoneNumber: '+33600000000' })
-      .expect(201, { phoneNumber: '📞: +33600000000' });
+      .expect(201, { phoneNumber: '+33600000000' });
+  });
+
+  it('should use the class serializer interceptor provided by the business module', async () => {
+    const otherApp = await createApp(AppModuleWithClassSerializer);
+
+    try {
+      await supertest(otherApp.getHttpServer())
+        .post('/test')
+        .send({ phoneNumber: '+33600000000' })
+        .expect(201, { phoneNumber: '📞: +33600000000' });
+    } finally {
+      await otherApp.close();
+    }
   });
 
   it('should apply nest application options', async () => {

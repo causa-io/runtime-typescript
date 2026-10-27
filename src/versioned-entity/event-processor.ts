@@ -28,6 +28,19 @@ export type VersionedProjectionOptions<P extends object> = {
 };
 
 /**
+ * Options for the {@link VersionedEventProcessor.updateState} method.
+ */
+export type VersionedStateUpdateOptions<P extends object> = {
+  /**
+   * The existing state before processing the event, as fetched or provided in
+   * {@link VersionedEventProcessor.processEvent}.
+   * `null` means that the state does not exist in the database, while `undefined` means that it is not known.
+   * `VersionedEntityManager.create` passes `null`, even when a soft-deleted entity exists in the database.
+   */
+  existingState?: P | null;
+};
+
+/**
  * A function that fetches the version of a projection.
  */
 export type ProjectionVersionFetcher<P extends object> = (
@@ -195,12 +208,18 @@ export abstract class VersionedEventProcessor<
   /**
    * Updates the current state using the given projection. By default, it replaces the state with the new projection.
    * This method can be overridden to customize how the state is updated (e.g. perform an update rather than a
-   * replacement).
+   * replacement, or only write what changed compared to the existing state).
    *
    * @param projection The new projection to update the state with.
    * @param transaction The transaction to use to update the state.
+   * @param options Options for the update.
    */
-  protected async updateState(projection: P, transaction: RWT): Promise<void> {
+  protected async updateState(
+    projection: P,
+    transaction: RWT,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    options?: VersionedStateUpdateOptions<P>,
+  ): Promise<void> {
     await transaction.set(projection);
   }
 
@@ -299,7 +318,9 @@ export abstract class VersionedEventProcessor<
           projectionVersionProperty: context.projectionVersionProperty,
         });
 
-        await this.updateState(projection, transaction);
+        await this.updateState(projection, transaction, {
+          existingState: state,
+        });
 
         return projection;
       },

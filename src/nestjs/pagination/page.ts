@@ -126,7 +126,8 @@ export class Page<T, PQ extends PageQuery<any> = PageQuery> {
       });
     }
 
-    return plainToInstance(Page, { items, nextPageQuery }) as any;
+    const page = new Page<U, PageQuery>(items, null);
+    return Object.assign(page, { nextPageQuery });
   }
 
   /**
@@ -138,6 +139,20 @@ export class Page<T, PQ extends PageQuery<any> = PageQuery> {
    */
   serialize(): SerializedPage<this> {
     return this as any;
+  }
+
+  /**
+   * Returns the representation of the page used by `JSON.stringify`, with the `nextPageQuery` converted to a search
+   * params string.
+   * This matches the transformation applied to `nextPageQuery` by `instanceToPlain`, without deep-copying the items.
+   *
+   * @returns The serialized page.
+   */
+  toJSON(): Omit<SerializedPage<this>, 'map' | 'serialize' | 'toJSON'> {
+    return {
+      ...this,
+      nextPageQuery: convertQueryToSearchParams(this.nextPageQuery),
+    };
   }
 
   /**

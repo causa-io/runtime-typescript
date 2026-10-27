@@ -26,8 +26,8 @@ function decorateReadAfterPropertyWithClassTransformer(
   Transform(
     ({ value }) => {
       try {
-        // Checking whether the value is already an instance of the `readAfterType` is useful when deep copying a
-        // `PageQuery` class using `instanceToInstance`.
+        // Checking whether the value is already an instance of the `readAfterType` is useful when an already typed
+        // `PageQuery` is transformed again, e.g. using `instanceToInstance`.
         if (!value || value instanceof readAfterType) {
           return value;
         }

@@ -311,6 +311,51 @@ describe('VersionedEntityManager', () => {
         { existingEntity },
       );
     });
+
+    it('should use the provided custom event creation logic', async () => {
+      class MyManager extends VersionedEntityManager<
+        Transaction,
+        Transaction,
+        MyEvent,
+        MockRunner
+      > {
+        protected makeEvent(
+          eventName: string,
+          entity: MyEntity,
+          producedAt: Date,
+        ): MyEvent {
+          return new MyEvent({
+            id: '🆔',
+            name: eventName,
+            producedAt,
+            data: new MyEntity({ ...entity, someProperty: '🎨' }),
+          });
+        }
+      }
+      manager = new MyManager('my-topic', MyEvent, MyEntity, new MockRunner());
+
+      const actualEvent = await manager.create('myEntityCreated', {
+        id: 'abc',
+        someProperty: '🎉',
+      });
+
+      expect(actualEvent).toEqual(
+        new MyEvent({
+          id: '🆔',
+          producedAt: mockTransaction.timestamp,
+          name: 'myEntityCreated',
+          data: new MyEntity({
+            id: 'abc',
+            createdAt: mockTransaction.timestamp,
+            updatedAt: mockTransaction.timestamp,
+            deletedAt: null,
+            someProperty: '🎨',
+          }),
+        }),
+      );
+      expect(mockTransaction.entities).toEqual({ abc: actualEvent.data });
+      expectPublishedEvent(actualEvent);
+    });
   });
 
   describe('update', () => {
@@ -400,6 +445,7 @@ describe('VersionedEntityManager', () => {
     it('should update the entity', async () => {
       const existingEntity = new MyEntity({ id: 'abc' });
       mockTransaction.set(existingEntity);
+      const existingEntityBefore = structuredClone(existingEntity);
       const validationFn = jest.fn(() => Promise.resolve());
 
       const actualEvent = await manager.update(
@@ -408,6 +454,10 @@ describe('VersionedEntityManager', () => {
         { someProperty: '🔖' },
         { validationFn, checkUpdatedAt: existingEntity.updatedAt },
       );
+
+      // The existing entity should not be modified, e.g. as it is passed to `updateState` as the existing state.
+      expect(existingEntity).toEqual(existingEntityBefore);
+      expect(actualEvent.data).not.toBe(existingEntity);
 
       expect(actualEvent).toBeInstanceOf(MyEvent);
       expect(actualEvent).toEqual(
@@ -521,6 +571,26 @@ describe('VersionedEntityManager', () => {
       expectPublishedEvent(actualEvent, { att1: '🎁' });
     });
 
+    it('should transform a plain existing entity', async () => {
+      const existingEntity = { ...new MyEntity({ id: 'abc' }) };
+
+      const actualEvent = await manager.update(
+        'myEntityUpdated',
+        { id: 'abc' },
+        { someProperty: '🔖' },
+        { existingEntity },
+      );
+
+      expect(actualEvent.data).toBeInstanceOf(MyEntity);
+      expect(actualEvent.data).toEqual({
+        ...existingEntity,
+        updatedAt: mockTransaction.timestamp,
+        someProperty: '🔖',
+      });
+      expect(mockTransaction.entities).toEqual({ abc: actualEvent.data });
+      expectPublishedEvent(actualEvent);
+    });
+
     it('should use the provided custom update logic', async () => {
       class MyManager extends VersionedEntityManager<
         Transaction,
@@ -626,6 +696,7 @@ describe('VersionedEntityManager', () => {
     it('should delete the entity', async () => {
       const existingEntity = new MyEntity({ id: 'abc' });
       mockTransaction.set(existingEntity);
+      const existingEntityBefore = structuredClone(existingEntity);
       const validationFn = jest.fn(() => Promise.resolve());
 
       const actualEvent = await manager.delete(
@@ -633,6 +704,9 @@ describe('VersionedEntityManager', () => {
         { id: 'abc', someProperty: '🙈' },
         { validationFn, checkUpdatedAt: existingEntity.updatedAt },
       );
+
+      expect(existingEntity).toEqual(existingEntityBefore);
+      expect(actualEvent.data).not.toBe(existingEntity);
 
       expect(actualEvent).toBeInstanceOf(MyEvent);
       expect(actualEvent).toEqual(
@@ -688,6 +762,25 @@ describe('VersionedEntityManager', () => {
 
       expect(manager.runner.runReadWrite).not.toHaveBeenCalled();
       expectPublishedEvent(actualEvent, { att1: '🎁' });
+    });
+
+    it('should transform a plain existing entity', async () => {
+      const existingEntity = { ...new MyEntity({ id: 'abc' }) };
+
+      const actualEvent = await manager.delete(
+        'myEntityDeleted',
+        { id: 'abc' },
+        { existingEntity },
+      );
+
+      expect(actualEvent.data).toBeInstanceOf(MyEntity);
+      expect(actualEvent.data).toEqual({
+        ...existingEntity,
+        updatedAt: mockTransaction.timestamp,
+        deletedAt: mockTransaction.timestamp,
+      });
+      expect(mockTransaction.entities).toEqual({ abc: actualEvent.data });
+      expectPublishedEvent(actualEvent);
     });
   });
 

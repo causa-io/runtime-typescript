@@ -56,7 +56,9 @@ describe('OutboxTransactionRunner', () => {
     sender = new MockSender(publisher, logger, { pollingInterval: 0 });
     runner = new MyRunner(MyEventType, sender, logger);
 
-    jest.spyOn(sender, 'publish').mockResolvedValue();
+    jest
+      .spyOn(sender, 'publish')
+      .mockResolvedValue({ result: {}, outboxUpdated: true });
   });
 
   afterEach(() => {
