@@ -12,6 +12,19 @@ describe('createMockConfigService', () => {
     expect(configService.get('NOPE')).toBeUndefined();
   });
 
+  it('should not read from the environment', () => {
+    process.env.CONFIG_FIXTURE_TEST_VAR = '🙈';
+
+    try {
+      const configService = createMockConfigService({ MY_VAR: '👋' });
+
+      expect(configService.get('CONFIG_FIXTURE_TEST_VAR')).toBeUndefined();
+      expect(configService.get('MY_VAR')).toEqual('👋');
+    } finally {
+      delete process.env.CONFIG_FIXTURE_TEST_VAR;
+    }
+  });
+
   it('should allow further override of the configuration', () => {
     const configService = createMockConfigService({
       MY_VAR: '👋',
