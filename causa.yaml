@@ -17,7 +17,10 @@ project:
 javascript:
   dependencies:
     check:
-      allowlist: [GHSA-q7qp-rjg7-q26m]
+      allowlist:
+        - GHSA-3g3m-2fjr-6pw4
+        - GHSA-g3hv-75wg-m249
+        - GHSA-gcqx-w48m-w2h4
     update:
       packageTargets:
         # The following types should be manually updated to the next major version when the corresponding tool / package

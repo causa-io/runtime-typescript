@@ -1,4 +1,3 @@
-import { jest } from '@jest/globals';
 import { ConfigService } from '@nestjs/config';
 import type { Fixture, NestJsModuleOverrider } from './testing.js';
 
@@ -26,14 +25,9 @@ export function createMockConfigService(
 ): MockedConfigService {
   const configService = new ConfigService(config);
 
-  // This disables the default behavior that prioritizes configuration from the environment, such that only the
-  // configuration explicitly defined in tests is passed.
-  jest
-    .spyOn(configService as any, 'getFromValidatedEnv')
-    .mockReturnValue(undefined);
-  jest
-    .spyOn(configService as any, 'getFromProcessEnv')
-    .mockReturnValue(undefined);
+  // This disables the fallback to `process.env`, such that only the configuration explicitly defined in tests is
+  // passed. This is what `ConfigModule.forRoot({ skipProcessEnv: true })` does, but the setter is not public.
+  (configService as any).skipProcessEnv = true;
 
   return configService as any;
 }
