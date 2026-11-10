@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## v4.0.0 (2026-11-10)
+
+Fixes:
+
+- Make `createMockConfigService` (and the `ConfigFixture`) compatible with `@nestjs/config` 12.1, which removed an internal `ConfigService` method it relied on to ignore environment variables.
+
 ## v4.0.0-beta.1 (2026-10-27)
 
 Breaking changes:
